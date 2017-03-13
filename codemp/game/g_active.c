@@ -4150,6 +4150,11 @@ void ClientThink_real( gentity_t *ent ) {
 					client->ps.speed *= 1.3f;
 			}
 		}
+		else if (client->ps.stats[STAT_MOVEMENTSTYLE] == MV_SPEED && client->sess.movementStyle == MV_SPEED) {
+			client->ps.speed *= 1.7f;
+			if (client->ps.fd.forcePower > 50)
+				client->ps.fd.forcePower = 50;
+		}
 
 		//Check for a siege class speed multiplier
 		if (level.gametype == GT_SIEGE &&

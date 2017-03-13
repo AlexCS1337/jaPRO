@@ -27,10 +27,12 @@ extern vec3_t gPainPoint;
 #define SECURITY_LOG "security.log"
 #define DUEL_LOG "duels.log" //duellog
 #define RACE_LOG "races.log" //racelog
-#if !_NEWRACERANKING
-#define TEMP_RACE_LOG "currentRaces.tmp" //racelog
+#if 1
+#define FAIL_RACE_LOG "failedRaces.log" //racelog
 #endif
+#if _STATLOG
 #define TEMP_STAT_LOG "currentStats.tmp" //racelog
+#endif
 #define	PLAYER_LOG "players.log" //Name, IP, Guid
 
 #define BODY_QUEUE_SIZE		8
@@ -1255,6 +1257,7 @@ typedef enum //movementstyle enum
 	MV_RJCPM,
 	MV_SWOOP,
 	MV_JETPACK,
+	MV_SPEED,
 #if _SPPHYSICS
 	MV_SP,
 #endif
@@ -1440,10 +1443,10 @@ typedef struct level_locals_s {
 	qboolean	isLockedfree;	
 	fileHandle_t	duelLog;
 	fileHandle_t	raceLog;
-#if !_NEWRACERANKING
-	fileHandle_t	tempRaceLog;
-#endif
+	fileHandle_t	failRaceLog;
+#if _STATLOG
 	fileHandle_t	tempStatLog;
+#endif
 	fileHandle_t	playerLog;
 
 	char		courseName[24][32];//japro defrag	

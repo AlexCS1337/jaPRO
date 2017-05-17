@@ -777,6 +777,7 @@ static void CGVM_Cvar_Set( const char *var_name, const char *value ) {
 // legacy syscall
 
 intptr_t CL_CgameSystemCalls( intptr_t *args ) {
+	if (args[0] >= G_G2_COLLISIONDETECTCACHE) args[0]++;
 	switch ( args[0] ) {
 		//rww - alright, DO NOT EVER add a GAME/CGAME/UI generic call without adding a trap to match, and
 		//all of these traps must be shared and have cases in sv_game, cl_cgame, and cl_ui. They must also

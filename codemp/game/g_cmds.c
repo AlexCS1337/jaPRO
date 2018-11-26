@@ -243,7 +243,7 @@ Returns a player number for either a number or name string
 Returns -1 if invalid
 ==================
 */
-static int JP_ClientNumberFromString(gentity_t *to, const char *s) 
+int JP_ClientNumberFromString(gentity_t *to, const char *s) 
 {
 	gclient_t	*cl;
 	int			idnum, i, match = -1;
@@ -8038,7 +8038,7 @@ void Cmd_ShowNet_f( gentity_t *ent ) { //why does this crash sometimes..? condit
 			}
 		}
 		else {
-			clientnum = atoi(arg1);
+			clientnum = JP_ClientNumberFromString( ent, arg1 );
 		}
 	}
 	else if (trap->Argc() != 1) {

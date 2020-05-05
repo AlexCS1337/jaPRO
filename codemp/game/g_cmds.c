@@ -7025,6 +7025,8 @@ void Cmd_Amtele_f(gentity_t *ent)
 
 	if (!ent->client)
 		return;
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR && (ent->client->ps.pm_flags & PMF_FOLLOW)) //lazy
+		return;
 
 	allowed = G_AdminAllowed(ent, JAPRO_ACCOUNTFLAG_A_ADMINTELE, qtrue, g_allowRaceTele.integer, "amTele");
 

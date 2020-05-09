@@ -2046,7 +2046,7 @@ const char *int_to_string(int i, char *buf, size_t bufSize) {
 void PrintStats(int client) {
 	int			i, j = 0, gametype = level.gametype;
 	char		msg[1024-128] = {0}, numbuf[16] = {0};
-	char		lKills[32], lDeaths[32], lNet[32], lDmgGiven[32], lDmgTaken[32], lDmgNet[32], lDmgPerDeath[32], lTK[32], lCaptures[32], lReturns[32], lFragCarrier[32], lAccuracy[32], lTE[32], lTH[32], lDrain[32], lName[32], whitespace[32];
+	char		lKills[32], lDeaths[32], lNet[32], lDmgGiven[32], lDmgTaken[32], lDmgNet[32], lDmgPerDeath[32], lTK[32], lCaptures[32], lReturns[32], lFragCarrier[32], lAccuracy[32], lTE[32], lTH[32], lDrain[32], lName[MAX_NETNAME], whitespace[32];
 	qboolean	showAccuracy = qtrue, showTeamPowers = qtrue, showDrain = qtrue;
 	gclient_t	*cl;
 
@@ -2185,7 +2185,7 @@ void PrintStats(int client) {
 				Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*s", strlen(lDrain), int_to_string(drainRatio, numbuf, sizeof(numbuf)));
 				Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			}	
-			Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*^7s", strlen(lName), cl->pers.netname);
+			Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "^7%-*s", strlen(lName), cl->pers.netname);
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), "\n");
 

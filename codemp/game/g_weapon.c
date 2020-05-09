@@ -2826,7 +2826,11 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	}
 
 	// normal ones bounce, alt ones explode on impact
-	bolt->genericValue5 = level.time + TD_TIME; // How long 'til she blows
+	if (g_tweakWeapons.integer & WT_IMPACT_NITRON)
+		bolt->genericValue5 = level.time + 2250; // How long 'til she blows
+	else
+		bolt->genericValue5 = level.time + TD_TIME; // How long 'til she blows
+
 	bolt->s.pos.trType = TR_GRAVITY;
 	bolt->parent = ent;
 	bolt->r.ownerNum = ent->s.number;

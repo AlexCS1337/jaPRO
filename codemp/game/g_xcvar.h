@@ -320,6 +320,7 @@ XCVAR_DEF( bot_s3,						"48",			NULL,				CVAR_ARCHIVE,									qtrue )
 XCVAR_DEF( bot_s4,						"0.5",			NULL,				CVAR_ARCHIVE,									qtrue )
 XCVAR_DEF( bot_s5,						"0",			NULL,				CVAR_ARCHIVE,									qtrue )
 XCVAR_DEF( bot_s6,						"64",			NULL,				CVAR_ARCHIVE,									qtrue )
+XCVAR_DEF( g_fixTimerOOB,				"0",			NULL,				CVAR_ARCHIVE,									qtrue )
 
 
 //DEBUG / TOOLS

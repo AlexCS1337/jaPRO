@@ -2706,7 +2706,7 @@ void Cmd_MapList_f( gentity_t *ent ) {
 		Q_strncpyz( map, Info_ValueForKey( level.arenas.infos[i], "map" ), sizeof( map ) );
 		Q_StripColor( map );
 
-		if ( G_DoesMapSupportGametype( map, level.gametype ) ) {
+		if ( G_DoesMapSupportGametype( map, level.gametype ) || (g_tweakVote.integer & TV_IGNOREMAPARENAS) ) {  //ARGH?
 			char *tmpMsg = va( " ^%c%s", (++toggle&1) ? COLOR_GREEN : COLOR_YELLOW, map );
 			if ( strlen( buf ) + strlen( tmpMsg ) >= sizeof( buf ) ) {
 				trap->SendServerCommand( ent-g_entities, va( "print \"%s\"", buf ) );
@@ -2877,7 +2877,7 @@ qboolean G_VoteMap( gentity_t *ent, int numArgs, const char *arg1, const char *a
 	}
 	trap->FS_Close( fp );
 
-	if ( !G_DoesMapSupportGametype( arg2, level.gametype ) /*&& !(g_tweakVote.integer & TV_FIX_GAMETYPEMAP)*/ ) { //new TV for check arena file for matching gametype?
+	if ( !G_DoesMapSupportGametype( arg2, level.gametype ) && !(g_tweakVote.integer & TV_IGNOREMAPARENAS) ) { //new TV for check arena file for matching gametype?
 		//Logic, this is not needed because we have live update gametype?
 		trap->SendServerCommand( ent-g_entities, va( "print \"%s\n\"", G_GetStringEdString( "MP_SVGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME" ) ) );
 		return qfalse;
@@ -6062,9 +6062,11 @@ static void Cmd_ModVersion_f(gentity_t *ent) {
 	trap->SendServerCommand(ent-g_entities, va("print \"^5The servers version of the mod was compiled on %s at %s\n\"", __DATE__, __TIME__)); 
 }
 
+void IntegerToRaceName(int style, char *styleString, size_t styleStringSize);
 static void Cmd_Cosmetics_f(gentity_t *ent) {
 	int i;
 	qboolean printed = qfalse;
+	char styleString[16] = {0};
 
 	for (i=0; i < MAX_COSMETIC_UNLOCKS; i++) { //Loop through cosmetics and print restrictions.
 		if (!cosmeticUnlocks[i].active)
@@ -6073,11 +6075,12 @@ static void Cmd_Cosmetics_f(gentity_t *ent) {
 			trap->SendServerCommand(ent-g_entities, "print \"    ^5There are cosmetic unlocks on the server:\n\"");
 			printed = qtrue;
 		}
+		IntegerToRaceName(cosmeticUnlocks[i].style, styleString, sizeof(styleString));
 		if (cosmeticUnlocks[i].duration) {
-			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%i) in under %.3f seconds\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, cosmeticUnlocks[i].style, ((float)cosmeticUnlocks[i].duration) * 0.001f)); 
+			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%s) in under %.3f seconds\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, styleString, ((float)cosmeticUnlocks[i].duration) * 0.001f)); 
 		}
 		else {
-			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%i)\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, cosmeticUnlocks[i].style)); 
+			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%s)\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, styleString)); 
 		}
 	}
 	if (!printed) { //No cosmetic locks

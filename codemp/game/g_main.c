@@ -3369,18 +3369,11 @@ void G_RunFrame( int levelTime ) {
 
 	static int lastMsgTime = 0;//OSP: pause
 
-	if (g_autoQuit.integer) {
-		if (levelTime > /*g_autoQuit.integer*/5 * 24 * 60 * 60 * 1000) {//5 days
-			//Check if between 5 - 5:01 AM? or w/e?.  or check if anyone on?
+	if (!level.numVotingClients && g_autoQuit.integer) {
+		if (levelTime > g_autoQuit.integer * 24 * 60 * 60 * 1000) {//X days
 			//Where to do this other than runframe.. something thats called like every 1 second?
-			if (level.numVotingClients == 0) { //No humans ingame
-				trap->Print("Auto quitting server %i\n", levelTime);
-				trap->SendConsoleCommand(EXEC_APPEND, "quit\n");
-			}
-			if (levelTime > (2147483648 - 60*1000)) { //just always quit if its this high.. 24 days?
-				trap->Print("Auto quitting server %i\n", levelTime);
-				trap->SendConsoleCommand(EXEC_APPEND, "quit\n");
-			}
+			trap->Print("Auto quitting server (up %i days)\n", levelTime / 1000 / 60 / 60 / 24);
+			trap->SendConsoleCommand(EXEC_APPEND, "quit\n");
 		}
 	}
 

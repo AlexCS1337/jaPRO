@@ -317,7 +317,7 @@ static void RemoveWeaponsFromPlayer(gentity_t *ent) {
 	ent->client->ps.stats[STAT_WEAPONS] &= ~disallowedWeaps; //Subtract disallowed weapons from current weapons.
 
 	if (ent->client->ps.stats[STAT_WEAPONS] <= 0)
-		ent->client->ps.stats[STAT_WEAPONS] = WP_MELEE;
+		ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE); //HMM? asdf
 
 	if (!(ent->client->ps.stats[STAT_WEAPONS] & (1 >> ent->client->ps.weapon))) { //If our weapon selected does not appear in our weapons list
 		ent->client->ps.weapon = WP_MELEE; //who knows why this does shit even if our current weapon is fine.

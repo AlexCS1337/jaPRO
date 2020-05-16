@@ -1729,7 +1729,7 @@ void Use_target_restrict_on(gentity_t *trigger, gentity_t *other, gentity_t *pla
 	if (trigger->spawnflags & RESTRICT_FLAG_YSAL) {//Give Ysal
 		if (player->client->ps.powerups[PW_YSALAMIRI] <= 0)
 			G_Sound(player, CHAN_AUTO, G_SoundIndex("sound/player/boon.mp3"));
-		player->client->ps.powerups[PW_YSALAMIRI] = 99999999;
+		player->client->ps.powerups[PW_YSALAMIRI] = 2147483648;
 	}
 	if (trigger->spawnflags & RESTRICT_FLAG_CROUCHJUMP) {//hl style crouch jump
 		player->client->ps.stats[STAT_RESTRICTIONS] |= JAPRO_RESTRICT_CROUCHJUMP;
@@ -1760,7 +1760,7 @@ void Use_target_restrict_off( gentity_t *trigger, gentity_t *other, gentity_t *p
 	if (trigger->spawnflags & RESTRICT_FLAG_ALLOWTELES) {
 		player->client->ps.stats[STAT_RESTRICTIONS] &= ~JAPRO_RESTRICT_ALLOWTELES;
 	}
-	if (!trigger->spawnflags) {
+	if (trigger->spawnflags == RESTRICT_FLAG_DISABLE) {
 		player->client->ps.stats[STAT_RESTRICTIONS] &= ~JAPRO_RESTRICT_BHOP;
 	}
 }

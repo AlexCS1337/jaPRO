@@ -6062,32 +6062,6 @@ static void Cmd_ModVersion_f(gentity_t *ent) {
 	trap->SendServerCommand(ent-g_entities, va("print \"^5The servers version of the mod was compiled on %s at %s\n\"", __DATE__, __TIME__)); 
 }
 
-void IntegerToRaceName(int style, char *styleString, size_t styleStringSize);
-static void Cmd_Cosmetics_f(gentity_t *ent) {
-	int i;
-	qboolean printed = qfalse;
-	char styleString[16] = {0};
-
-	for (i=0; i < MAX_COSMETIC_UNLOCKS; i++) { //Loop through cosmetics and print restrictions.
-		if (!cosmeticUnlocks[i].active)
-			continue;
-		if (!printed) {
-			trap->SendServerCommand(ent-g_entities, "print \"    ^5There are cosmetic unlocks on the server:\n\"");
-			printed = qtrue;
-		}
-		IntegerToRaceName(cosmeticUnlocks[i].style, styleString, sizeof(styleString));
-		if (cosmeticUnlocks[i].duration) {
-			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%s) in under %.3f seconds\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, styleString, ((float)cosmeticUnlocks[i].duration) * 0.001f)); 
-		}
-		else {
-			trap->SendServerCommand(ent-g_entities, va("print \"^5%i^3: %s (%s)\n\"", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, styleString)); 
-		}
-	}
-	if (!printed) { //No cosmetic locks
-		trap->SendServerCommand(ent-g_entities, "print \"^5There are no cosmetic unlocks on the server\n\"");
-	}
-}
-
 extern qboolean BG_InKnockDown( int anim ); //bg_pmove.c
 static void DoEmote(gentity_t *ent, int anim, qboolean freeze, qboolean nosaber, int body)
 {
@@ -8282,8 +8256,6 @@ command_t commands[] = {
 	{ "clanpass",			Cmd_Clanpass_f,				CMD_NOINTERMISSION },
 	{ "clansay",			Cmd_Clansay_f,				0 },
 	{ "clanwhois",			Cmd_Clanwhois_f,			0 },
-
-	{ "cosmetics",			Cmd_Cosmetics_f,			0 },
 
 	{ "debugBMove_Back",	Cmd_BotMoveBack_f,			CMD_CHEAT|CMD_ALIVE },
 	{ "debugBMove_Forward",	Cmd_BotMoveForward_f,		CMD_CHEAT|CMD_ALIVE },

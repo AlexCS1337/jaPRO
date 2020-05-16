@@ -421,6 +421,27 @@ static void CVU_Registration(void) {
 	trap->Cvar_Set("jcinfo2", va("%i", jcinfo2.integer));
 }
 
+static void CVU_Cosmetics(void) {
+		char	msg[1024-128] = {0};
+		if (g_validateCosmetics.integer) {
+			int		i;
+
+			for (i=0; i<MAX_COSMETIC_UNLOCKS; i++) {
+				char *tmpMsg = NULL;
+				if (!cosmeticUnlocks[i].active)
+					continue;
+
+				tmpMsg = va("%i:%s:%i:%i\n", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, cosmeticUnlocks[i].style, cosmeticUnlocks[i].duration); //probably have to replace the \n with something so it doesnt flood console of old japro clients
+				if (strlen(msg) + strlen(tmpMsg) >= sizeof( msg)) {
+					trap->SendServerCommand( -1, va("cosmetics \"%s\"", msg));
+					msg[0] = '\0';
+				}
+				Q_strcat(msg, sizeof(msg), tmpMsg);
+			}
+		}
+		trap->SendServerCommand(-1, va("cosmetics \"%s\"", msg));
+}
+
 //
 // Cvar table
 //

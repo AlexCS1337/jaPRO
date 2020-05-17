@@ -1582,11 +1582,6 @@ qboolean PM_CanBackstab(void)
 		}
 	}
 #else
-	if (cgs.isJAPro && (cgs.jcinfo & JAPRO_CINFO_EASIERBACKSLASH))
-	{
-		return qtrue;
-	}
-
 	if (cgs.isJAPro && (cgs.jcinfo & JAPRO_CINFO_EASYBACKSLASH))
 	{
 		int i;

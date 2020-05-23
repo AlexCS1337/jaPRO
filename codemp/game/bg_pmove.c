@@ -13229,6 +13229,14 @@ void Pmove (pmove_t *pmove) {
 					msec = 8;
 				}
 				else if (msec > 16) {
+#if _GAME
+					gclient_t *client = NULL;
+					int clientNum = pm->ps->clientNum;
+					if (0 <= clientNum && clientNum < MAX_CLIENTS) {
+						client = g_entities[clientNum].client;
+					}
+					if (!client->pers.practice) //This fugs wall skim at low fps. i don't even remember why this is here.  429e61f63b77c2d2446969ac54e4bbd0921a84f0
+#endif
 					msec = 16;
 				}
 			}

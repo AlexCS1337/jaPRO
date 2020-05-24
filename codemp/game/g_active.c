@@ -3828,7 +3828,8 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		else if (movementStyle == MV_JETPACK) {
 			ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE) + (1 << WP_SABER) + (1 << WP_DET_PACK);
-			//ent->client->ps.ammo[AMMO_DETPACK] = 1;
+			if (!ent->client->pers.stats.startTime)
+				ent->client->ps.ammo[AMMO_DETPACK] = 4; //Dont drop their ammo before the course starts? qol
 			if (ent->health > 0)
 				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 		}

@@ -9145,7 +9145,6 @@ if (pm->ps->duelInProgress)
 	{
 		// enough energy to fire this weapon?
 		if ((pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] - amount) >= 0) {
-			Com_Printf("Dropping %i\n", amount);
 			pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= amount;
 		}
 		else	// Not enough energy
@@ -12704,7 +12703,8 @@ void PmoveSingle (pmove_t *pmove) {
 			pm->ps->velocity[2] = MAX_JETPACK_VEL_UP;
 		}
 
-		if (gDist2 <  16) {//** changed this so jetpack shuts off on ground
+		if (gDist2 <  16 && pm->cmd.upmove < 0) {//** changed this so jetpack shuts off on ground
+			//Sad hack, this stops sliding on ground with downjet
 			pm->ps->eFlags &= ~EF_JETPACK_ACTIVE;
 		}
 

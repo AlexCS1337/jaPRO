@@ -716,6 +716,7 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 		if (ent->client->sess.movementStyle == MV_JETPACK) {
 			ent->client->ps.jetpackFuel = 100;
 			ent->client->ps.eFlags &= ~EF_JETPACK_ACTIVE;
+			ent->client->ps.ammo[AMMO_DETPACK] = 4;
 		}
 
 		if (ent->client->pers.userName && ent->client->pers.userName[0]) {

@@ -1365,6 +1365,9 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 		return;
 	}
 
+	if (player->client->sess.raceMode && player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)
+		player->client->ps.ammo[AMMO_DETPACK] = 4;
+
 	//if (GetTimeMS() - player->client->pers.stats.startTime < 500)//Some built in floodprotect per player?
 		//return;
 	//if (player->client->pers.stats.startTime) //Instead of floodprotect, dont let player start a timer if they already have one.  Mapmakers should then put reset timers over the start area.

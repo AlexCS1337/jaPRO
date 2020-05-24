@@ -792,8 +792,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			PM_ClipVelocity (endVelocity, planes[i], endClipVelocity, OVERCLIP );
 
 #if _GAME
-			//This seems way too easy, idk if this is right. it takes advantage of players being squares so.. dont have to worry about advanced clipvelocity stuff?.  Ignore racemode?
-			//what if somehow there is no playerstate? crash?
+			//Ignore racemode? what if somehow there is no playerstate? crash?
 			if (trace.entityNum < MAX_CLIENTS && g_fixPlayerCollision.integer && g_entities[trace.entityNum].client && (g_entities[trace.entityNum].client->ps.velocity[0] || g_entities[trace.entityNum].client->ps.velocity[1])) {
 				if (clipVelocity[0] != pm->ps->velocity[0])
 					clipVelocity[0] = g_entities[trace.entityNum].client->ps.velocity[0] * 0.95f;

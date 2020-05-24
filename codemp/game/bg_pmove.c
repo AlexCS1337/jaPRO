@@ -9103,27 +9103,39 @@ if (pm->ps->duelInProgress)
 
 	if (pm->cmd.buttons & BUTTON_ALT_ATTACK)
 	{
-#ifdef _GAME
-		if (g_tweakWeapons.integer & WT_INFINITE_AMMO)
-			amount = 0;
-		else if (pm->ps->weapon == WP_ROCKET_LAUNCHER && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && !pm->ps->stats[STAT_RACEMODE])
-			amount = 1;//JAPRO mortar meh
-		else if (pm->ps->weapon == WP_FLECHETTE && g_tweakWeapons.integer & WT_STAKE_GUN)
-			amount = 0;//Detonating stakes shouldnt take ammo
-		else
-#endif
 		amount = weaponData[pm->ps->weapon].altEnergyPerShot;
+#ifdef _GAME
+		if (pm->ps->stats[STAT_RACEMODE]) {
+			if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
+				amount = 1;
+		}
+		else {
+			if (g_tweakWeapons.integer & WT_INFINITE_AMMO)
+				amount = 0;
+			else if (pm->ps->weapon == WP_ROCKET_LAUNCHER && (g_tweakWeapons.integer & WT_ROCKET_MORTAR))
+				amount = 1;//JAPRO mortar meh
+			else if (pm->ps->weapon == WP_FLECHETTE && g_tweakWeapons.integer & WT_STAKE_GUN)
+				amount = 0;//Detonating stakes shouldnt take ammo
+		}
+#endif
 	}
 	else
 	{
-#ifdef _GAME
-		if (g_tweakWeapons.integer & WT_INFINITE_AMMO)
-			amount = 0;
-		else if (pm->ps->weapon == WP_FLECHETTE && g_tweakWeapons.integer & WT_STAKE_GUN)
-			amount = 10;//5 ammo per stake? eh
-		else
-#endif
 		amount = weaponData[pm->ps->weapon].energyPerShot;
+#ifdef _GAME
+		if (pm->ps->stats[STAT_RACEMODE]) {
+			if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
+				amount = 1;
+			if (pm->ps->weapon == WP_DET_PACK)
+				amount = 1;
+		}
+		else {
+			if (g_tweakWeapons.integer & WT_INFINITE_AMMO)
+				amount = 0;
+			else if (pm->ps->weapon == WP_FLECHETTE && g_tweakWeapons.integer & WT_STAKE_GUN)
+				amount = 10;//5 ammo per stake? eh
+		}
+#endif
 	}
 
 	pm->ps->weaponstate = WEAPON_FIRING;
@@ -9132,12 +9144,9 @@ if (pm->ps->duelInProgress)
 	if ( pm->ps->clientNum < MAX_CLIENTS && pm->ps->ammo[ weaponData[pm->ps->weapon].ammoIndex ] != -1 )
 	{
 		// enough energy to fire this weapon?
-		if ((pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] - amount) >= 0) 
-		{
-#ifdef _GAME
-			if (!pm->ps->stats[STAT_RACEMODE])
-#endif
-				pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= amount;
+		if ((pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] - amount) >= 0) {
+			Com_Printf("Dropping %i\n", amount);
+			pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= amount;
 		}
 		else	// Not enough energy
 		{
@@ -13228,17 +13237,9 @@ void Pmove (pmove_t *pmove) {
 				if (BG_InRollFixed(pmove->ps, pmove->ps->legsAnim)) {
 					msec = 8;
 				}
-				else if (msec > 16) {
-#if _GAME
-					gclient_t *client = NULL;
-					int clientNum = pm->ps->clientNum;
-					if (0 <= clientNum && clientNum < MAX_CLIENTS) {
-						client = g_entities[clientNum].client;
-					}
-					if (!client->pers.practice) //This fugs wall skim at low fps. i don't even remember why this is here.  429e61f63b77c2d2446969ac54e4bbd0921a84f0
-#endif
+				/*else if (msec > 16) {
 					msec = 16;
-				}
+				}*/
 			}
 			//Com_Printf("Chopping\n");
 		}

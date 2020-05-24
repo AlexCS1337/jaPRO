@@ -4948,19 +4948,19 @@ int RaceNameToInteger(char *style) {
 		return 2;
 	if (!Q_stricmp(style, "cpm") || !Q_stricmp(style, "cpma"))
 		return 3;
-	if (!Q_stricmp(style, "q3") || !Q_stricmp(style, "q3"))
+	if (!Q_stricmp(style, "q3"))
 		return 4;
 	if (!Q_stricmp(style, "pjk"))
 		return 5;
 	if (!Q_stricmp(style, "wsw") || !Q_stricmp(style, "warsow"))
 		return 6;
-	if (!Q_stricmp(style, "rjq3") || !Q_stricmp(style, "q3rj"))
+	if (!Q_stricmp(style, "rjq3"))
 		return 7;
-	if (!Q_stricmp(style, "rjcpm") || !Q_stricmp(style, "cpmrj"))
+	if (!Q_stricmp(style, "rjcpm"))
 		return 8;
 	if (!Q_stricmp(style, "swoop"))
 		return 9;
-	if (!Q_stricmp(style, "jetpack"))
+	if (!Q_stricmp(style, "jetpack") || !Q_stricmp(style, "jet") || !Q_stricmp(style, "detpack"))
 		return 10;
 	if (!Q_stricmp(style, "speed") || !Q_stricmp(style, "ctf"))
 		return 11;

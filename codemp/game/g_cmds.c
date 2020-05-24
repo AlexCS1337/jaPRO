@@ -6561,6 +6561,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 
 		if (style == MV_JETPACK) {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_JETPACK);
+			ent->client->ps.ammo[AMMO_DETPACK] = 4;
 		}
 		else {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] &= ~(1 << HI_JETPACK); 

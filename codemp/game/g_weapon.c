@@ -3610,6 +3610,8 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	VectorNormalize (dir);
 
+	VectorMA( start, 8, forward, start );
+
 	bolt = G_Spawn(qfalse);
 	bolt->classname = "detpack";
 	bolt->nextthink = level.time + FRAMETIME;
@@ -3651,8 +3653,8 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	VectorCopy( start, bolt->s.pos.trBase );
 
 	if (self->client->sess.raceMode) { //put contents=mask_shot here?
-		VectorScale(dir, 300, bolt->s.pos.trDelta );
-		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta);
+		VectorScale(dir, 300, bolt->s.pos.trDelta ); //Launch at +300
+		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta); //Inherit full velocity from player 
 	}
 	else {
 		bolt->health = 1;

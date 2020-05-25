@@ -264,7 +264,7 @@ void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean
 	if (!player || !player->client)
 		return;
 	if (BG_InRoll(&player->client->ps, player->s.legsAnim)) {//is this crashing? if ps is null or something?
-		PM_SetAnim( SETANIM_BOTH, BOTH_UNCROUCH1, SETANIM_FLAG_RESTART|SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD );
+		G_SetAnim(player, &player->client->pers.cmd, SETANIM_BOTH, BOTH_UNCROUCH1, SETANIM_FLAG_RESTART|SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 0);		
 		//return;
 	}
 

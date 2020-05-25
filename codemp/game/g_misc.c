@@ -263,8 +263,10 @@ void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean
 
 	if (!player || !player->client)
 		return;
-	if (BG_InRoll(&player->client->ps, player->s.legsAnim))//is this crashing? if ps is null or something?
-		return;
+	if (BG_InRoll(&player->client->ps, player->s.legsAnim)) {//is this crashing? if ps is null or something?
+		PM_SetAnim( SETANIM_BOTH, BOTH_UNCROUCH1, SETANIM_FLAG_RESTART|SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD );
+		//return;
+	}
 
 #if _GRAPPLE
 	if (player->client && player->client->hook)

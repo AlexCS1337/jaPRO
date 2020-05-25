@@ -5267,6 +5267,7 @@ qboolean G_SpecialRollGetup(gentity_t *self)
 	return rolled;
 }
 
+void Cmd_RaceTele_f(gentity_t *ent, qboolean useForce);
 void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 {
 	int			i;//, holo, holoregen;
@@ -5697,8 +5698,16 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 		}
 	}
 
-	if ( (ucmd->buttons & BUTTON_FORCEPOWER) &&
-		BG_CanUseFPNow(level.gametype, &self->client->ps, level.time, self->client->ps.fd.forcePowerSelected))
+	if ( (ucmd->buttons & BUTTON_FORCEPOWER) &&	self->client->sess.raceMode && g_allowRaceTele.integer) {
+		//Floodprotect and tele them
+		if (self->client->genCmdDebounce[GENCMD_DELAY_DUEL] > level.time - 250) {
+		}
+		else {
+			self->client->genCmdDebounce[GENCMD_DELAY_DUEL] = level.time;
+			Cmd_RaceTele_f(self, qtrue);
+		}
+	}
+	else if ( (ucmd->buttons & BUTTON_FORCEPOWER) && BG_CanUseFPNow(level.gametype, &self->client->ps, level.time, self->client->ps.fd.forcePowerSelected))
 	{
 		if (self->client->ps.fd.forcePowerSelected == FP_LEVITATION)
 			ForceJumpCharge( self, ucmd );

@@ -6898,12 +6898,9 @@ void Cmd_Amtelemark_f(gentity_t *ent)
 }
 //[JAPRO - Serverside - All - Amtelemark Function - End]
 
-void Cmd_RaceTele_f(gentity_t *ent)
+void Cmd_RaceTele_f(gentity_t *ent, qboolean useForce)
 {
-	if (trap->Argc() > 2 && trap->Argc() != 4) {
-		trap->SendServerCommand( ent-g_entities, "print \"Usage: /amTele to teleport to your telemark or /amTele <client> or /amtele <X Y Z>\n\"" );
-	}		
-	if (trap->Argc() == 1) {//Amtele to telemark
+	if (useForce || trap->Argc() == 1) {//Amtele to telemark
 		if (ent->client->pers.telemarkOrigin[0] != 0 || ent->client->pers.telemarkOrigin[1] != 0 || ent->client->pers.telemarkOrigin[2] != 0 || ent->client->pers.telemarkAngle != 0) {
 			vec3_t	angles = {0, 0, 0};
 			angles[YAW] = ent->client->pers.telemarkAngle;
@@ -6912,8 +6909,12 @@ void Cmd_RaceTele_f(gentity_t *ent)
 		}
 		else
 			trap->SendServerCommand( ent-g_entities, "print \"No telemark set!\n\"" );
+		return;
 	}
-
+	if (trap->Argc() > 2 && trap->Argc() != 4) {
+		trap->SendServerCommand( ent-g_entities, "print \"Usage: /amTele to teleport to your telemark or /amTele <client> or /amtele <X Y Z>\n\"" );
+		return;
+	}
 	if (trap->Argc() == 2)//Amtele to player
 	{ 
 		char client[MAX_NETNAME];
@@ -6936,6 +6937,7 @@ void Cmd_RaceTele_f(gentity_t *ent)
 		origin[2] = g_entities[clientid].client->ps.origin[2] + 96;
 
 		AmTeleportPlayer( ent, origin, angles, qtrue, qtrue, qfalse );
+		return;
 	}
 
 	if (trap->Argc() == 4)
@@ -6952,6 +6954,7 @@ void Cmd_RaceTele_f(gentity_t *ent)
 		origin[2] = atoi(z);
 			
 		AmTeleportPlayer( ent, origin, angles, qtrue, qtrue, qfalse );
+		return;
 	}
 }
 
@@ -7210,7 +7213,7 @@ void Cmd_Amtele_f(gentity_t *ent)
 
 	}
 	else if (allowed) { //Cheat or racemode
-		Cmd_RaceTele_f(ent);
+		Cmd_RaceTele_f(ent, qfalse);
 		return;
 	}
 }

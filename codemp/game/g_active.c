@@ -3418,6 +3418,7 @@ qboolean CanFireGrapple( gentity_t *ent ) { // Adapt for new hold-to-use jetpack
 	return qtrue;
 }
 
+void Cmd_RaceTele_f(gentity_t *ent, qboolean useForce);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pmove;
@@ -5127,17 +5128,25 @@ void ClientThink_real( gentity_t *ent ) {
 			Cmd_ToggleSaber_f(ent);
 			break;
 		case GENCMD_ENGAGE_DUEL:
-			if (ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] > level.time - 100)
+			if (ent->client->sess.raceMode) {
+				if (ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] > level.time - 250)
+					break;
+				ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] = level.time;
+				Cmd_RaceTele_f(ent, qtrue);
+			}
+			else {
+				if (ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] > level.time - 100)
+					break;
+				ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] = level.time;
+				if ( level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL )
+				{//already in a duel, made it a taunt command
+				}
+				else
+				{
+					Cmd_EngageDuel_f(ent, 0);
+				}
 				break;
-			ent->client->genCmdDebounce[GENCMD_DELAY_DUEL] = level.time;
-			if ( level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL )
-			{//already in a duel, made it a taunt command
 			}
-			else
-			{
-				Cmd_EngageDuel_f(ent, 0);
-			}
-			break;
 		case GENCMD_FORCE_HEAL:
 			if (ent->client->genCmdDebounce[GENCMD_DELAY_HEAL] > level.time - 300)
 				break;

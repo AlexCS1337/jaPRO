@@ -5585,6 +5585,8 @@ void Cmd_Showmotd_f(gentity_t *ent)
 	if (Q_stricmp(g_centerMOTD.string, "" ))
 		strcpy(ent->client->csMessage, G_NewString(va("^7%s\n", g_centerMOTD.string )));//Loda fixme, resize this so it does not allocate more than it needs (game_memory crash eventually?)
 	ent->client->csTimeLeft = g_centerMOTDTime.integer;
+	if (Q_stricmp(g_consoleMOTD.string, "" ))
+		trap->SendServerCommand(ent-g_entities, va("print \"%s\n\"", g_consoleMOTD.string));
 }
 
 

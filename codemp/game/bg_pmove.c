@@ -12696,12 +12696,14 @@ void PmoveSingle (pmove_t *pmove) {
 			gDist2 = PM_GroundDistance(); //Have to get this since we dont do it when holding crouch normally
 		}
 
+		/*
 		if (pm->ps->velocity[2] < MAX_FALL_SPEED) {
 			pm->ps->velocity[2] = MAX_FALL_SPEED;
 		}
 		else if (pm->ps->velocity[2] > MAX_JETPACK_VEL_UP) {
 			pm->ps->velocity[2] = MAX_JETPACK_VEL_UP;
 		}
+		*/
 
 		if (gDist2 <  16 && pm->cmd.upmove < 0) {//** changed this so jetpack shuts off on ground
 			//Sad hack, this stops sliding on ground with downjet

@@ -1402,7 +1402,7 @@ static void ClientCleanName( const char *in, char *out, int outSize )
 
 	// discard leading asterisk's (fail raven for using * as a skipnotify)
 	// apparently .* causes the issue too so... derp
-	//for(; *in == '*'; in++);
+	for(; *in == '*'; in++);
 	
 	for(; *in && outpos < outSize - 1; in++)
 	{

@@ -6539,14 +6539,14 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_REPEATER;
 				bs->doAltAttack = 1;
 			}
+			else if (distance < 768 && BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
+				bestWeapon = WP_STUN_BATON;
+			}
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
 			else if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
-			}
-			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
-				bestWeapon = WP_STUN_BATON;
 			}
 			else if (BotWeaponSelectableAltFire(bs, WP_BOWCASTER)) {
 				bestWeapon = WP_BOWCASTER;
@@ -6613,7 +6613,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
-			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
+			else if (distance < 768 && BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
 				bestWeapon = WP_STUN_BATON;
 			}
 			else if (BotWeaponSelectableAltFire(bs, WP_BOWCASTER)) {
@@ -6673,6 +6673,9 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
+			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
+				bestWeapon = WP_STUN_BATON;
+			}
 			else bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
@@ -6709,7 +6712,7 @@ int NewBotAI_GetAltCharge(bot_state_t *bs)
 
 	weap = bs->cur_ps.weapon;
 
-	if (bs->cur_ps.ammo[weaponData[weap].ammoIndex] < weaponData[weap].altEnergyPerShot)
+	if (bs->cur_ps.ammo[weaponData[weap].ammoIndex] < weaponData[weap].altEnergyPerShot && weap != WP_STUN_BATON)
 		return 0;
 
 	if ((bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT) && (level.time - bs->cur_ps.weaponChargeTime) > bs->altChargeTime)
@@ -6761,6 +6764,8 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 		return;
 
 	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs)) {//Ehhh..
+		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
+			return;
 		trap->EA_Alt_Attack(bs->client);
 	}
 	else if (bs->cur_ps.weapon == weapon) //we are using desired weapon

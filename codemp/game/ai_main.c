@@ -4669,6 +4669,11 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;
 		}
+		if ((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) { //Aim higher for the orbs
+			const float eta = (bs->frame_Enemy_Len/(10000 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
+			const float drop = (0.5)*(800)*(eta*eta);
+			predictedSpot[2] += drop;
+		}
 
 #if 0
 		else if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //poke/wiggle

@@ -4606,7 +4606,10 @@ float BotWeaponCanLead(bot_state_t *bs)
 	case WP_FLECHETTE:
 		return 0.3f;
 	case WP_DISRUPTOR:
-		return 0.03f;
+		if (g_tweakWeapons.integer & WT_PROJ_SNIPER)
+			return 0.08f;
+		else
+			return 0.03f;
 	default:
 		return 0.0f;
 	}
@@ -4669,7 +4672,7 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;
 		}
-		if ((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) { //Aim higher for the orbs
+		else if ((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) { //Aim higher for the orbs
 			const float eta = (bs->frame_Enemy_Len/(10000 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;

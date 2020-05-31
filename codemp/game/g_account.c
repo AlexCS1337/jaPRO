@@ -2814,7 +2814,7 @@ void Svcmd_FlagAccount_f( void ) {
 		}
 		else if (args == 4) { //set
 			char arg[8] = { 0 };
-			unsigned int bitmask;
+			unsigned int bitmask = 0;
 			trap->Argv( 2, arg, sizeof(arg) );
 			int i;
 			gclient_t	*cl;
@@ -2825,7 +2825,12 @@ void Svcmd_FlagAccount_f( void ) {
 			}
 
 			trap->Argv( 3, arg, sizeof(arg) );
-			bitmask = atoi( arg );
+			if (atoi(arg))
+				bitmask = atoi(arg);
+			else if (!Q_stricmp(arg, "j") || !Q_stricmp(arg, "junior"))
+				bitmask = g_juniorAdminLevel.integer;
+			else if (!Q_stricmp(arg, "f") || !Q_stricmp(arg, "full"))
+				bitmask = g_fullAdminLevel.integer;
 
 			sql = "UPDATE LocalAccount SET flags = ? WHERE username = ?";
 			CALL_SQLITE (prepare_v2 (db, sql, strlen (sql) + 1, & stmt, NULL));

@@ -1940,11 +1940,14 @@ qboolean PM_AdjustAngleForWallJump( playerState_t *ps, usercmd_t *ucmd, qboolean
 		}
 		else if ( doMove 
 			&& (ps->pm_flags&PMF_STUCK_TO_WALL))
-		{//jump off
+		{//jump off - loda - MV_JETPACK spiderman
 			//push off of it!
 			ps->pm_flags &= ~PMF_STUCK_TO_WALL;
 			ps->velocity[0] = ps->velocity[1] = 0;
-			VectorScale( checkDir, -JUMP_OFF_WALL_SPEED, ps->velocity );
+			if (pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)
+				VectorScale(checkDir, -JUMP_OFF_WALL_SPEED*2.5f, ps->velocity);
+			else
+				VectorScale( checkDir, -JUMP_OFF_WALL_SPEED, ps->velocity );
 			ps->velocity[2] = BG_ForceWallJumpStrength();
 			ps->pm_flags |= PMF_JUMP_HELD;//PMF_JUMPING|PMF_JUMP_HELD;
 			//G_SoundOnEnt( ent, CHAN_BODY, "sound/weapons/force/jump.wav" );

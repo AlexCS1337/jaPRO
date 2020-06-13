@@ -1876,17 +1876,28 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 	if (ps->duelInProgress) // consider duel types.
 		{
 			switch (dueltypes[ps->clientNum]) {
+			case 20:
+				if (ps->stats[STAT_RACEMODE])
+					break;
+				if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				{
+					if (!ps->saberLockFrame || power != FP_PUSH)
+					{
+						return qfalse;
+					}
+				}
+				break;
 			case 1: //force duel
 				break;
 			case 0: //normal duel
 			default:
-					if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				{
+					if (!ps->saberLockFrame || power != FP_PUSH)
 					{
-						if (!ps->saberLockFrame || power != FP_PUSH)
-						{
-							return qfalse;
-						}
+						return qfalse;
 					}
+				}
 				break;
 			}
 		}

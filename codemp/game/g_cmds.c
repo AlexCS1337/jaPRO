@@ -674,8 +674,7 @@ void QINLINE DeletePlayerProjectiles(gentity_t *ent) {
 }
 
 void G_UpdatePlaytime(int null, char *username, int seconds );
-void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
-{
+void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	qboolean wasReset = qfalse;;
 
 	if (!ent->client)
@@ -699,16 +698,16 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 			ent->client->ps.stats[STAT_ARMOR] = 25;
 		}
 		//}
-		if (ent->client->sess.movementStyle == MV_RJQ3 || ent->client->sess.movementStyle == MV_RJCPM) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
+		if (ent->client->sess.movementStyle == MV_RJQ3 || ent->client->sess.movementStyle == MV_RJCPM || ent->client->sess.movementStyle == MV_COOP_JKA) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
 			DeletePlayerProjectiles(ent);
 		}
 
-/* //already done every frame ?
-#if _GRAPPLE
-		if (ent->client->sess.movementStyle == MV_SLICK && ent->client->hook)
-			Weapon_HookFree(ent->client->hook);
-#endif
-*/
+		/* //already done every frame ?
+		#if _GRAPPLE
+				if (ent->client->sess.movementStyle == MV_SLICK && ent->client->hook)
+					Weapon_HookFree(ent->client->hook);
+		#endif
+		*/
 		if (ent->client->sess.movementStyle == MV_SPEED) {
 			ent->client->ps.fd.forcePower = 50;
 		}
@@ -721,11 +720,11 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 
 		if (ent->client->pers.userName && ent->client->pers.userName[0]) {
 			if (ent->client->sess.raceMode && !ent->client->pers.practice && ent->client->pers.stats.startTime) {
-				ent->client->pers.stats.racetime += (trap->Milliseconds() - ent->client->pers.stats.startTime)*0.001f - ent->client->afkDuration*0.001f;
+				ent->client->pers.stats.racetime += (trap->Milliseconds() - ent->client->pers.stats.startTime) * 0.001f - ent->client->afkDuration * 0.001f;
 				ent->client->afkDuration = 0;
 			}
 			if (ent->client->pers.stats.racetime > 120.0f) {
-				G_UpdatePlaytime(0, ent->client->pers.userName, (int)(ent->client->pers.stats.racetime+0.5f));
+				G_UpdatePlaytime(0, ent->client->pers.userName, (int)(ent->client->pers.stats.racetime + 0.5f));
 				ent->client->pers.stats.racetime = 0.0f;
 			}
 		}
@@ -746,7 +745,18 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 
 	if (wasReset && print)
 		//trap->SendServerCommand( ent-g_entities, "print \"Timer reset!\n\""); //console spam is bad
-		trap->SendServerCommand( ent-g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
+		trap->SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
+}
+
+void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
+{
+	ResetSpecificPlayerTimers(ent, print);
+
+	if (ent->client->ps.duelInProgress && ent->client->ps.duelIndex != ENTITYNUM_NONE) {
+		gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];
+		if (duelAgainst && duelAgainst->client)
+			ResetSpecificPlayerTimers(duelAgainst, print);
+	}
 }
 
 /*
@@ -6108,6 +6118,12 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 
 		G_AddEvent(ent, EV_PRIVATE_DUEL, dueltypes[ent->client->ps.clientNum]);
 		G_AddEvent(challenged, EV_PRIVATE_DUEL, dueltypes[challenged->client->ps.clientNum]);
+
+		for (i = AMMO_BLASTER; i < AMMO_MAX; i++) {
+			ent->client->ps.ammo[i] = 999;
+			challenged->client->ps.ammo[i] = 999;
+		}
+
 		
 	}
 	else { //Print the message asking them to accept
@@ -6701,8 +6717,10 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 		else {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] &= ~(1 << HI_JETPACK); 
 		}
-		ent->client->ps.ammo[AMMO_POWERCELL] = 0;
-		ent->client->ps.ammo[AMMO_ROCKETS] = 0;
+		if (newStyle != MV_COOP_JKA) {
+			ent->client->ps.ammo[AMMO_POWERCELL] = 0;
+			ent->client->ps.ammo[AMMO_ROCKETS] = 0;
+		}
 		ent->client->ps.weapon = WP_MELEE; //dont really understand this
 	}
 	else

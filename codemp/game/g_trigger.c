@@ -1486,11 +1486,35 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	if (player->client->sess.raceMode && player->client->ps.duelInProgress) {
 		if (player->client->ps.duelIndex != ENTITYNUM_NONE) {
 			gentity_t* duelAgainst = &g_entities[player->client->ps.duelIndex];
+
+			//If we have no timer and our partner does, take his timer
+			//If we have a timer and our partner does, reset both?
+
 			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
-				if (duelAgainst->client->pers.stats.startTime)
-					player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime; // ??
-				if (duelAgainst->client->ps.duelTime)
-					player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
+				if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
+					duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+					duelAgainst->client->pers.keepDemo = qfalse;
+					/*
+					if (player->client->pers.stats.startTime) { //We do too, reset both
+						duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+						duelAgainst->client->pers.keepDemo = qfalse;
+						//player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime = 0;
+					}
+					else //copy his
+						player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime; // ??
+					*/
+				}  
+				if (duelAgainst->client->ps.duelTime) { //Partner has a timer
+					duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+					/*
+					if (player->client->ps.duelTime) {//we do too, reset both
+						duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+						//player->client->ps.duelTime = duelAgainst->client->ps.duelTime = 0;
+					}
+					else //copy his
+						player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
+					*/
+				}
 			}
 		}
 	}

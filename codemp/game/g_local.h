@@ -813,6 +813,7 @@ typedef struct {//JAPRO - Serverside - Stats
 	int	displacementFlagSamples;
 
 	int	startTime;//For timers that are not flags
+	int	coopFinished;//For coop tracking ugh
 	int	startLevelTime;//For timers that are not flags
 	float displacement;
 	int	displacementSamples;
@@ -1306,6 +1307,7 @@ typedef enum
 } alertEventType_e;
 
 #define _SPPHYSICS 1
+#define _COOP 1
 typedef enum //movementstyle enum
 {
 	MV_SIEGE,
@@ -1325,6 +1327,9 @@ typedef enum //movementstyle enum
 #endif
 	MV_SLICK,
 	MV_BOTCPM,
+#if _COOP
+	MV_COOP_JKA,
+#endif
 	MV_NUMSTYLES
 } movementStyle_e;
 

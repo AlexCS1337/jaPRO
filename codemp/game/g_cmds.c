@@ -5679,6 +5679,7 @@ void Cmd_Aminfo_f(gentity_t *ent)
 		Q_strcat(buf, sizeof(buf), "ysal ");
 		Q_strcat(buf, sizeof(buf), "warpList ");
 		Q_strcat(buf, sizeof(buf), "warp ");
+		Q_strcat(buf, sizeof(buf), "coop ");
 		if (g_allowRaceTele.integer) {
 			Q_strcat(buf, sizeof(buf), "amTele ");
 			Q_strcat(buf, sizeof(buf), "amTelemark ");
@@ -6011,6 +6012,115 @@ static void Cmd_Spot_f(gentity_t *ent) {
 	}
 
 }
+
+#if _COOP
+void Cmd_StopCoop_f(gentity_t* ent) { //Should this only show logged in people..?
+	//exit coop, or they can just /kill
+	//during starttimer, we need to apply the startime of the 1st cooper to the 2nd cooper that hits the trigger as well ? or base it on 2nd as well
+	//then when hitting endtimer, we don't print the timer until the 2nd cooper hits the end trigger
+
+	//no need for this, just do /move jka to exit coop
+}
+
+void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
+	//See if we are able to perform the cmd
+	//See who we are challanging / accepting
+	//See if we are challening or accepting
+	//Start the coop
+	//or do we want this to be /move coop <name>
+	int otherClientNum;
+	char input[MAX_NETNAME];
+	const int dueltype = 20;//ok - use the all gunduel one
+	const int duelTimeout = 20000;
+	gentity_t* challenged;
+
+	if (trap->Argc() != 2) {
+		trap->SendServerCommand(ent - g_entities, "print \"Usage: coop <player name>\n\"");
+		return;
+	}
+
+	if (ent->client->ps.saberInFlight)
+		return;
+	if ((ent->health <= 0
+		|| ent->client->tempSpectate >= level.time
+		|| ent->client->sess.sessionTeam == TEAM_SPECTATOR)) {// Does this stop spectating someone and challenging them to a duel?
+		trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "MUSTBEALIVE")));
+		return;
+	}
+	if (ent->client->ps.forceHandExtend == HANDEXTEND_KNOCKDOWN)
+		return;
+	if (ent->client->ps.powerups[PW_NEUTRALFLAG])
+		return;
+	if (!ent->client->sess.raceMode) {
+		trap->SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+	if (ent->client->ps.duelInProgress) //already cooping
+		return;
+#if _GRAPPLE
+	if (ent->client && ent->client->hook)
+		Weapon_HookFree(ent->client->hook);
+#endif
+
+	trap->Argv(1, input, sizeof(input));
+	otherClientNum = JP_ClientNumberFromString(ent, input);
+
+	if (otherClientNum == -1 || otherClientNum == -2) {//No clients or multiple clients are a match
+		return;
+	}
+	challenged = &g_entities[otherClientNum];
+	if (!challenged || !challenged->client)
+		return;
+	
+	/*
+	if (challenged->client->ps.duelIndex == ent->s.number && (challenged->client->ps.duelTime + 20000) >= level.time &&
+		(
+			((dueltypes[challenged->client->ps.clientNum] == dueltype) && (dueltype == 0 || dueltype == 1))
+			||
+			(dueltypes[challenged->client->ps.clientNum] != 0 && (dueltypes[challenged->client->ps.clientNum] != 1) && dueltype > 1)
+			))
+	{
+	*/
+
+	if (challenged->client->ps.duelIndex == ent->s.number /*&& (challenged->client->ps.duelTime + duelTimeout) >= level.time*/) {//We are accepting the duel - make this timeout TODO
+		trap->SendServerCommand(ent - g_entities, va("print \"$s^7 has accepted your co-op request\n\"", challenged->client->pers.netname));
+		trap->SendServerCommand(challenged - g_entities, va("print \"You accepted a co-op request with %s\n\"", ent->client->pers.netname));
+
+		ent->client->ps.duelInProgress = qtrue;
+		challenged->client->ps.duelInProgress = qtrue;
+
+		ent->client->ps.duelInProgress = qtrue;
+		challenged->client->ps.duelInProgress = qtrue;
+		ent->client->sess.movementStyle = MV_COOP_JKA;
+		challenged->client->sess.movementStyle = MV_COOP_JKA;
+		if (ent->client->pers.stats.startTime || ent->client->pers.stats.startTimeFlag)
+			ResetPlayerTimers(ent, qtrue);
+		if (challenged->client->pers.stats.startTime || challenged->client->pers.stats.startTimeFlag)
+			ResetPlayerTimers(challenged, qtrue);
+
+		//if (dueltype == 0 || dueltype == 1)
+			//dueltypes[ent->client->ps.clientNum] = dueltype;//y isnt this syncing the weapons they use? gun duels
+		//else {
+		dueltypes[ent->client->ps.clientNum] = dueltypes[challenged->client->ps.clientNum];//dueltype;//k this is y
+		//}
+
+		ent->client->ps.duelTime = 0;//level.time + duelTimeout; //loda fixme - this should be lower so they can re-coop? or just keep it same as duel timeout..
+		challenged->client->ps.duelTime = 0;//level.time + duelTimeout; //loda fixme
+		
+	}
+	else { //Print the message asking them to accept
+		trap->SendServerCommand(ent - g_entities, va("print \"You asked %s to co-op\n\"", challenged->client->pers.netname));
+		trap->SendServerCommand(challenged - g_entities, va("print \"%s has asked you to co-op\n\"", ent->client->pers.netname));
+	}
+
+	//challenged->client->ps.fd.privateDuelTime = 0; //reset the timer in case this player just got out of a duel. He should still be able to accept the challenge.
+	ent->client->ps.duelIndex = challenged->s.number;
+	if (!ent->client->ps.duelInProgress)
+		dueltypes[ent->client->ps.clientNum] = dueltype; //Coop
+
+	
+}
+#endif
 
 
 //[JAPRO - Serverside - All - Clanwhois Function - Start]
@@ -6466,7 +6576,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 		return;
 
 	if (trap->Argc() != 2) {
-		trap->SendServerCommand( ent-g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, or botcpm>.\n\"" );
+		trap->SendServerCommand( ent-g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, botcpm, or coop>.\n\"" );
 		return;
 	}
 
@@ -6535,7 +6645,22 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated.\n\"");
 		}
 
-		ent->client->sess.movementStyle = style;
+		if (ent->client->sess.movementStyle == MV_COOP_JKA) { //clear the duel
+			if (ent->client->ps.duelIndex != ENTITYNUM_NONE) {
+				gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];
+				if (duelAgainst && duelAgainst->client) {
+					if (duelAgainst->client->sess.raceMode) {
+						duelAgainst->client->ps.duelInProgress = qfalse; //how to stop this from hitting clientnum 0 if they are an actual dueler?
+						duelAgainst->client->ps.duelIndex = ENTITYNUM_NONE; // ??
+					}
+				}
+				ent->client->ps.duelInProgress = qfalse;
+				ent->client->ps.duelIndex = ENTITYNUM_NONE; // ??
+			}
+		}
+		else if (ent->client->sess.movementStyle == MV_JETPACK) {
+			RemoveDetpacks(ent);
+		}
 		AmTeleportPlayer( ent, ent->client->ps.origin, ent->client->ps.viewangles, qtrue, qtrue, qfalse ); //Good
 
 		if (ent->client->ourSwoopNum) {
@@ -8263,6 +8388,10 @@ command_t commands[] = {
 	{ "clanpass",			Cmd_Clanpass_f,				CMD_NOINTERMISSION },
 	{ "clansay",			Cmd_Clansay_f,				0 },
 	{ "clanwhois",			Cmd_Clanwhois_f,			0 },
+
+#if _COOP
+	{ "coop",				Cmd_Coop_f,					CMD_NOINTERMISSION },
+#endif
 
 	{ "debugBMove_Back",	Cmd_BotMoveBack_f,			CMD_CHEAT|CMD_ALIVE },
 	{ "debugBMove_Forward",	Cmd_BotMoveForward_f,		CMD_CHEAT|CMD_ALIVE },

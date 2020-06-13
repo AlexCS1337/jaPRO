@@ -4288,7 +4288,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 	}
 
-	if (ent->client->ps.duelInProgress)
+	if (ent->client->ps.duelInProgress && !ent->client->sess.raceMode) //_coop uses duelinprogress but we dont want it to do any of this stuff
 	{
 		gentity_t *duelAgainst = &g_entities[ent->client->ps.duelIndex];
 
@@ -4444,8 +4444,8 @@ void ClientThink_real( gentity_t *ent ) {
 
 			if (subLen >= 1024 && g_duelDistanceLimit.integer)//[JAPRO - Serverside - Duel - Remove duel distance limit]
 			{
-				ent->client->ps.duelInProgress = 0;
-				duelAgainst->client->ps.duelInProgress = 0;
+				ent->client->ps.duelInProgress = qfalse;
+				duelAgainst->client->ps.duelInProgress = qfalse;
 
 				G_AddEvent(ent, EV_PRIVATE_DUEL, 0);
 				G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 0);

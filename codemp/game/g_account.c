@@ -1019,9 +1019,14 @@ void IntegerToRaceName(int style, char *styleString, size_t styleStringSize) {
 		case 9:	Q_strncpyz(styleString, "swoop", styleStringSize); break;
 		case 10: Q_strncpyz(styleString, "jetpack", styleStringSize); break;
 		case 11: Q_strncpyz(styleString, "speed", styleStringSize); break;
+#if _SPPHYSICS
 		case 12: Q_strncpyz(styleString, "sp", styleStringSize); break;
+#endif
 		case 13: Q_strncpyz(styleString, "slick", styleStringSize); break;
 		case 14: Q_strncpyz(styleString, "botcpm", styleStringSize); break;
+#if _COOP
+		case 15: Q_strncpyz(styleString, "coop", styleStringSize); break;
+#endif
 		default: Q_strncpyz(styleString, "ERROR", styleStringSize); break;
 	}
 }
@@ -1528,7 +1533,7 @@ void PrintRaceTime(char *username, char *playername, char *message, char *style,
 	else if (global_newRank > 0) {//PB
 		if (awesomenoise)
 			PlayActualGlobalSound(awesomenoise);
-		else
+		else if (awesomenoise != -1)
 			PlayActualGlobalSound(G_SoundIndex("sound/chars/rosh/misc/taunt1"));
 	}
 
@@ -4977,6 +4982,10 @@ int RaceNameToInteger(char *style) {
 		return 13;
 	if (!Q_stricmp(style, "botcpm"))
 		return 14;
+#if _COOP
+	if (!Q_stricmp(style, "coop"))
+		return 15;
+#endif
 	return -1;
 }
 

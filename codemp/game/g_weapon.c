@@ -5577,7 +5577,7 @@ void FireWeapon( gentity_t *ent, qboolean altFire ) {
 
 	if (ent->client && ent->client->pers.amfreeze)
 		return;
-	if (ent->client && ent->client->sess.raceMode && !((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_JETPACK)))
+	if (ent->client && ent->client->sess.raceMode && !((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_JETPACK) || (ent->client->sess.movementStyle == MV_COOP_JKA)))
 		return;	
 
 	// track shots taken for accuracy tracking.  Grapple is not a weapon and gauntet is just not tracked

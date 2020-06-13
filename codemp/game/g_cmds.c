@@ -6068,7 +6068,7 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 		return;
 	}
 	challenged = &g_entities[otherClientNum];
-	if (!challenged || !challenged->client)
+	if (!challenged || !challenged->client || ent == challenged)
 		return;
 	
 	/*
@@ -6105,6 +6105,9 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 
 		ent->client->ps.duelTime = 0;//level.time + duelTimeout; //loda fixme - this should be lower so they can re-coop? or just keep it same as duel timeout..
 		challenged->client->ps.duelTime = 0;//level.time + duelTimeout; //loda fixme
+
+		G_AddEvent(ent, EV_PRIVATE_DUEL, dueltypes[ent->client->ps.clientNum]);
+		G_AddEvent(challenged, EV_PRIVATE_DUEL, dueltypes[challenged->client->ps.clientNum]);
 		
 	}
 	else { //Print the message asking them to accept
@@ -6685,8 +6688,11 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 		else if (newStyle == MV_SPEED) {
 			ent->client->ps.fd.forcePower = 50;
 		}
-		//else if (newStyle == MV_COOP_JKA) {
-		//}
+		else if (newStyle == MV_COOP_JKA) {
+			int i;
+			for (i = AMMO_BLASTER; i < AMMO_MAX; i++)
+				ent->client->ps.ammo[i] = 999;
+		}
 
 		if (newStyle == MV_JETPACK) {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_JETPACK);

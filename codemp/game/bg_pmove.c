@@ -8628,7 +8628,7 @@ if (pm->ps->duelInProgress)
 		PM_StartTorsoAnim( BOTH_GUNSIT1 );
 	}
 
-	if (pm->ps->isJediMaster || pm->ps->duelInProgress || pm->ps->trueJedi)
+	if (pm->ps->isJediMaster || (pm->ps->duelInProgress && !pm->ps->stats[STAT_RACEMODE]) || pm->ps->trueJedi) //_coop uses duelinprogress for semi isolation but we dont want it to actually do any of this stuff
 	{
 #ifdef _CGAME
 		if (cg_dueltypes[pm->ps->clientNum] > 2) {

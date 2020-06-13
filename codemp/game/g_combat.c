@@ -4694,12 +4694,20 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			return;
 	}
 
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
+		if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
+			return; //ignore self damage if we are in racemode
+		if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker))
+			return; //ignore other damage if we are in racemode
+	}
+	/*
 	if (attacker && attacker->client && attacker->client->sess.raceMode && !((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)))
 		return;
 	if (attacker && attacker->client && attacker->client->sess.raceMode && ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker))
 		return;
-	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE)) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
-		return;
+	*/
+	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
+		return; //ignore other damage if they are in racemode
 
 	if ( targ->client )
 	{//don't take damage when in a walker, or fighter

@@ -7252,7 +7252,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 	}
 
 	if (!useTheForce && !(g_forcePowerDisable.integer & (1 << FP_RAGE)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_RAGE))) {
-		if (((bs->cur_ps.weapon > WP_BRYAR_PISTOL) || (bs->cur_ps.weapon == WP_STUN_BATON)) && (bs->cur_ps.fd.forcePower > 50) && bs->frame_Enemy_Len < 768) { //Need line of sight
+		if (((bs->cur_ps.weapon > WP_BRYAR_PISTOL) || (bs->cur_ps.weapon == WP_STUN_BATON)) && (bs->cur_ps.fd.forcePower > 50) && bs->frame_Enemy_Len < 768 && bs->frame_Enemy_Vis) { //Need line of sight
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_RAGE;
 			useTheForce = qtrue;
 		}
@@ -7872,10 +7872,15 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	bs->enemySeenTime = level.time + ENEMY_FORGET_MS;
 
 	bs->frame_Enemy_Len = NewBotAI_GetDist(bs);
-	if (OrgVisible(bs->eye, bs->currentEnemy->client->ps.origin, bs->client))
-		bs->frame_Enemy_Vis = 1;
-	else
-		bs->frame_Enemy_Vis = 0;
+	{
+		vec3_t headlevel;
+		VectorCopy(bs->currentEnemy->client->ps.origin, headlevel);
+		headlevel[2] += bs->currentEnemy->client->ps.viewheight - 24;
+		if (OrgVisible(bs->eye, bs->currentEnemy->client->ps.origin, bs->client))
+			bs->frame_Enemy_Vis = 1;
+		else
+			bs->frame_Enemy_Vis = 0;
+	}
 
 	if (!bs->frame_Enemy_Vis && bs->frame_Enemy_Len > 8096) {
 #if _ADVANCEDBOTSHIT

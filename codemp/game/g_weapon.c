@@ -3724,6 +3724,22 @@ void RemoveDetpacks(gentity_t *ent)
 	}
 }
 
+void RemoveLaserTraps(gentity_t* ent)
+{
+	gentity_t* found = NULL;
+
+	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
+	{//loop through all ents and blow the crap out of them!
+		if (found->parent == ent)
+		{
+			VectorCopy(found->r.currentOrigin, found->s.origin);
+			found->think = G_FreeEntity;
+			found->nextthink = level.time;
+			//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
+		}
+	}
+}
+
 qboolean CheatsOn(void) 
 {
 	if ( !sv_cheats.integer )

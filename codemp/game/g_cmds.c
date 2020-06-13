@@ -6570,7 +6570,7 @@ int RaceNameToInteger(char *style);
 static void Cmd_MovementStyle_f(gentity_t *ent)
 {
 	char mStyle[32];
-	int style;
+	int newStyle;
 
 	if (!ent->client)
 		return;
@@ -6613,17 +6613,18 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 
 	trap->Argv(1, mStyle, sizeof(mStyle));
 
-	style = RaceNameToInteger(mStyle);
+	newStyle = RaceNameToInteger(mStyle);
+	//Just return if newstyle = old style?
 
-	if (style >= 0) {
+	if (newStyle >= 0) {
 		if (ent->client->pers.stats.startTime || ent->client->pers.stats.startTimeFlag) {
-			if (style == MV_WSW)
+			if (newStyle == MV_WSW)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated: timer reset. Use +button13 for dash.\n\"");
-			else if (style == MV_JETPACK)
+			else if (newStyle == MV_JETPACK)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated: timer reset. Use +button12 for grapple, double jump for jetpack.\n\"");
-			else if (style == MV_SWOOP)
+			else if (newStyle == MV_SWOOP)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated: timer reset. Use +attack for gravboost, +altattack for speedboost.\n\"");
-			else if (style == MV_BOTCPM)
+			else if (newStyle == MV_BOTCPM)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated: timer reset. Use +button14 for strafebot.\n\"");
 			else
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated: timer reset.\n\"");
@@ -6633,13 +6634,13 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 			if (ent->client->sess.movementStyle == MV_RJQ3 || ent->client->sess.movementStyle == MV_RJCPM) { //Get rid of their rockets when they tele/noclip..?
 				DeletePlayerProjectiles(ent);
 			}
-			if (style == MV_WSW)
+			if (newStyle == MV_WSW)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated. Use +button13 for dash.\n\"");
-			else if (style == MV_JETPACK)
+			else if (newStyle == MV_JETPACK)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated. Use +button12 for grapple, double jump for jetpack.\n\"");
-			else if (style == MV_SWOOP)
+			else if (newStyle == MV_SWOOP)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated. Use +attack for gravboost, +altattack for speedboost.\n\"");
-			else if (style == MV_BOTCPM)
+			else if (newStyle == MV_BOTCPM)
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated. Use +button14 for strafebot.\n\"");
 			else 
 				trap->SendServerCommand(ent-g_entities, "print \"Movement style updated.\n\"");
@@ -6661,12 +6662,12 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 		else if (ent->client->sess.movementStyle == MV_JETPACK) {
 			RemoveDetpacks(ent);
 		}
+
+		ent->client->sess.movementStyle = newStyle;
 		AmTeleportPlayer( ent, ent->client->ps.origin, ent->client->ps.viewangles, qtrue, qtrue, qfalse ); //Good
 
 		if (ent->client->ourSwoopNum) {
-
 			gentity_t *ourSwoop = &g_entities[ent->client->ourSwoopNum];
-
 			/*
 			if (ent->client->ps.m_iVehicleNum) { //If we are in a vehicle, properly eject from it?
 				if (ourSwoop && ourSwoop->m_pVehicle && ourSwoop->client && ourSwoop->s.NPC_class == CLASS_VEHICLE && ourSwoop->m_pVehicle->m_pVehicleInfo) {//if ourVeh is a vehicle then perform appropriate checks
@@ -6679,28 +6680,28 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 			ent->client->ourSwoopNum = 0;
 		}
 
-		ent->client->ps.ammo[AMMO_POWERCELL] = 0;
-		ent->client->ps.ammo[AMMO_ROCKETS] = 0;
-		ent->client->ps.weapon = WP_MELEE; //dont really understand this
-
-		if (style == MV_SWOOP) {
+		if (newStyle == MV_SWOOP) {
 			SpawnRaceSwoop(ent);
 		}
+		else if (newStyle == MV_SPEED) {
+			ent->client->ps.fd.forcePower = 50;
+		}
+		//else if (newStyle == MV_COOP_JKA) {
+		//}
 
-		if (style == MV_JETPACK) {
+		if (newStyle == MV_JETPACK) {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_JETPACK);
 			ent->client->ps.ammo[AMMO_DETPACK] = 4;
 		}
 		else {
 			ent->client->ps.stats[STAT_HOLDABLE_ITEMS] &= ~(1 << HI_JETPACK); 
 		}
-
-		if (style == MV_SPEED) {
-			ent->client->ps.fd.forcePower = 50;
-		}
+		ent->client->ps.ammo[AMMO_POWERCELL] = 0;
+		ent->client->ps.ammo[AMMO_ROCKETS] = 0;
+		ent->client->ps.weapon = WP_MELEE; //dont really understand this
 	}
 	else
-		trap->SendServerCommand( ent-g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, or botcpm>.\n\"" );
+		trap->SendServerCommand( ent-g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, botcpm, or coop>.\n\"" );
 }
 
 static void Cmd_JumpChange_f(gentity_t *ent) 
@@ -7379,6 +7380,7 @@ void Cmd_Amrename_f(gentity_t *ent)
 }
 
 //[JAPRO - Serverside - All - Amrename - End]
+void RemoveLaserTraps(gentity_t* ent);
 void Cmd_Race_f(gentity_t *ent)
 {
 	if (!ent->client)
@@ -7412,6 +7414,9 @@ void Cmd_Race_f(gentity_t *ent)
 	else {
 		ent->client->sess.raceMode = qtrue;
 		trap->SendServerCommand(ent-g_entities, "print \"^5Race mode toggled on.\n\"");
+		//Delete all their projectiles / saved stuff
+		RemoveLaserTraps(ent);
+		RemoveDetpacks(ent);
 	}
 
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {

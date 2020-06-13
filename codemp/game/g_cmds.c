@@ -6092,6 +6092,7 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 	*/
 
 	if (challenged->client->ps.duelIndex == ent->s.number /*&& (challenged->client->ps.duelTime + duelTimeout) >= level.time*/) {//We are accepting the duel - make this timeout TODO
+		int i;
 		trap->SendServerCommand(ent - g_entities, va("print \"$s^7 has accepted your co-op request\n\"", challenged->client->pers.netname));
 		trap->SendServerCommand(challenged - g_entities, va("print \"You accepted a co-op request with %s\n\"", ent->client->pers.netname));
 

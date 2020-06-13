@@ -6585,6 +6585,7 @@ static void SpawnRaceSwoop(gentity_t *ent)
 	}
 }
 
+void RemoveLaserTraps(gentity_t* ent);
 int RaceNameToInteger(char *style);
 static void Cmd_MovementStyle_f(gentity_t *ent)
 {
@@ -6650,7 +6651,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 			ResetPlayerTimers(ent, qtrue);
 		}
 		else {
-			if (ent->client->sess.movementStyle == MV_RJQ3 || ent->client->sess.movementStyle == MV_RJCPM) { //Get rid of their rockets when they tele/noclip..?
+			if (ent->client->sess.movementStyle == MV_RJQ3 || ent->client->sess.movementStyle == MV_RJCPM || ent->client->sess.movementStyle == MV_COOP_JKA) { //Get rid of their rockets when they tele/noclip..?
 				DeletePlayerProjectiles(ent);
 			}
 			if (newStyle == MV_WSW)
@@ -6677,6 +6678,9 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 				ent->client->ps.duelInProgress = qfalse;
 				ent->client->ps.duelIndex = ENTITYNUM_NONE; // ??
 			}
+			RemoveDetpacks(ent);
+			RemoveLaserTraps(ent);
+
 		}
 		else if (ent->client->sess.movementStyle == MV_JETPACK) {
 			RemoveDetpacks(ent);
@@ -7404,7 +7408,6 @@ void Cmd_Amrename_f(gentity_t *ent)
 }
 
 //[JAPRO - Serverside - All - Amrename - End]
-void RemoveLaserTraps(gentity_t* ent);
 void Cmd_Race_f(gentity_t *ent)
 {
 	if (!ent->client)

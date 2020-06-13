@@ -6392,7 +6392,7 @@ void NewBotAI_ReactToBeingGripped(bot_state_t *bs) //Test this more, does it pus
 
 void NewBotAI_Gripkick(bot_state_t *bs)
 {
-	float heightDiff = bs->cur_ps.origin[2] - bs->currentEnemy->client->ps.origin[2]; //We are above them by this much
+	//float heightDiff = bs->cur_ps.origin[2] - bs->currentEnemy->client->ps.origin[2]; //We are above them by this much
 	int gripTime = level.time - bs->currentEnemy->client->ps.fd.forceGripStarted; //Milliseconds we have been gripping them
 
 	if (gripTime < 1000) { //[0-1] second in the grip (Aim down until in range, kick)
@@ -7383,7 +7383,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 		}
 	}
 
-	if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
+	if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse;
 
 	if (useTheForce) {

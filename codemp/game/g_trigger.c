@@ -1533,7 +1533,7 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		char styleStr[32] = { 0 }, timeStr[32] = { 0 }, playerName[MAX_NETNAME] = { 0 };
 		char c[4] = S_COLOR_RED;
 		float time = GetTimeMS() - player->client->pers.stats.startTime;
-		int average, restrictions = 0, nameColor = 7;
+		int average, restrictions = 0;
 		qboolean valid = qfalse;
 		const int endLag = GetTimeMS() - level.frameStartTime + level.time - player->client->pers.cmd.serverTime;
 		const int diffLag = player->client->pers.startLag - endLag;

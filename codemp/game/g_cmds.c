@@ -3137,7 +3137,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 				//trap->Print("Searching slot: %i (%s, %i)\n", j, voteFloodProtect[j].ip, voteFloodProtect[j].voteTimeoutUntil);
 				if (!Q_stricmp(voteFloodProtect[j].ip, ourIP)) {
 					//trap->Print("Found clients IP in array!\n");
-					const int voteTimeout = voteFloodProtect[j].failCount+1 * 1000*g_voteTimeout.integer;
+					//const int voteTimeout = voteFloodProtect[j].failCount+1 * 1000*g_voteTimeout.integer;
 
 					if (voteFloodProtect[j].voteTimeoutUntil && (voteFloodProtect[j].voteTimeoutUntil > time)) { //compare this to something other than level.time ?
 						//trap->Print("Client has just failed a vote, dont let them call this new one!\n");
@@ -3346,7 +3346,6 @@ void Cmd_Vote_f( gentity_t *ent ) {
 
 		for (i=0; i<MAX_CLIENTS; i++)
 		{//Build a list of clients
-			char *tmpMsg = NULL;
 			if (!g_entities[i].inuse)
 				continue;
 
@@ -3748,7 +3747,7 @@ void saberKnockDown(gentity_t *saberent, gentity_t *saberOwner, gentity_t *other
 void Cmd_ToggleSaber_f(gentity_t *ent)
 {
 //[JAPRO - Serverside - Force - Fix Saber in grip - Start]
-	if (!g_fixSaberInGrip.integer > 2 && ent->client->ps.fd.forceGripCripple)
+	if (g_fixSaberInGrip.integer < 3 && ent->client->ps.fd.forceGripCripple)
 	{ //if they are being gripped, don't let them unholster their saber
 		if (ent->client->ps.saberHolstered)
 		{
@@ -5237,7 +5236,7 @@ void Cmd_Amfreeze_f(gentity_t *ent)
 
 				if(targetplayer->client && targetplayer->client->pers.connected)
 				{
-					if (!G_AdminUsableOn(ent->client, g_entities[clientid].client, JAPRO_ACCOUNTFLAG_A_FREEZE))
+					if (!G_AdminUsableOn(ent->client, targetplayer->client, JAPRO_ACCOUNTFLAG_A_FREEZE))
 						continue;
 					if (targetplayer->client->pers.amfreeze)
 					{
@@ -5413,7 +5412,7 @@ void Cmd_Ammap_f(gentity_t *ent)
 		gtype = atoi(gametype);
 
 		{
-			char				unsortedMaps[4096], buf[512] = {0};
+			char				unsortedMaps[4096];
 			char*				possibleMapName;
 			int					numMaps;
 			const unsigned int  MAX_MAPS = 512;
@@ -6031,7 +6030,7 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 	int otherClientNum;
 	char input[MAX_NETNAME];
 	const int dueltype = 20;//ok - use the all gunduel one
-	const int duelTimeout = 20000;
+	//const int duelTimeout = 20000;
 	gentity_t* challenged;
 
 	if (trap->Argc() != 2) {

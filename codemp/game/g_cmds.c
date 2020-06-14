@@ -674,7 +674,7 @@ void QINLINE DeletePlayerProjectiles(gentity_t *ent) {
 }
 
 void G_UpdatePlaytime(int null, char *username, int seconds );
-void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
+void QINLINE ResetPlayerTimers(gentity_t* ent, qboolean print) {
 	qboolean wasReset = qfalse;;
 
 	if (!ent->client)
@@ -748,6 +748,7 @@ void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		trap->SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
 }
 
+/*
 void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 {
 	ResetSpecificPlayerTimers(ent, print);
@@ -758,6 +759,7 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 			ResetSpecificPlayerTimers(duelAgainst, print);
 	}
 }
+*/
 
 /*
 ==================

@@ -439,8 +439,13 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	// we don't want it to bounce forever
 	missile->bounceCount = 8;
 
-	if (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
+	if (ent->client && !ent->client->sess.raceMode && (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY)) //JAPRO - Serverside - Give bullets gravity!
 		missile->s.pos.trType = TR_GRAVITY;
+
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing
+		missile->splashDamage = 15;
+		missile->splashRadius = 20;
+	}
 }
 
 //---------------------------------------------------------
@@ -519,9 +524,9 @@ static void WP_FireBlaster( gentity_t *ent, qboolean altFire, int seed )
 	if ( altFire )
 	{
 		// add some slop to the alt-fire direction
-		if (g_tweakWeapons.integer & WT_NO_SPREAD) {
-			angs[PITCH]	+= crandom() * BLASTER_SPREAD * 0.1;
-			angs[YAW]       += crandom() * BLASTER_SPREAD * 0.1;
+		if ((g_tweakWeapons.integer & WT_NO_SPREAD) || (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA)) {
+			angs[PITCH]	+= crandom() * 0.1;
+			angs[YAW]       += crandom() * 0.1;
 		}
 		else if (g_tweakWeapons.integer & WT_PSEUDORANDOM_FIRE)
 		{
@@ -1576,8 +1581,10 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 
 	VectorCopy( muzzle, start );
 
-	if (ent->client->sess.raceMode)
-		VectorMA( start, 16384, forward, end );
+	if (ent->client->sess.movementStyle == MV_COOP_JKA) {
+		damage = 6;
+		VectorMA(start, 16384, forward, end);
+	}
 	else
 		VectorMA(start, DEMP2_ALT_RANGE, forward, end);
 
@@ -1982,6 +1989,21 @@ static void WP_FireHitscanShotgun( gentity_t *ent )
 	
 }
 */
+void RemoveLaserTraps(gentity_t* ent)
+{
+	gentity_t* found = NULL;
+
+	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
+	{//loop through all ents and blow the crap out of them!
+		if (found->parent == ent)
+		{
+			VectorCopy(found->r.currentOrigin, found->s.origin);
+			found->think = G_FreeEntity;
+			found->nextthink = level.time;
+			//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
+		}
+	}
+}
 
 static void WP_FireStakeGun( gentity_t *ent ) 
 {
@@ -1999,38 +2021,43 @@ static void WP_FireStakeGun( gentity_t *ent )
 
 	stake = G_Spawn(qfalse);
 	
-	//limit to 10 placed at any one time
-	//see how many there are now
-	while ( (found = G_Find( found, FOFS(classname), "laserTrap" )) != NULL ) {
-		if ( found->parent != ent )
-			continue;
-		foundLaserTraps[trapcount++] = found->s.number;
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {
+		RemoveLaserTraps(ent); //only 1 at a time
 	}
-	//now remove first ones we find until there are only 9 left
-	found = NULL;
-	trapcount_org = trapcount;
-	lowestTimeStamp = level.time;
-	while ( trapcount > 9 ) {
-		removeMe = -1;
-		for ( i = 0; i < trapcount_org; i++ ) {
-			if ( foundLaserTraps[i] == ENTITYNUM_NONE )
+	else {
+		//limit to 10 placed at any one time
+		//see how many there are now
+		while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL) {
+			if (found->parent != ent)
 				continue;
-			found = &g_entities[foundLaserTraps[i]];
-			if ( stake && found->setTime < lowestTimeStamp ) {
-				removeMe = i;
-				lowestTimeStamp = found->setTime;
+			foundLaserTraps[trapcount++] = found->s.number;
+		}
+		//now remove first ones we find until there are only 9 left
+		found = NULL;
+		trapcount_org = trapcount;
+		lowestTimeStamp = level.time;
+		while (trapcount > 9) {
+			removeMe = -1;
+			for (i = 0; i < trapcount_org; i++) {
+				if (foundLaserTraps[i] == ENTITYNUM_NONE)
+					continue;
+				found = &g_entities[foundLaserTraps[i]];
+				if (stake && found->setTime < lowestTimeStamp) {
+					removeMe = i;
+					lowestTimeStamp = found->setTime;
+				}
 			}
+			if (removeMe != -1) {
+				//remove it... or blow it?
+				if (&g_entities[foundLaserTraps[removeMe]] == NULL)
+					break;
+				else
+					G_FreeEntity(&g_entities[foundLaserTraps[removeMe]]);
+				foundLaserTraps[removeMe] = ENTITYNUM_NONE;
+				trapcount--;
+			}
+			else break;
 		}
-		if ( removeMe != -1 ) {
-			//remove it... or blow it?
-			if ( &g_entities[foundLaserTraps[removeMe]] == NULL )
-				break;
-			else
-				G_FreeEntity( &g_entities[foundLaserTraps[removeMe]] );
-			foundLaserTraps[removeMe] = ENTITYNUM_NONE;
-			trapcount--;
-		}
-		else break;
 	}
 
 	//ent->client->numStakes = trapcount;
@@ -2522,6 +2549,53 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 	//
 	vec3_t temp;
 
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {
+		//gentity_t* stake;
+		int			trapcount = 0;
+		int			foundStakes[MAX_GENTITIES];
+		int			trapcount_org;
+		int			lowestTimeStamp;
+		int			removeMe;
+		int			i;
+
+		foundStakes[0] = ENTITYNUM_NONE;
+
+		gentity_t* found = NULL;
+		//limit to 10 placed at any one time
+		//see how many there are now
+		while ((found = G_Find(found, FOFS(classname), "rocket_proj")) != NULL) {
+			if (found->parent != ent)
+				continue;
+			foundStakes[trapcount++] = found->s.number;
+		}
+		//now remove first ones we find until there are only 9 left
+		found = NULL;
+		trapcount_org = trapcount;
+		lowestTimeStamp = level.time;
+		while (trapcount > 1) {
+			removeMe = -1;
+			for (i = 0; i < trapcount_org; i++) {
+				if (foundStakes[i] == ENTITYNUM_NONE)
+					continue;
+				found = &g_entities[foundStakes[i]];
+				if (/*stake &&*/ found->setTime < lowestTimeStamp) {
+					removeMe = i;
+					lowestTimeStamp = found->setTime;
+				}
+			}
+			if (removeMe != -1) {
+				//remove it... or blow it?
+				if (&g_entities[foundStakes[removeMe]] == NULL)
+					break;
+				else
+					G_FreeEntity(&g_entities[foundStakes[removeMe]]);
+				foundStakes[removeMe] = ENTITYNUM_NONE;
+				trapcount--;
+			}
+			else break;
+		}
+	}
+
 	if (ent->client && ent->client->sess.raceMode) {
 		q3style = qtrue;
 		damage = splashDamage = 100; //force default dmg/vel for racers
@@ -2623,6 +2697,8 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 
 	// we don't want it to ever bounce
 	missile->bounceCount = 0;
+
+	missile->setTime = level.time;//remember when we placed it
 }
 
 
@@ -3731,22 +3807,6 @@ void RemoveDetpacks(gentity_t *ent)
 			}
 		}
 		ent->client->ps.hasDetPackPlanted = qfalse;
-	}
-}
-
-void RemoveLaserTraps(gentity_t* ent)
-{
-	gentity_t* found = NULL;
-
-	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
-	{//loop through all ents and blow the crap out of them!
-		if (found->parent == ent)
-		{
-			VectorCopy(found->r.currentOrigin, found->s.origin);
-			found->think = G_FreeEntity;
-			found->nextthink = level.time;
-			//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
-		}
 	}
 }
 

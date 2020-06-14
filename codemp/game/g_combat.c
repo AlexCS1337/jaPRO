@@ -4659,7 +4659,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				else
 					targ->client->ps.electrifyTime = level.time + Q_irand( 300, 800 );
 				if (targ->client->sess.movementStyle == MV_COOP_JKA)
-					targ->client->gravityGunTime = level.time + 1000;
+					targ->client->gravityGunTime = level.time + 600; //Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
 //[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
 			}
 		}

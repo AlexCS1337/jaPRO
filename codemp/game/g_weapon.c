@@ -1045,7 +1045,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 
 	if ( altFire )
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER) {
+		if (g_tweakWeapons.integer & WT_PROJ_SNIPER && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qtrue);
 		}
 		else {
@@ -1054,7 +1054,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 	}
 	else
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER) {
+		if (g_tweakWeapons.integer & WT_PROJ_SNIPER && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qfalse);
 		}
 		else {
@@ -1155,7 +1155,10 @@ static void WP_BowcasterMainFire( gentity_t *ent, int seed )
 	for (i = 0; i < count; i++ )
 	{
 		// create a range of different velocities
-		vel = BOWCASTER_VELOCITY * ( crandom() * BOWCASTER_VEL_RANGE + 1.0f );//velocity does not need to be syncd with client
+		if (g_tweakWeapons.integer & WT_BOWCASTER_SPRD || ent->client->sess.raceMode)
+			vel = BOWCASTER_VELOCITY;// *(crandom() * BOWCASTER_VEL_RANGE + 1.0f);
+		else
+			vel = BOWCASTER_VELOCITY * ( crandom() * BOWCASTER_VEL_RANGE + 1.0f );//velocity does not need to be syncd with client
 
 		vectoangles( forward, angs );
 
@@ -4048,8 +4051,14 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 //JAPRO - Serverside - fixkillcredit - End
 								traceEnt->client->ps.otherKillerDebounceTime = level.time + 100;
 
-								traceEnt->client->ps.velocity[0] += pushDir[0]*pStr;
-								traceEnt->client->ps.velocity[1] += pushDir[1]*pStr;
+								if (traceEnt->client->sess.raceMode) { //_coop tractor beam
+									traceEnt->client->ps.velocity[0] -= pushDir[0] * pStr;
+									traceEnt->client->ps.velocity[1] -= pushDir[1] * pStr;
+								}
+								else {
+									traceEnt->client->ps.velocity[0] += pushDir[0] * pStr;
+									traceEnt->client->ps.velocity[1] += pushDir[1] * pStr;
+								}
 								traceEnt->client->ps.velocity[2] = pStr;
 							}
 						}

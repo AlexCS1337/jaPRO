@@ -539,9 +539,9 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 		return 0;
 	if (attacker && attacker->client && attacker->client->noclip)//Japro fix noclip abuse
 		return 0;
-	if (attacker && attacker->client && attacker->client->sess.raceMode)//not needed?
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress)//not needed?
 		return 0;
-	if (other && other->client && other->client->sess.raceMode)//fix having forcepowers used on you when in racemode
+	if (other && other->client && other->client->sess.raceMode && !other->client->ps.duelInProgress)//fix having forcepowers used on you when in racemode
 		return 0;
 	if (g_godChat.integer && level.gametype == GT_FFA) {
 		if (attacker && attacker->client && (attacker->client->ps.eFlags & EF_TALK)) //Dont let people in chat use force ever
@@ -556,7 +556,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 		//// is the other player in a duel too?
 		if (other && other->client && other->client->ps.duelInProgress ) {
 			//// yes both players are dueling -- with each other? 
-			if ( dueltypes[attacker->client->ps.clientNum] == 1 && other->s.number == attacker->client->ps.duelIndex ) {
+			if ( ((dueltypes[attacker->client->ps.clientNum] == 1) || attacker->client->sess.raceMode) && other->s.number == attacker->client->ps.duelIndex ) {
 				//force duel
 				//return 1; //wonderful, im a retard
 			}
@@ -3754,7 +3754,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					//fullbody push effect
 					push_list[x]->client->pushEffectTime = level.time + 600;
 
-					if ((g_tweakForce.integer & FT_PULLSTRENGTH) && pull) {
+					if (((g_tweakForce.integer & FT_PULLSTRENGTH) || push_list[x]->client->sess.raceMode) && pull) {
 						push_list[x]->client->ps.velocity[0] += pushDir[0]*pushPowerMod; //FT_WEAKPULL?
 						push_list[x]->client->ps.velocity[1] += pushDir[1]*pushPowerMod;
 					}
@@ -3774,7 +3774,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					}
 					else
 					{
-						if ((g_tweakForce.integer & FT_PULLSTRENGTH) && pull)
+						if (((g_tweakForce.integer & FT_PULLSTRENGTH) || push_list[x]->client->sess.raceMode) && pull)
 							push_list[x]->client->ps.velocity[2] += pushDir[2]*pushPowerMod;
 						else
 							push_list[x]->client->ps.velocity[2] = pushDir[2]*pushPowerMod;

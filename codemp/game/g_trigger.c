@@ -1473,6 +1473,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	player->client->pers.stats.topSpeed = 0;
 	player->client->pers.stats.displacement = 0;
 	player->client->pers.stats.displacementSamples = 0;
+	player->client->pers.stats.coopFinished = qfalse;
 
 	if (player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) { //Reset their telemark on map start if this is the case
 		player->client->pers.telemarkOrigin[0] = 0;
@@ -1684,8 +1685,8 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 				duelAgainst->client->pers.stats.startTime = 0;
 				duelAgainst->client->pers.stats.topSpeed = 0;
 				duelAgainst->client->pers.stats.displacement = 0;
-				player->client->pers.stats.coopFinished = 0;
-				duelAgainst->client->pers.stats.coopFinished = 0;
+				player->client->pers.stats.coopFinished = qfalse;
+				duelAgainst->client->pers.stats.coopFinished = qfalse;
 			}
 		}
 

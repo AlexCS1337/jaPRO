@@ -6068,6 +6068,8 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 	}
 	if (ent->client->ps.duelInProgress) //already cooping
 		return;
+	if (ent->client->sess.movementStyle == MV_SWOOP)
+		return;
 #if _GRAPPLE
 	if (ent->client && ent->client->hook)
 		Weapon_HookFree(ent->client->hook);
@@ -6082,7 +6084,8 @@ void Cmd_Coop_f(gentity_t* ent) { //Should this only show logged in people..?
 	challenged = &g_entities[otherClientNum];
 	if (!challenged || !challenged->client || ent == challenged)
 		return;
-	
+	if (challenged->client->sess.movementStyle == MV_SWOOP)
+		return;
 	/*
 	if (challenged->client->ps.duelIndex == ent->s.number && (challenged->client->ps.duelTime + 20000) >= level.time &&
 		(

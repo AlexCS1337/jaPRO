@@ -9192,6 +9192,8 @@ if (pm->ps->duelInProgress)
 					addTime = 3000;
 				else if (pm->ps->weapon == WP_THERMAL && (g_tweakWeapons.integer & WT_IMPACT_NITRON))
 					addTime = 1500;
+				else if (pm->ps->weapon == WP_BLASTER && pm->ps->stats[STAT_RACEMODE])
+					addTime = 100;
 				else
 #endif
 					addTime = weaponData[pm->ps->weapon].altFireTime;

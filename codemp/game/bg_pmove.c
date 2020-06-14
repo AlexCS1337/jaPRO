@@ -12285,7 +12285,7 @@ void PmoveSingle (pmove_t *pmove) {
 		pm->cmd.upmove = 0;
 	}
 
-	if (pm->ps->fd.forceGripCripple)
+	if (pm->ps->fd.forceGripCripple && pm->ps->stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA)
 	{ //don't let attack or alt attack if being gripped I guess
 		pm->cmd.buttons &= ~BUTTON_ATTACK;
 		pm->cmd.buttons &= ~BUTTON_ALT_ATTACK;

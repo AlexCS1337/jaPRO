@@ -425,7 +425,10 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	{ //animent
 		damage = 10;
 	}
-
+	else if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing plasmagun
+		velocity = 2000;
+		damage = 20;
+	}
 	missile = CreateMissileNew( start, dir, velocity, 10000, ent, altFire, qtrue, qtrue );
 
 	missile->classname = "blaster_proj";
@@ -442,9 +445,10 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	if (ent->client && !ent->client->sess.raceMode && (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY)) //JAPRO - Serverside - Give bullets gravity!
 		missile->s.pos.trType = TR_GRAVITY;
 
-	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing plasmagun
 		missile->splashDamage = 15;
 		missile->splashRadius = 20;
+		missile->splashMethodOfDeath = MOD_BLASTER;
 	}
 }
 

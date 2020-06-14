@@ -4472,7 +4472,7 @@ void G_LocationBasedDamageModifier(gentity_t *ent, vec3_t point, int mod, int df
 		return;
 	}
 
-	if (ent && ent->client && ((ent->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (ent->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM)))//no loc based in rocketjump mode -and detpack?
+	if (ent && ent->client && ((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_COOP_JKA)))//no loc based in rocketjump mode -and detpack?
 		return;
 
 	if ( (dflags&DAMAGE_NO_HIT_LOC) )
@@ -4659,7 +4659,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				else
 					targ->client->ps.electrifyTime = level.time + Q_irand( 300, 800 );
 				if (targ->client->sess.movementStyle == MV_COOP_JKA)
-					targ->client->gravityGunTime = level.time + 600; //Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
+					targ->client->gravityGunTime = level.time + 800; //Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
 //[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
 			}
 		}
@@ -4697,7 +4697,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	}
 
 	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
-		if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
+		if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) {
+			if (mod != MOD_BLASTER)
+				return;
+		}
+		else if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
 			return; //ignore self damage if we are in racemode
 		if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker))
 			return; //ignore other damage if we are in racemode
@@ -4780,8 +4784,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		if (targ && targ->client && targ->client->ps.duelInProgress)//Target is dueling
 		{
 			if (attacker && attacker->client) {//always kill him if he dies by falling
-				if (attacker->s.number != targ->client->ps.duelIndex)//Dont dmg him if its not his duelpartner doing the dmg
-					return;	
+				if (attacker->s.number != targ->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
+					if (targ->client->sess.raceMode && mod == MOD_BLASTER) {
+					}
+					else return;
+				}
 				if (mod != MOD_SABER && dueltypes[attacker->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;
 				if ((mod == MOD_TRIP_MINE_SPLASH || mod == MOD_DET_PACK_SPLASH) && dueltypes[attacker->client->ps.clientNum] == 1) //Tripmine or detpack in FF duel.. sad hack!
@@ -4791,8 +4798,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		if (attacker && attacker->client && attacker->client->ps.duelInProgress)//Attacker is dueling
 		{
 			if (targ && targ->client) {//always kill him if he dies by falling
-				if (targ->s.number != attacker->client->ps.duelIndex)//Dont dmg him if its not his duelpartner doing the dmg
-					return;	
+				if (targ->s.number != attacker->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
+					if (attacker->client->sess.raceMode && mod == MOD_BLASTER) {
+					}
+					else return;
+				}
 				if (mod != MOD_SABER && dueltypes[targ->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;
 				if ((mod == MOD_TRIP_MINE_SPLASH || mod == MOD_DET_PACK_SPLASH) && dueltypes[attacker->client->ps.clientNum] == 1) //Tripmine or detpack in FF duel.. sad hack!
@@ -5090,7 +5100,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 //JAPRO - Serverside - Fix Kill credit - End
 	}
 
-	
 	if ( (g_jediVmerc.integer || level.gametype == GT_SIEGE)
 		&& client )
 	{//less explosive damage for jedi, more saber damage for non-jedi

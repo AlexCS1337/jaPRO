@@ -4288,7 +4288,7 @@ void ClientThink_real( gentity_t *ent ) {
 				{
 					client->ps.gravity = g_gravity.value;
 					if (client->sess.raceMode || client->ps.stats[STAT_RACEMODE]) {
-						if (client->gravityGunTime > level.time && client->sess.movementStyle == MV_COOP_JKA) {//grav gun
+						if (client->ps.electrifyTime > level.time && client->sess.movementStyle == MV_COOP_JKA) {//grav gun
 							client->ps.gravity = 200;
 						}
 						else client->ps.gravity = 750; //Match 125fps gravity here since we are using decimal precision for Zvel now

@@ -3835,6 +3835,7 @@ void ClientThink_real( gentity_t *ent ) {
 				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 		}
 		else if (movementStyle == MV_COOP_JKA) {
+			ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
 			ent->client->ps.stats[STAT_WEAPONS] = (1 << 16) - 1 - (1 << WP_DET_PACK) - (1 << WP_TRIP_MINE); //all weapons? w/o tripmine detpack.
 			if (ent->health > 0)
 				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 2000;

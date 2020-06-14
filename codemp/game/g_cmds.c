@@ -6679,7 +6679,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 				ent->client->ps.duelIndex = ENTITYNUM_NONE; // ??
 			}
 			//RemoveDetpacks(ent);
-			//RemoveLaserTraps(ent);
+			RemoveLaserTraps(ent); //stakes
 
 		}
 		else if (ent->client->sess.movementStyle == MV_JETPACK) {
@@ -6732,6 +6732,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 		trap->SendServerCommand( ent-g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, botcpm, or coop>.\n\"" );
 }
 
+void IntegerToRaceName(int style, char* styleString, size_t styleStringSize);
 static void Cmd_JumpChange_f(gentity_t *ent) 
 {
 	char jLevel[32];
@@ -6752,6 +6753,14 @@ static void Cmd_JumpChange_f(gentity_t *ent)
 
 	if (ent->client->ps.groundEntityNum == ENTITYNUM_NONE || VectorLength(ent->client->ps.velocity)) {
 		trap->SendServerCommand(ent-g_entities, "print \"You must be standing still to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->sess.movementStyle == MV_COOP_JKA || ent->client->sess.movementStyle == MV_Q3 || ent->client->sess.movementStyle == MV_CPM || ent->client->sess.movementStyle == MV_JETPACK || 
+		ent->client->sess.movementStyle == MV_WSW || ent->client->sess.movementStyle == MV_BOTCPM || ent->client->sess.movementStyle == MV_SLICK) {
+		char styleString[16];
+		IntegerToRaceName(ent->client->sess.movementStyle, styleString, sizeof(styleString));
+		trap->SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%s)!\n\"", styleString));
 		return;
 	}
 

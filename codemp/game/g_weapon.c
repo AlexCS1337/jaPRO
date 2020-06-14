@@ -1576,7 +1576,10 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 
 	VectorCopy( muzzle, start );
 
-	VectorMA( start, DEMP2_ALT_RANGE, forward, end );
+	if (ent->client->sess.raceMode)
+		VectorMA( start, 16384, forward, end );
+	else
+		VectorMA(start, DEMP2_ALT_RANGE, forward, end);
 
 	count = ( level.time - ent->client->ps.weaponChargeTime ) / DEMP2_CHARGE_UNIT;
 

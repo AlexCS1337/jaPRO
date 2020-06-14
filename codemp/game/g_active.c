@@ -3835,9 +3835,9 @@ void ClientThink_real( gentity_t *ent ) {
 				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 		}
 		else if (movementStyle == MV_COOP_JKA) {
-			ent->client->ps.stats[STAT_WEAPONS] = (1 << 16) - 1; //all weapons?
+			ent->client->ps.stats[STAT_WEAPONS] = (1 << 16) - 1 - (1 << WP_DET_PACK) - (1 << WP_TRIP_MINE); //all weapons? w/o tripmine detpack.
 			if (ent->health > 0)
-				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 1000;
+				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 2000;
 		}
 		else {
 			client->ps.ammo[AMMO_POWERCELL] = 300;
@@ -4286,8 +4286,12 @@ void ClientThink_real( gentity_t *ent ) {
 				else
 				{
 					client->ps.gravity = g_gravity.value;
-					if (client->sess.raceMode || client->ps.stats[STAT_RACEMODE])
-						client->ps.gravity = 750; //Match 125fps gravity here since we are using decimal precision for Zvel now
+					if (client->sess.raceMode || client->ps.stats[STAT_RACEMODE]) {
+						if (client->gravityGunTime > level.time && client->sess.movementStyle == MV_COOP_JKA) {//grav gun
+							client->ps.gravity = 200;
+						}
+						else client->ps.gravity = 750; //Match 125fps gravity here since we are using decimal precision for Zvel now
+					}
 				}
 			}
 		}

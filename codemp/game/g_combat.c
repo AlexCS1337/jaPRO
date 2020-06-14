@@ -4658,6 +4658,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 					targ->client->ps.electrifyTime = level.time + 550;
 				else
 					targ->client->ps.electrifyTime = level.time + Q_irand( 300, 800 );
+				if (targ->client->sess.movementStyle == MV_COOP_JKA)
+					targ->client->gravityGunTime = level.time + 1000;
 //[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
 			}
 		}

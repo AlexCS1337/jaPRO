@@ -566,7 +566,7 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 	vec3_t		start, end;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = 8192;
+	int			shotRange = 16384;
 	int			ignore, traces;
 	qboolean ghoul2 = qfalse;
 
@@ -3858,7 +3858,7 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 	vec3_t		muzzle2, dir;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = 8192.0f;
+	int			shotRange = 16384;
 	qboolean	hitDodged = qfalse;
 	vec3_t shot_mins, shot_maxs;
 	int			i;
@@ -4371,7 +4371,7 @@ static void WP_FireLightningGun( gentity_t *ent )
 	vec3_t		start, end;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = LIGHTNING_RANGE;
+	int		shotRange = LIGHTNING_RANGE;
 	int			ignore;
 	qboolean	ghoul2 = qfalse;
 

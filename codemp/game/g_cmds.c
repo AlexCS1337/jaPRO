@@ -6678,8 +6678,8 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 				ent->client->ps.duelInProgress = qfalse;
 				ent->client->ps.duelIndex = ENTITYNUM_NONE; // ??
 			}
-			RemoveDetpacks(ent);
-			RemoveLaserTraps(ent);
+			//RemoveDetpacks(ent);
+			//RemoveLaserTraps(ent);
 
 		}
 		else if (ent->client->sess.movementStyle == MV_JETPACK) {

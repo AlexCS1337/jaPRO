@@ -1212,7 +1212,7 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 		return qfalse;
 	if (((style == MV_RJQ3) || (style == MV_RJCPM)) && g_knockback.value != 1000.0f)
 		return qfalse;
-	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM) { //Ignore forcejump restrictions if in onlybhop movement modes
+	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM &&& style != MV_COOP_JKA) { //Ignore forcejump restrictions if in onlybhop movement modes
 		if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
 			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: this course requires force jump level 1!\n\n\n\n\n\n\n\n\n\n\"");
@@ -1473,7 +1473,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	player->client->pers.stats.topSpeed = 0;
 	player->client->pers.stats.displacement = 0;
 	player->client->pers.stats.displacementSamples = 0;
-	player->client->pers.stats.coopFinished = qfalse;
+	//player->client->pers.stats.coopFinished = qfalse;
 
 	if (player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) { //Reset their telemark on map start if this is the case
 		player->client->pers.telemarkOrigin[0] = 0;
@@ -1582,9 +1582,11 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 			time -= lessTime;
 #if _COOP
 		if (player->client->sess.raceMode && player->client->ps.duelInProgress && player->client->ps.duelIndex != ENTITYNUM_NONE) {
-			player->client->pers.stats.coopFinished = qtrue;
+			//player->client->pers.stats.coopFinished = qtrue;
 			duelAgainst = &g_entities[player->client->ps.duelIndex];
 			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
+				coopFinished = qtrue;
+				/*
 				if (!duelAgainst->client->pers.stats.startTime || !duelAgainst->client->pers.stats.coopFinished) { //we are 1st across?
 					//print partial coop.. msg.. idk.. dont add time to db
 					//Com_Printf("%s is first, %s hasn't completed or started %i\n", player->client->pers.netname, duelAgainst->client->pers.netname, player->client->pers.stats.startTime);
@@ -1594,6 +1596,7 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 					coopFinished = qtrue;
 					//Com_Printf("%s is second, %s already completed %i\n", player->client->pers.netname, duelAgainst->client->pers.netname, player->client->pers.stats.startTime);
 				}
+				*/
 			}
 		}
 #endif
@@ -1647,7 +1650,7 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 			if (coopFinished) {
 				Q_strncpyz(playerName, duelAgainst->client->pers.netname, sizeof(playerName));
 				Q_StripColor(playerName);
-				PrintRaceTime(NULL, playerName, trigger->message, styleStr, (int)(duelAgainst->client->pers.stats.topSpeed + 0.5f), average, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qfalse, 0, 0, 0, 0);
+				PrintRaceTime(NULL, playerName, trigger->message, styleStr, 0, 0, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qfalse, 0, 0, 0, 0);
 			}
 		}
 		else {
@@ -1668,7 +1671,7 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 				if (coopFinished) {
 					Q_strncpyz(playerName, duelAgainst->client->pers.netname, sizeof(playerName));
 					Q_StripColor(playerName);
-					PrintRaceTime(NULL, playerName, trigger->message, styleStr, (int)(duelAgainst->client->pers.stats.topSpeed + 0.5f), average, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qtrue, 0, 0, 0, 0);
+					PrintRaceTime(NULL, playerName, trigger->message, styleStr, 0, 0, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qtrue, 0, 0, 0, 0);
 				}
 			}
 		}
@@ -1685,8 +1688,8 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 				duelAgainst->client->pers.stats.startTime = 0;
 				duelAgainst->client->pers.stats.topSpeed = 0;
 				duelAgainst->client->pers.stats.displacement = 0;
-				player->client->pers.stats.coopFinished = qfalse;
-				duelAgainst->client->pers.stats.coopFinished = qfalse;
+				//player->client->pers.stats.coopFinished = qfalse;
+				//duelAgainst->client->pers.stats.coopFinished = qfalse;
 			}
 		}
 

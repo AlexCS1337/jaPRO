@@ -9109,7 +9109,9 @@ if (pm->ps->duelInProgress)
 		amount = weaponData[pm->ps->weapon].altEnergyPerShot;
 #ifdef _GAME
 		if (pm->ps->stats[STAT_RACEMODE]) {
-			if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
+			if (pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA)
+				amount = 0;
+			else if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
 				amount = 1;
 		}
 		else {
@@ -9127,9 +9129,11 @@ if (pm->ps->duelInProgress)
 		amount = weaponData[pm->ps->weapon].energyPerShot;
 #ifdef _GAME
 		if (pm->ps->stats[STAT_RACEMODE]) {
-			if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
+			if (pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA)
+				amount = 0;
+			else if (pm->ps->weapon == WP_ROCKET_LAUNCHER)
 				amount = 1;
-			if (pm->ps->weapon == WP_DET_PACK)
+			else if (pm->ps->weapon == WP_DET_PACK)
 				amount = 1;
 		}
 		else {

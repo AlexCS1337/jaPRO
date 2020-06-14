@@ -1045,7 +1045,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 
 	if ( altFire )
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER && !ent->client->sess.raceMode) {
+		if ((g_tweakWeapons.integer & WT_PROJ_SNIPER) && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qtrue);
 		}
 		else {
@@ -1054,7 +1054,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 	}
 	else
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER && !ent->client->sess.raceMode) {
+		if ((g_tweakWeapons.integer & WT_PROJ_SNIPER) && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qfalse);
 		}
 		else {
@@ -1442,6 +1442,10 @@ void DEMP2_AltRadiusDamage( gentity_t *ent )
 
 		if ( !gent || !gent->takedamage || !gent->r.contents )
 		{
+			continue;
+		}
+
+		if (gent->client && gent->client->sess.raceMode != myOwner->client->sess.raceMode) { //racemode isolation for alt demp?
 			continue;
 		}
 

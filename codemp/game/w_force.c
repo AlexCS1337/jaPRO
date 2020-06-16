@@ -1836,7 +1836,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 					}
 
 					if (traceEnt->client->sess.movementStyle == MV_COOP_JKA) {
-						traceEnt->client->ps.speed *= 1.28f; //lightning speeds people up in coop and doesnt show them w/ electrify effect
+						traceEnt->client->ps.fd.forceHealTime = level.time + 200; //lightning speeds people up in coop and doesnt show them w/ electrify effect
 					}
 					else if (traceEnt->client->ps.electrifyTime < (level.time + 400))
 					{ //only update every 400ms to reduce bandwidth usage (as it is passing a 32-bit time value)

@@ -741,6 +741,7 @@ void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	ent->client->pers.stats.displacementFlagSamples = 0;
 	ent->client->ps.stats[STAT_JUMPTIME] = 0;
 	ent->client->ps.fd.forceRageRecoveryTime = 0;
+	ent->client->ps.fd.forcePowersActive = 0;
 
 	ent->client->pers.stats.lastResetTime = level.time; //well im just not sure
 

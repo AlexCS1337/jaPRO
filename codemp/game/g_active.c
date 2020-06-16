@@ -3836,11 +3836,13 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		else if (movementStyle == MV_COOP_JKA) {
 			ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
-			ent->client->ps.fd.forcePowerLevel[FP_SPEED] = ent->client->ps.fd.forcePowerLevel[FP_GRIP] = ent->client->ps.fd.forcePowerLevel[FP_DRAIN] = ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = 3;
+			ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = 2;
+			ent->client->ps.fd.forcePowerLevel[FP_SPEED] = ent->client->ps.fd.forcePowerLevel[FP_GRIP] = ent->client->ps.fd.forcePowerLevel[FP_DRAIN] = ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = 
+				ent->client->ps.fd.forcePowerLevel[FP_RAGE] = ent->client->ps.fd.forcePowerLevel[FP_PUSH] = ent->client->ps.fd.forcePowerLevel[FP_PULL] = 3;
 			ent->client->ps.fd.forcePowersKnown = (1 << FP_SPEED) + (1 << FP_GRIP) + (1 << FP_DRAIN) + (1 << FP_LIGHTNING) + (1 << FP_RAGE);
 			ent->client->ps.stats[STAT_WEAPONS] = (1 << 16) - 1 - (1 << WP_DET_PACK) - (1 << WP_TRIP_MINE); //all weapons? w/o tripmine detpack.
 			if (ent->health > 0)
-				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 2000;
+				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 999;
 		}
 		else {
 			client->ps.ammo[AMMO_POWERCELL] = 300;

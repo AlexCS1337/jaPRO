@@ -2291,14 +2291,14 @@ static void WP_FireFlechette( gentity_t *ent, qboolean altFire, int seed )
 {
 	if ( altFire )
 	{
-		if (g_tweakWeapons.integer & WT_STAKE_GUN)
+		if ((g_tweakWeapons.integer & WT_STAKE_GUN) || ent->client->sess.raceMode)
 			WP_ExplodeStakes( ent );
 		else
 			WP_FlechetteAltFire(ent, seed);
 	}
 	else
 	{
-		if (g_tweakWeapons.integer & WT_STAKE_GUN)
+		if ((g_tweakWeapons.integer & WT_STAKE_GUN) || ent->client->sess.raceMode)
 			WP_FireStakeGun( ent );
 		//else if (0)
 			//WP_FireHitscanShotgun(ent);
@@ -3713,8 +3713,6 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	bolt->parent = self;
 	bolt->r.ownerNum = self->s.number;
-	bolt->damage = 100 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
-	bolt->splashDamage = 200 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
 	bolt->splashRadius = 200;
 	bolt->methodOfDeath = MOD_DET_PACK_SPLASH;
 	bolt->splashMethodOfDeath = MOD_DET_PACK_SPLASH;
@@ -3743,12 +3741,16 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	VectorCopy( start, bolt->s.pos.trBase );
 
 	if (self->client->sess.raceMode) { //put contents=mask_shot here?
+		bolt->damage = 100;
+		bolt->splashDamage = 200;
 		VectorScale(dir, 300, bolt->s.pos.trDelta ); //Launch at +300
-		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta); //Inherit full velocity from player 
+		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta); //Inherit full velocity from player
 	}
 	else {
 		bolt->health = 1;
 		bolt->takedamage = qtrue;
+		bolt->damage = 100 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
+		bolt->splashDamage = 200 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
 		VectorScale(dir, 300, bolt->s.pos.trDelta );
 	}
 	bolt->s.pos.trTime = level.time;

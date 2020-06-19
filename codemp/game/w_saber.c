@@ -8336,7 +8336,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 		self->client->saberCycleQueue = 0;
 	}
 
-	if (self && self->inuse && self->client && (self->client->sess.raceMode || self->client->pers.amfreeze)) {
+	if (self && self->inuse && self->client && ((self->client->sess.raceMode && !self->client->ps.duelInProgress) || self->client->pers.amfreeze)) {
 		return;
 	}
 

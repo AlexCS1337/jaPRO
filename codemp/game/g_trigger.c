@@ -1473,7 +1473,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	player->client->pers.stats.topSpeed = 0;
 	player->client->pers.stats.displacement = 0;
 	player->client->pers.stats.displacementSamples = 0;
-	//player->client->pers.stats.coopFinished = qfalse;
+	player->client->pers.stats.coopStarted = qtrue;
 
 	if (player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) { //Reset their telemark on map start if this is the case
 		player->client->pers.telemarkOrigin[0] = 0;
@@ -1494,6 +1494,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
 				if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
 					duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+					duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
 					duelAgainst->client->pers.keepDemo = qfalse;
 					/*
 					if (player->client->pers.stats.startTime) { //We do too, reset both
@@ -1541,6 +1542,8 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE && player->client->ps.pm_type != PM_JETPACK) 
 		return;
 	if (!player->client->pers.stats.startTime)
+		return;
+	if (!player->client->pers.stats.coopStarted)
 		return;
 	if (player->client->sess.raceMode && g_fixTimerOOB.integer > 1 && !trap->InPVS(player->client->ps.origin, player->client->ps.origin)) { //Check if they are OOB (not in a PVS?)
 			player->client->pers.stats.startLevelTime = 0;
@@ -1699,6 +1702,7 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 				duelAgainst->client->ps.duelTime = 0;
 		}
 	}
+	//Set coopstarted to false?
 }
 
 void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO Timers

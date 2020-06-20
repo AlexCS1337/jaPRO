@@ -813,7 +813,7 @@ typedef struct {//JAPRO - Serverside - Stats
 	int	displacementFlagSamples;
 
 	int	startTime;//For timers that are not flags
-	//int	coopFinished;//For coop tracking ugh
+	int	coopStarted;//For coop tracking ugh
 	int	startLevelTime;//For timers that are not flags
 	float displacement;
 	int	displacementSamples;

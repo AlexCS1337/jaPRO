@@ -1349,7 +1349,7 @@ void G_TouchTriggersWithTrace( gentity_t *ent ) {
 		return;
 
 	//First trace for a solid and return if we hit that?
-	trap->Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_SOLID, qfalse, 0, 0);
+	trap->Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_PLAYERCLIP, qfalse, 0, 0);
 	if (trace.allsolid) {//We are actually inside the solid, so lets assume we already checked it..
 		if (developer.integer)
 			trap->SendServerCommand(-1, "print \"Starting in a solid during trigger lerp\n\"");

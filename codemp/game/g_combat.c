@@ -4665,6 +4665,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			}
 		}
 	}
+	else if (mod == MOD_TARGET_LASER && targ && targ->inuse && targ->client && targ->client->sess.raceMode) { //coop velocity redirect
+		targ->client->ps.velocity[0] = -targ->client->ps.velocity[0];
+		targ->client->ps.velocity[1] = -targ->client->ps.velocity[1];
+	}
 
 	if (level.gametype == GT_SIEGE &&
 		!gSiegeRoundBegun)

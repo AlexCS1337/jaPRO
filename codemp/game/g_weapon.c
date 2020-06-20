@@ -1095,13 +1095,18 @@ static void WP_BowcasterAltFire( gentity_t *ent )
 
 	missile->damage = damage;
 	missile->dflags = DAMAGE_DEATH_KNOCKBACK;
-	missile->methodOfDeath = MOD_BOWCASTER;
+	if (ent->client->sess.raceMode) {
+		missile->damage = 5;
+		missile->methodOfDeath = MOD_TARGET_LASER; //no bowcaster alt so hijackt his :/
+	}
+	else
+		missile->methodOfDeath = MOD_BOWCASTER;
 	missile->clipmask = MASK_SHOT | CONTENTS_LIGHTSABER;
 
 	missile->flags |= FL_BOUNCE;
 	missile->bounceCount = 3;
 
-	if (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
+	if (!ent->client->sess.raceMode && g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
 		missile->s.pos.trType = TR_GRAVITY;
 }
 
@@ -2932,7 +2937,12 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	bolt->s.loopSound = G_SoundIndex( "sound/weapons/thermal/thermloop.wav" );
 	bolt->s.loopIsSoundset = qfalse;
 
-	if (g_tweakWeapons.integer & WT_IMPACT_NITRON) {
+	if (ent->client->sess.raceMode) {
+		bolt->damage = 140;
+		bolt->splashDamage = 140;
+		bolt->splashRadius = 192;
+	}
+	else if (g_tweakWeapons.integer & WT_IMPACT_NITRON) {
 		bolt->damage = 60 * g_weaponDamageScale.integer;
 		bolt->splashDamage = 20 * g_weaponDamageScale.integer;
 		bolt->splashRadius = 96;//128

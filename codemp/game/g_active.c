@@ -1349,10 +1349,10 @@ void G_TouchTriggersWithTrace( gentity_t *ent ) {
 		return;
 
 	trap->Trace( &trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_PLAYERCLIP|CONTENTS_TRIGGER, qfalse, 0, 0 );
-	if (developer.integer == 2)
-		G_TestLine(ent->client->ps.origin, ent->client->oldOrigin, 0x00000ff, 5000);	
 	if (trace.contents & CONTENTS_PLAYERCLIP)
 		return;//We hit a playerclip (HELLO CUDDLES-9)
+	if (developer.integer == 2)
+		G_TestLine(ent->client->ps.origin, ent->client->oldOrigin, 0x00000ff, 5000);
 	if (trace.allsolid) //We are actually inside the trigger, so lets assume we already checked it..
 		return;
 	if (trace.fraction == 1) //Did the entire trace without hitting any triggers

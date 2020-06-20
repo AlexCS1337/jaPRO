@@ -2042,7 +2042,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 				{
 					dmg = 3;
 					if (self->client->sess.raceMode)
-						dmg = -5;
+						dmg = -4;
 				}
 				else if (self->client->ps.fd.forcePowerLevel[FP_DRAIN] == FORCE_LEVEL_3)
 				{
@@ -2089,6 +2089,8 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 					traceEnt->client->ps.fd.forcePower = 0;
 					dmg2 = 0;
 				}
+				else if (traceEnt->client->ps.fd.forcePower > 100) //racemode
+					traceEnt->client->ps.fd.forcePower = 100;
 
 				if (g_gametype.integer >= GT_TEAM) {
 					if (self->client->sess.sessionTeam == traceEnt->client->sess.sessionTeam) 
@@ -2226,7 +2228,7 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			if ( !traceEnt->client )
 				continue;
-			if ( !traceEnt->client->ps.fd.forcePower )
+			if ( !traceEnt->client->ps.fd.forcePower && !traceEnt->client->sess.raceMode ) //ugh
 				continue;
 			if (OnSameTeam(self, traceEnt) && !g_friendlyFire.integer)
 				continue;

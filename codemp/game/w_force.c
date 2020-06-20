@@ -2019,7 +2019,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 
 	if ( traceEnt && traceEnt->takedamage )
 	{
-		if ( traceEnt->client && (!OnSameTeam(self, traceEnt) || g_friendlyFire.integer) && /*self->client->ps.fd.forceDrainTime < level.time &&*/ traceEnt->client->ps.fd.forcePower )
+		if ( traceEnt->client && (!OnSameTeam(self, traceEnt) || g_friendlyFire.integer) && /*self->client->ps.fd.forceDrainTime < level.time &&*/ (traceEnt->client->ps.fd.forcePower || traceEnt->client->sess.raceMode) )
 		{//an enemy or object
 			if (!traceEnt->client && traceEnt->s.eType == ET_NPC)
 			{ //g2animent
@@ -2228,7 +2228,7 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			if ( !traceEnt->client )
 				continue;
-			if ( !traceEnt->client->ps.fd.forcePower && !traceEnt->client->sess.raceMode ) //ugh
+			if ( !traceEnt->client->ps.fd.forcePower )
 				continue;
 			if (OnSameTeam(self, traceEnt) && !g_friendlyFire.integer)
 				continue;

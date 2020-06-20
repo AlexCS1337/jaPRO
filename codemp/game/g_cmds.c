@@ -758,11 +758,11 @@ void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 	if (ent->client->ps.duelInProgress && ent->client->ps.duelIndex != ENTITYNUM_NONE) {
 		gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];
 		if (duelAgainst && duelAgainst->client) {
-			ResetSpecificPlayerTimers(duelAgainst, print);
 			if (ent->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) //Only do this for coop person that teles i guess.
 				WP_ForcePowerStop(ent, FP_RAGE);
 			if (ent->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
 				WP_ForcePowerStop(ent, FP_SPEED);
+			ResetSpecificPlayerTimers(duelAgainst, print);
 		}
 	}
 }

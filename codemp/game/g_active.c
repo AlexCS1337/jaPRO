@@ -1348,23 +1348,11 @@ void G_TouchTriggersWithTrace( gentity_t *ent ) {
 	if (len > 512 * 512 || len == 0) //sanity check i guess, also skip if they are not moving
 		return;
 
-	//First trace for a solid and return if we hit that?
-	trap->Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_PLAYERCLIP, qfalse, 0, 0);
-	if (trace.allsolid) {//We are actually inside the solid, so lets assume we already checked it..
-		if (developer.integer)
-			trap->SendServerCommand(-1, "print \"Starting in a solid during trigger lerp\n\"");
-		return;
-	}
-	if (trace.fraction != 1) {//Hit a solid, return
-		if (developer.integer)
-			trap->SendServerCommand(-1, "print \"Hit a solid during trigger lerp\n\"");
-		return;
-	}
-
-	trap->Trace( &trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_TRIGGER, qfalse, 0, 0 );
+	trap->Trace( &trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->oldOrigin, ent->client->ps.clientNum, CONTENTS_PLAYERCLIP|CONTENTS_TRIGGER, qfalse, 0, 0 );
 	if (developer.integer == 2)
-		G_TestLine(ent->client->ps.origin, ent->client->oldOrigin, 0x00000ff, 5000);
-		
+		G_TestLine(ent->client->ps.origin, ent->client->oldOrigin, 0x00000ff, 5000);	
+	if (trace.contents & CONTENTS_PLAYERCLIP)
+		return;//We hit a playerclip (HELLO CUDDLES-9)
 	if (trace.allsolid) //We are actually inside the trigger, so lets assume we already checked it..
 		return;
 	if (trace.fraction == 1) //Did the entire trace without hitting any triggers

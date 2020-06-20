@@ -730,6 +730,7 @@ void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		}
 	}
 
+	ent->client->pers.stats.coopStarted = qfalse;
 	ent->client->pers.stats.startLevelTime = 0;
 	ent->client->pers.stats.startTime = 0;
 	ent->client->pers.stats.topSpeed = 0;

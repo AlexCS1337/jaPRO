@@ -1569,6 +1569,10 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		qboolean coopFinished = qfalse;
 		gentity_t* duelAgainst;
 
+		if (trigger->noise_index) //Still play this always? Or handle this later..
+			G_Sound(player, CHAN_AUTO, trigger->noise_index);
+		if (trigger->spawnflags)//Get the restrictions for the specific course (only allow jump1, or jump2, etc..)
+			restrictions = trigger->spawnflags;
 		if (ValidRaceSettings(restrictions, player)) {
 			valid = qtrue;
 			if (player->client->pers.userName && player->client->pers.userName[0])
@@ -1622,15 +1626,10 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		else
 			average = player->client->pers.stats.topSpeed;
 
-		if (trigger->spawnflags)//Get the restrictions for the specific course (only allow jump1, or jump2, etc..)
-			restrictions = trigger->spawnflags;
-
 		/*
 		if (valid && (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JKA) && trigger->awesomenoise_index && (time <= trigger->speed)) //Play the awesome noise if they were fast enough
 			G_Sound(player, CHAN_AUTO, trigger->awesomenoise_index);//Just play it in jka physics for now...
 		else*/
-		if (trigger->noise_index) //Still play this always? Or handle this later..
-			G_Sound(player, CHAN_AUTO, trigger->noise_index);
 
 		//Pass awesomenoise_index through to play it if its a PB
 

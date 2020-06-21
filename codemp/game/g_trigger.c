@@ -1569,6 +1569,13 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		qboolean coopFinished = qfalse;
 		gentity_t* duelAgainst;
 
+		if (ValidRaceSettings(restrictions, player)) {
+			valid = qtrue;
+			if (player->client->pers.userName && player->client->pers.userName[0])
+				Q_strncpyz(c, S_COLOR_CYAN, sizeof(c));
+			else
+				Q_strncpyz(c, S_COLOR_GREEN, sizeof(c));
+		}
 
 		if (diffLag > 0) {//Should this be more trusting..?.. -20? -30?
 			time += diffLag;
@@ -1589,6 +1596,8 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 			duelAgainst = &g_entities[player->client->ps.duelIndex];
 			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
 				coopFinished = qtrue;
+				if (duelAgainst->client->pers.practice)
+					valid = qfalse;
 				/*
 				if (!duelAgainst->client->pers.stats.startTime || !duelAgainst->client->pers.stats.coopFinished) { //we are 1st across?
 					//print partial coop.. msg.. idk.. dont add time to db
@@ -1615,14 +1624,6 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 
 		if (trigger->spawnflags)//Get the restrictions for the specific course (only allow jump1, or jump2, etc..)
 			restrictions = trigger->spawnflags;
-
-		if (ValidRaceSettings(restrictions, player)) {
-			valid = qtrue;
-			if (player->client->pers.userName && player->client->pers.userName[0])
-				Q_strncpyz(c, S_COLOR_CYAN, sizeof(c));
-			else
-				Q_strncpyz(c, S_COLOR_GREEN, sizeof(c));
-		}
 
 		/*
 		if (valid && (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JKA) && trigger->awesomenoise_index && (time <= trigger->speed)) //Play the awesome noise if they were fast enough

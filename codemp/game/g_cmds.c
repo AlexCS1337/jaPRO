@@ -6998,6 +6998,7 @@ static void Cmd_Launch_f(gentity_t *ent)
 
 	ent->client->pers.stats.displacement = 0;
 	ent->client->pers.stats.displacementSamples = 0;//avg fix for standing in starttimer and /launch
+	ent->client->pers.stats.coopStarted = qtrue;
 }
 
 static void Cmd_Practice_f(gentity_t *ent)

@@ -1212,7 +1212,7 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 		return qfalse;
 	if (((style == MV_RJQ3) || (style == MV_RJCPM)) && g_knockback.value != 1000.0f)
 		return qfalse;
-	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM &&& style != MV_COOP_JKA) { //Ignore forcejump restrictions if in onlybhop movement modes
+	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA) { //Ignore forcejump restrictions if in onlybhop movement modes
 		if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
 			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: this course requires force jump level 1!\n\n\n\n\n\n\n\n\n\n\"");
@@ -1365,11 +1365,6 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 		return;
 	}
 
-	if (player->client->sess.raceMode && player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK) {
-		player->client->ps.ammo[AMMO_DETPACK] = 4;
-		player->client->ps.jetpackFuel = 100;
-	}
-
 	//if (GetTimeMS() - player->client->pers.stats.startTime < 500)//Some built in floodprotect per player?
 		//return;
 	//if (player->client->pers.stats.startTime) //Instead of floodprotect, dont let player start a timer if they already have one.  Mapmakers should then put reset timers over the start area.
@@ -1452,22 +1447,6 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 
 	lessTime = InterpolateTouchTime(player, trigger);
 
-	if (player->client->sess.raceMode) {
-		player->client->ps.duelTime = level.time - lessTime;
-		player->client->ps.stats[STAT_HEALTH] = player->health = player->client->ps.stats[STAT_MAX_HEALTH];
-		player->client->ps.stats[STAT_ARMOR] = 25;
-
-		if ((GetTimeMS() - player->client->pers.stats.startTime > 2000)) {
-			//Floodprotect the prints
-			if (!player->client->pers.userName[0]) //In racemode but not logged in
-				trap->SendServerCommand(player-g_entities, "cp \"^3Warning: You are not logged in!\n\n\n\n\n\n\n\n\n\n\"");
-			else if (player->client->pers.noFollow)
-				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid while hidden!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
-			else if (player->client->pers.practice)
-				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid in practice mode!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
-		}
-	}
-
 	player->client->pers.stats.startLevelTime = level.time; //Should this use trap milliseconds instead.. 
 	player->client->pers.stats.startTime = GetTimeMS() - lessTime;
 	player->client->pers.stats.topSpeed = 0;
@@ -1481,43 +1460,72 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 		player->client->pers.telemarkOrigin[2] = 0;
 		player->client->pers.telemarkAngle = 0;
 	}
-	
-	//If racemode and _coop, adjust timer for their partner if needed
-	//If partner already has a dueltime, set our dueltime and (starttime? to that)
-	if (player->client->sess.raceMode && player->client->ps.duelInProgress) {
-		if (player->client->ps.duelIndex != ENTITYNUM_NONE) {
-			gentity_t* duelAgainst = &g_entities[player->client->ps.duelIndex];
 
-			//If we have no timer and our partner does, take his timer
-			//If we have a timer and our partner does, reset both?
+	if (player->client->sess.raceMode) {
+		player->client->ps.duelTime = level.time - lessTime;
+		player->client->ps.stats[STAT_HEALTH] = player->health = player->client->ps.stats[STAT_MAX_HEALTH];
+		player->client->ps.stats[STAT_ARMOR] = 25;
 
-			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
-				if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
-					duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
-					duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
-					duelAgainst->client->pers.keepDemo = qfalse;
-					/*
-					if (player->client->pers.stats.startTime) { //We do too, reset both
+		if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK) {
+			player->client->ps.ammo[AMMO_DETPACK] = 4;
+			player->client->ps.jetpackFuel = 100;
+		}
+		else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //Set their forcepoints back to prevent coop pre fp drain/tele boost tactic
+			if (player->client->ps.fd.forcePowersActive & (1 << FP_RAGE))
+				player->client->ps.fd.forcePower -= 50;
+			if (player->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
+				player->client->ps.fd.forcePower -= 50;
+			if (player->client->ps.fd.forcePower < 0)
+				player->client->ps.fd.forcePower = 0;
+		}
+
+		//If racemode and _coop, adjust timer for their partner if needed
+		//If partner already has a dueltime, set our dueltime and (starttime? to that)
+		if (player->client->ps.duelInProgress) {
+			if (player->client->ps.duelIndex != ENTITYNUM_NONE) {
+				gentity_t* duelAgainst = &g_entities[player->client->ps.duelIndex];
+
+				//If we have no timer and our partner does, take his timer
+				//If we have a timer and our partner does, reset both?
+
+				if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
+					if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
 						duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+						duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
 						duelAgainst->client->pers.keepDemo = qfalse;
-						//player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime = 0;
+						/*
+						if (player->client->pers.stats.startTime) { //We do too, reset both
+							duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+							duelAgainst->client->pers.keepDemo = qfalse;
+							//player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime = 0;
+						}
+						else //copy his
+							player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime; // ??
+						*/
 					}
-					else //copy his
-						player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime; // ??
-					*/
-				}  
-				if (duelAgainst->client->ps.duelTime) { //Partner has a timer
-					duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
-					/*
-					if (player->client->ps.duelTime) {//we do too, reset both
+					if (duelAgainst->client->ps.duelTime) { //Partner has a timer
 						duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
-						//player->client->ps.duelTime = duelAgainst->client->ps.duelTime = 0;
+						/*
+						if (player->client->ps.duelTime) {//we do too, reset both
+							duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+							//player->client->ps.duelTime = duelAgainst->client->ps.duelTime = 0;
+						}
+						else //copy his
+							player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
+						*/
 					}
-					else //copy his
-						player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
-					*/
 				}
 			}
+		}
+
+		if ((GetTimeMS() - player->client->pers.stats.startTime > 2000)) {
+			//Floodprotect the prints
+			if (!player->client->pers.userName[0]) //In racemode but not logged in
+				trap->SendServerCommand(player-g_entities, "cp \"^3Warning: You are not logged in!\n\n\n\n\n\n\n\n\n\n\"");
+			else if (player->client->pers.noFollow)
+				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid while hidden!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
+			else if (player->client->pers.practice)
+				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid in practice mode!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
 		}
 	}
 

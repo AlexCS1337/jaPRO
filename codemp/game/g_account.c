@@ -2556,8 +2556,8 @@ void Svcmd_RenameAccount_f(void)
 		return;
 	}
 	if (CheckUserExists(newUsername)) {
-		trap->Print( "This username already exists.\n"); //Merge?
-		return;
+		trap->Print( "This username already exists.  Merging\n"); //Merge?
+		//return;
 	}
 
 	{

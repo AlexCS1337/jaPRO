@@ -8187,13 +8187,14 @@ static void G_GrabSomeMofos(gentity_t *self)
 		level.time, NULL, self->modelScale);
 	BG_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, pos);
 
-	if (g_buffMelee.integer)
-		range = g_buffMelee.integer;
+	if (g_tweakForce.integer & FT_BUFFMELEE)
+		range = 14;
 
 	VectorSet(grabMins, -range, -range, -range);
 	VectorSet(grabMaxs, range, range, range);
 
-	//trace from my origin to my hand, if we hit anyone then get 'em
+	//trace from my origin to my hand, if we hit anyone then get 'em - because this is mask_shot not contents_body it can get blocked if its high range and it hits a wall or something instead of player.
+	//but if its contents_body and high range then you can grab people through walls ..
 	JP_Trace( &trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE|G2TRFLAG_GETSURFINDEX|G2TRFLAG_THICK|G2TRFLAG_HITCORPSES, g_g2TraceLod.integer );
 
 	if (trace.fraction != 1.0f &&
@@ -8211,7 +8212,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 			int tortureAnim = -1;
 			int correspondingAnim = -1;
 
-			if (self->client->pers.cmd.forwardmove > 0)
+			if (self->client->pers.cmd.forwardmove > 0 || (g_tweakForce.integer & FT_BUFFMELEE)) //This is the only non broken/OP one so... 
 			{ //punch grab
 				tortureAnim = BOTH_KYLE_PA_1;
 				correspondingAnim = BOTH_PLAYER_PA_1;

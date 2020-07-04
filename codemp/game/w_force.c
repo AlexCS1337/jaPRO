@@ -4413,7 +4413,15 @@ static void WP_UpdateMindtrickEnts(gentity_t *self)
 			{ //Untrick this entity if the tricker (self) fires while in his fov
 				if (trap->InPVS(ent->client->ps.origin, self->client->ps.origin) && OrgVisible(ent->client->ps.origin, self->client->ps.origin, ent->s.number))
 				{
-					if ((g_tweakForce.integer & FT_BUFFMINDTRICK) && !InFieldOfVision(self->client->ps.viewangles, 180, ent->client->ps.origin)) {
+					if (g_tweakForce.integer & FT_BUFFMINDTRICK) {
+						vec3_t a, tto;
+
+						VectorCopy(self->client->ps.origin, tto);
+						tto[2] += self->client->ps.viewheight;
+						VectorSubtract(ent->client->ps.origin, tto, a);
+						vectoangles(a, a);
+						if (InFieldOfVision(self->client->ps.viewangles, 180, a))
+							RemoveTrickedEnt(&self->client->ps.fd, i);
 					}
 					else
 						RemoveTrickedEnt(&self->client->ps.fd, i);

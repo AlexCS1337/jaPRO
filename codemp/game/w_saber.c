@@ -8175,6 +8175,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 	vec3_t pos;
 	vec3_t grabMins, grabMaxs;
 	trace_t trace;
+	float range = 4.0f;
 
 	if (!self->ghoul2 || ri->handRBolt == -1)
 	{ //no good
@@ -8186,8 +8187,11 @@ static void G_GrabSomeMofos(gentity_t *self)
 		level.time, NULL, self->modelScale);
 	BG_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, pos);
 
-	VectorSet(grabMins, -4.0f, -4.0f, -4.0f);
-	VectorSet(grabMaxs, 4.0f, 4.0f, 4.0f);
+	if (g_buffMelee.integer)
+		range = g_buffMelee.integer;
+
+	VectorSet(grabMins, -range, -range, -range);
+	VectorSet(grabMaxs, range, range, range);
 
 	//trace from my origin to my hand, if we hit anyone then get 'em
 	JP_Trace( &trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE|G2TRFLAG_GETSURFINDEX|G2TRFLAG_THICK|G2TRFLAG_HITCORPSES, g_g2TraceLod.integer );

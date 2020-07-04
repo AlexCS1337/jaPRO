@@ -962,7 +962,8 @@ static bitInfo_T forceTweaks[] = {
 	{"Weak force pull"},//16
 	{"Nerfed weapon pull distance"},//17
 	{"Force resistance while firing/charging weapon"},//18
-	{"Stop rage from affecting firerate of weapons"}//19
+	{"Stop rage from affecting firerate of weapons"},//19
+	{"Don't break mindtrick on attack unless trickee is looking at you"}//19
 };
 static const int MAX_FORCE_TWEAKS = ARRAY_LEN( forceTweaks );
 

@@ -4393,7 +4393,10 @@ void WP_FireMelee( gentity_t *ent, qboolean alt_fire )
 	VectorMA(muzzlePunch, 20.0f, forward, muzzlePunch);
 	VectorMA(muzzlePunch, 4.0f, vright, muzzlePunch);
 
-	VectorMA( muzzlePunch, MELEE_RANGE, forward, end );
+	if (g_buffMelee.integer)
+		VectorMA(muzzlePunch, MELEE_RANGE+6, forward, end);
+	else
+		VectorMA( muzzlePunch, MELEE_RANGE, forward, end );
 
 	VectorSet( maxs, 6, 6, 6 );
 	VectorScale( maxs, -1, mins );
@@ -4425,10 +4428,15 @@ void WP_FireMelee( gentity_t *ent, qboolean alt_fire )
 		if ( tr_ent->takedamage )
 		{ //damage them, do more damage if we're in the second right hook
 			int dmg = MELEE_SWING1_DAMAGE;
+			if (g_buffMelee.integer)
+				dmg = 18 * g_weaponDamageScale.integer;
 
 			if (ent->client && ent->client->ps.torsoAnim == BOTH_MELEE2)
 			{ //do a tad bit more damage on the second swing
-				dmg = MELEE_SWING2_DAMAGE;
+				if (g_buffMelee.integer)
+					dmg = 20 * g_weaponDamageScale.integer;
+				else
+					dmg = MELEE_SWING2_DAMAGE;
 			}
 
 			if ( G_HeavyMelee( ent ) )

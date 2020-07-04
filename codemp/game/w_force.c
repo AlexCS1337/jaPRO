@@ -4420,7 +4420,7 @@ static void WP_UpdateMindtrickEnts(gentity_t *self)
 						tto[2] += self->client->ps.viewheight;
 						VectorSubtract(ent->client->ps.origin, tto, a);
 						vectoangles(a, a);
-						if (InFieldOfVision(self->client->ps.viewangles, 180, a))
+						if (InFieldOfVision(self->client->ps.viewangles, 60, a))
 							RemoveTrickedEnt(&self->client->ps.fd, i);
 					}
 					else

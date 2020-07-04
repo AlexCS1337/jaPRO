@@ -12085,10 +12085,11 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		stiffenedUp = qtrue;
 	}
-	else if (BG_InGrappleMove(pm->ps->torsoAnim) && (!g_tweakForce.integer & FT_BUFFMELEE))
+	else if (BG_InGrappleMove(pm->ps->torsoAnim))
 	{
 		stiffenedUp = qtrue;
-		PM_SetPMViewAngle(pm->ps, pm->ps->viewangles, &pm->cmd);
+		if (!g_tweakForce.integer & FT_BUFFMELEE)
+			PM_SetPMViewAngle(pm->ps, pm->ps->viewangles, &pm->cmd);
 	}
 	else if ( pm->ps->saberMove == LS_STABDOWN_DUAL ||
 			pm->ps->saberMove == LS_STABDOWN_STAFF ||

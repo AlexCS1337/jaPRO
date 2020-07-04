@@ -8212,7 +8212,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 			int tortureAnim = -1;
 			int correspondingAnim = -1;
 
-			if (self->client->pers.cmd.forwardmove > 0 || (g_tweakForce.integer & FT_BUFFMELEE)) //This is the only non broken/OP one so... 
+			if ((self->client->pers.cmd.forwardmove > 0) || (g_tweakForce.integer & FT_BUFFMELEE)) //This is the only non broken/OP one so... 
 			{ //punch grab
 				tortureAnim = BOTH_KYLE_PA_1;
 				correspondingAnim = BOTH_PLAYER_PA_1;

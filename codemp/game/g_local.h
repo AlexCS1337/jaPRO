@@ -279,7 +279,7 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define FT_WEAPON_PULLRESIST  (1<<17)
 #define FT_NORAGEFIRERATE	  (1<<18)
 #define FT_BUFFMINDTRICK	  (1<<19)
-#define FT_BUFFMELEE		  (1<<19) //not really a forcetweak but no room in weapon tweaks!
+#define FT_BUFFMELEE		  (1<<20) //not really a forcetweak but no room in weapon tweaks!
 
 //Saber tweaks
 #define	ST_NO_MP_SABERLERP		(1<<0)

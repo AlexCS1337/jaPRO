@@ -8236,7 +8236,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 				VectorSubtract(ent->client->ps.origin, self->client->ps.origin, a_fo);
 				vectoangles(a_fo, a_fo);
 
-				if (InFieldOfVision(self->client->ps.viewangles, 50, a_fo))
+				if (InFieldOfVision(self->client->ps.viewangles, 50, a_fo)) //eyelevel?
 				{
 
 					hit = qtrue;
@@ -8259,7 +8259,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 	//but if its contents_body and high range then you can grab people through walls ..
 	//JP_Trace( &trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE|G2TRFLAG_GETSURFINDEX|G2TRFLAG_THICK|G2TRFLAG_HITCORPSES, g_g2TraceLod.integer );
 
-	if (!(g_tweakForce.integer & FT_BUFFMELEE) && (trace.fraction != 1.0f && trace.entityNum < ENTITYNUM_WORLD) || ((g_tweakForce.integer & FT_BUFFMELEE) && hit))
+	if ((!(g_tweakForce.integer & FT_BUFFMELEE) && (trace.fraction != 1.0f && trace.entityNum < ENTITYNUM_WORLD)) || ((g_tweakForce.integer & FT_BUFFMELEE) && hit))
 	{
 		gentity_t *grabbed = &g_entities[trace.entityNum];
 

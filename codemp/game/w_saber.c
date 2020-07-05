@@ -8175,6 +8175,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 	vec3_t pos;
 	vec3_t grabMins, grabMaxs;
 	trace_t trace;
+	qboolean hit = qfalse;
 	float range = 4.0f;
 
 	if (!self->ghoul2 || ri->handRBolt == -1)
@@ -8193,12 +8194,72 @@ static void G_GrabSomeMofos(gentity_t *self)
 	VectorSet(grabMins, -range, -range, -range);
 	VectorSet(grabMaxs, range, range, range);
 
-	//trace from my origin to my hand, if we hit anyone then get 'em - because this is mask_shot not contents_body it can get blocked if its high range and it hits a wall or something instead of player.
-	//but if its contents_body and high range then you can grab people through walls ..
-	JP_Trace( &trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE|G2TRFLAG_GETSURFINDEX|G2TRFLAG_THICK|G2TRFLAG_HITCORPSES, g_g2TraceLod.integer );
+	if (g_tweakForce.integer & FT_BUFFMELEE)
+	{
+		int	entityList[MAX_GENTITIES];
+		int numListedEntities;
+		int e;
+		gentity_t* ent;
 
-	if (trace.fraction != 1.0f &&
-		trace.entityNum < ENTITYNUM_WORLD)
+		VectorAdd(pos, grabMins, grabMins);
+		VectorAdd(pos, grabMaxs, grabMaxs);
+
+		numListedEntities = trap->EntitiesInBox(grabMins, grabMaxs, entityList, MAX_GENTITIES);
+
+		for (e = 0; e < numListedEntities; e++) {
+			ent = &g_entities[entityList[e]];
+
+			if (!ent)
+				continue;
+			if (ent == self)
+				continue;
+			if (!ent->inuse)
+				continue;
+			if (!ent->takedamage)
+				continue;
+			if (ent->health <= 0)//no torturing corpses
+				continue;
+			if (!ent->client)
+				continue;
+			if (ent->client->ps.forceHandExtend == HANDEXTEND_KNOCKDOWN)
+				continue;
+
+			//JP_Trace(&trace, self->client->ps.origin, 0, 0, ent->s.origin, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE | G2TRFLAG_GETSURFINDEX | G2TRFLAG_THICK | G2TRFLAG_HITCORPSES, g_g2TraceLod.integer);
+			JP_Trace(&trace, self->client->ps.origin, 0, 0, ent->client->ps.origin, self->s.number, MASK_SHOT, qfalse, 0, 0);
+			G_TestLine(self->client->ps.origin, ent->client->ps.origin, 0x0000ff, 5000);
+			if (trace.entityNum != ent->s.number) {
+				Com_Printf("Client found and not hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
+			}
+			else { //Do a trace from us to ent, see if it makes it all the way.  if so break out and do the mvoe on him.
+				//Check if aiming at then
+				vec3_t a_fo;
+				VectorSubtract(ent->client->ps.origin, self->client->ps.origin, a_fo);
+				vectoangles(a_fo, a_fo);
+
+				if (InFieldOfVision(self->client->ps.viewangles, 50, a_fo))
+				{
+
+					hit = qtrue;
+					Com_Printf("Client found and hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
+					break;
+				}
+			}
+		}
+	}
+	else {
+		JP_Trace(&trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE | G2TRFLAG_GETSURFINDEX | G2TRFLAG_THICK | G2TRFLAG_HITCORPSES, g_g2TraceLod.integer);
+	}
+
+
+	//This should probably be done differently
+	//Get entities in box range, then loop through and trace to each one seeing if we can grab them, if so break
+
+	//trace from my origin to my hand, if we hit anyone then get 'em
+	//because this is mask_shot not contents_body it can get blocked if its high range and it hits a wall or something instead of player.
+	//but if its contents_body and high range then you can grab people through walls ..
+	//JP_Trace( &trace, self->client->ps.origin, grabMins, grabMaxs, pos, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE|G2TRFLAG_GETSURFINDEX|G2TRFLAG_THICK|G2TRFLAG_HITCORPSES, g_g2TraceLod.integer );
+
+	if (!(g_tweakForce.integer & FT_BUFFMELEE) && (trace.fraction != 1.0f && trace.entityNum < ENTITYNUM_WORLD) || ((g_tweakForce.integer & FT_BUFFMELEE) && hit))
 	{
 		gentity_t *grabbed = &g_entities[trace.entityNum];
 

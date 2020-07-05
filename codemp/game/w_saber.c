@@ -8226,9 +8226,9 @@ static void G_GrabSomeMofos(gentity_t *self)
 
 			//JP_Trace(&trace, self->client->ps.origin, 0, 0, ent->s.origin, self->s.number, MASK_SHOT, qfalse, G2TRFLAG_DOGHOULTRACE | G2TRFLAG_GETSURFINDEX | G2TRFLAG_THICK | G2TRFLAG_HITCORPSES, g_g2TraceLod.integer);
 			JP_Trace(&trace, self->client->ps.origin, 0, 0, ent->client->ps.origin, self->s.number, MASK_SHOT, qfalse, 0, 0);
-			G_TestLine(self->client->ps.origin, ent->client->ps.origin, 0x0000ff, 5000);
+			//G_TestLine(self->client->ps.origin, ent->client->ps.origin, 0x0000ff, 5000);
 			if (trace.entityNum != ent->s.number) {
-				Com_Printf("Client found and not hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
+				//Com_Printf("Client found and not hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
 			}
 			else { //Do a trace from us to ent, see if it makes it all the way.  if so break out and do the mvoe on him.
 				//Check if aiming at then
@@ -8240,7 +8240,7 @@ static void G_GrabSomeMofos(gentity_t *self)
 				{
 
 					hit = qtrue;
-					Com_Printf("Client found and hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
+					//Com_Printf("Client found and hit them:%im, us:%i\n", ent->s.number, trace.entityNum);
 					break;
 				}
 			}

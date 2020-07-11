@@ -3519,6 +3519,70 @@ void GiveClientItems(gclient_t *client) {
 	}
 }
 
+void G_GiveGunGameWeapon(gclient_t* client) {
+	//set other ammo to 0, force change to wep?
+	client->ps.stats[STAT_WEAPONS] = 0;
+	if (client->pers.stats.kills == 0) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
+		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+		client->ps.weapon = WP_CONCUSSION;
+	}
+	else if (client->pers.stats.kills == 1) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_ROCKET_LAUNCHER);
+		client->ps.ammo[AMMO_ROCKETS] = 999;
+		client->ps.weapon = WP_ROCKET_LAUNCHER;
+	}
+	else if (client->pers.stats.kills == 2) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_BLASTER);
+		client->ps.ammo[AMMO_BLASTER] = 999;
+		client->ps.weapon = WP_BLASTER;
+	}
+	else if (client->pers.stats.kills == 3) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_REPEATER);
+		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+		client->ps.weapon = WP_REPEATER;
+	}
+	else if (client->pers.stats.kills == 4) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_DISRUPTOR);
+		client->ps.ammo[AMMO_POWERCELL] = 999;
+		client->ps.weapon = WP_DISRUPTOR;
+	}
+	else if (client->pers.stats.kills == 5) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_FLECHETTE);
+		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+		client->ps.weapon = WP_FLECHETTE;
+	}
+	else if (client->pers.stats.kills == 6) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_BOWCASTER);
+		client->ps.ammo[AMMO_POWERCELL] = 999;
+		client->ps.weapon = WP_BOWCASTER;
+	}
+	else if (client->pers.stats.kills == 7) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_DEMP2);
+		client->ps.ammo[AMMO_POWERCELL] = 999;
+		client->ps.weapon = WP_DEMP2;
+	}
+	else if (client->pers.stats.kills == 8) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_OLD);
+		client->ps.ammo[AMMO_BLASTER] = 999;
+		client->ps.weapon = WP_BRYAR_OLD;
+	}
+	else if (client->pers.stats.kills == 9) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_PISTOL);
+		client->ps.ammo[AMMO_BLASTER] = 999;
+		client->ps.weapon = WP_BRYAR_PISTOL;
+	}
+	else if (client->pers.stats.kills == 10) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_THERMAL);
+		client->ps.ammo[AMMO_THERMAL] = 999;
+		client->ps.weapon = WP_THERMAL;
+	}
+	else if (client->pers.stats.kills >= 11) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
+		client->ps.weapon = WP_SABER;
+	}
+}
+
 void GiveClientWeapons(gclient_t *client) {
 
 	if (client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
@@ -3535,70 +3599,74 @@ void GiveClientWeapons(gclient_t *client) {
 	client->ps.ammo[AMMO_THERMAL] = 0;
 
 	//I guess this could be cleaned up a ton, but that trusts the user to not put a retarded value for g_startingWeapons ?
+	if (g_gunGame.integer) {
+		G_GiveGunGameWeapon(client);
+	}
+	else {
+		if (g_startingWeapons.integer & (1 << WP_STUN_BATON))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
+		if (g_startingWeapons.integer & (1 << WP_MELEE))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_MELEE);
+		if (g_startingWeapons.integer & (1 << WP_BRYAR_PISTOL))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_BRYAR_PISTOL);
+		if (g_startingWeapons.integer & (1 << WP_BLASTER))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_BLASTER);
+		if (g_startingWeapons.integer & (1 << WP_DISRUPTOR))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_DISRUPTOR);
+		if (g_startingWeapons.integer & (1 << WP_BOWCASTER))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_BOWCASTER);
+		if (g_startingWeapons.integer & (1 << WP_REPEATER))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_REPEATER);
+		if (g_startingWeapons.integer & (1 << WP_DEMP2))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_DEMP2);
+		if (g_startingWeapons.integer & (1 << WP_FLECHETTE))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_FLECHETTE);
+		if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_ROCKET_LAUNCHER);
+		if (g_startingWeapons.integer & (1 << WP_CONCUSSION))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_CONCUSSION);
+		if (g_startingWeapons.integer & (1 << WP_THERMAL))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_THERMAL);
+		if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_TRIP_MINE);
+		if (g_startingWeapons.integer & (1 << WP_DET_PACK))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_DET_PACK);
+		if (g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
+			client->ps.stats[STAT_WEAPONS] |= (1 << WP_BRYAR_OLD);
 
-				if (g_startingWeapons.integer & (1 << WP_STUN_BATON))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_STUN_BATON);
-				if (g_startingWeapons.integer & (1 << WP_MELEE))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_MELEE);
-				if (g_startingWeapons.integer & (1 << WP_BRYAR_PISTOL))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_BRYAR_PISTOL);
-				if (g_startingWeapons.integer & (1 << WP_BLASTER))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_BLASTER);
-				if (g_startingWeapons.integer & (1 << WP_DISRUPTOR))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_DISRUPTOR);
-				if (g_startingWeapons.integer & (1 << WP_BOWCASTER))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_BOWCASTER);
-				if (g_startingWeapons.integer & (1 << WP_REPEATER))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_REPEATER);
-				if (g_startingWeapons.integer & (1 << WP_DEMP2))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_DEMP2);
-				if (g_startingWeapons.integer & (1 << WP_FLECHETTE))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_FLECHETTE);
-				if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_ROCKET_LAUNCHER);
-				if (g_startingWeapons.integer & (1 << WP_CONCUSSION))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_CONCUSSION);
-				if (g_startingWeapons.integer & (1 << WP_THERMAL))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_THERMAL);
-				if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_TRIP_MINE);
-				if (g_startingWeapons.integer & (1 << WP_DET_PACK))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_DET_PACK);
-				if (g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
-					client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_BRYAR_OLD);
-
-				if (!(g_startingWeapons.integer & (1 << 0))) { //oh right, startingWeapons bit 1 gives more ammo
-					if (g_startingWeapons.integer & (1 << WP_BLASTER) || g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
-						client->ps.ammo[AMMO_BLASTER] = 300;
-					if (g_startingWeapons.integer & (1 << WP_DISRUPTOR) || g_startingWeapons.integer & (1 << WP_BOWCASTER) || g_startingWeapons.integer & (1 << WP_DEMP2))
-						client->ps.ammo[AMMO_POWERCELL] = 200;
-					if (g_startingWeapons.integer & (1 << WP_REPEATER) || g_startingWeapons.integer & (1 << WP_FLECHETTE) || g_startingWeapons.integer & (1 << WP_CONCUSSION))
-						client->ps.ammo[AMMO_METAL_BOLTS] = 200;
-					if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
-						client->ps.ammo[AMMO_ROCKETS] = 2;
-					if (g_startingWeapons.integer & (1 << WP_DET_PACK))
-						client->ps.ammo[AMMO_DETPACK] = 1;
-					if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
-						client->ps.ammo[AMMO_TRIPMINE] = 1;
-					if (g_startingWeapons.integer & (1 << WP_THERMAL))
-						client->ps.ammo[AMMO_THERMAL] = 1;
-				}
-				else {
-					if (g_startingWeapons.integer & (1 << WP_BLASTER) || g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
-						client->ps.ammo[AMMO_BLASTER] = 600;
-					if (g_startingWeapons.integer & (1 << WP_DISRUPTOR) || g_startingWeapons.integer & (1 << WP_BOWCASTER) || g_startingWeapons.integer & (1 << WP_DEMP2))
-						client->ps.ammo[AMMO_POWERCELL] = 600;
-					if (g_startingWeapons.integer & (1 << WP_REPEATER) || g_startingWeapons.integer & (1 << WP_FLECHETTE) || g_startingWeapons.integer & (1 << WP_CONCUSSION))
-						client->ps.ammo[AMMO_METAL_BOLTS] = 600;
-					if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
-						client->ps.ammo[AMMO_ROCKETS] = 25;
-					if (g_startingWeapons.integer & (1 << WP_DET_PACK))
-						client->ps.ammo[AMMO_DETPACK] = 10;
-					if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
-						client->ps.ammo[AMMO_TRIPMINE] = 10;
-					if (g_startingWeapons.integer & (1 << WP_THERMAL))
-						client->ps.ammo[AMMO_THERMAL] = 10;
-				}
+		if (!(g_startingWeapons.integer & (1 << 0))) { //oh right, startingWeapons bit 1 gives more ammo
+			if (g_startingWeapons.integer & (1 << WP_BLASTER) || g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
+				client->ps.ammo[AMMO_BLASTER] = 300;
+			if (g_startingWeapons.integer & (1 << WP_DISRUPTOR) || g_startingWeapons.integer & (1 << WP_BOWCASTER) || g_startingWeapons.integer & (1 << WP_DEMP2))
+				client->ps.ammo[AMMO_POWERCELL] = 200;
+			if (g_startingWeapons.integer & (1 << WP_REPEATER) || g_startingWeapons.integer & (1 << WP_FLECHETTE) || g_startingWeapons.integer & (1 << WP_CONCUSSION))
+				client->ps.ammo[AMMO_METAL_BOLTS] = 200;
+			if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
+				client->ps.ammo[AMMO_ROCKETS] = 2;
+			if (g_startingWeapons.integer & (1 << WP_DET_PACK))
+				client->ps.ammo[AMMO_DETPACK] = 1;
+			if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
+				client->ps.ammo[AMMO_TRIPMINE] = 1;
+			if (g_startingWeapons.integer & (1 << WP_THERMAL))
+				client->ps.ammo[AMMO_THERMAL] = 1;
+		}
+		else {
+			if (g_startingWeapons.integer & (1 << WP_BLASTER) || g_startingWeapons.integer & (1 << WP_BRYAR_OLD))
+				client->ps.ammo[AMMO_BLASTER] = 600;
+			if (g_startingWeapons.integer & (1 << WP_DISRUPTOR) || g_startingWeapons.integer & (1 << WP_BOWCASTER) || g_startingWeapons.integer & (1 << WP_DEMP2))
+				client->ps.ammo[AMMO_POWERCELL] = 600;
+			if (g_startingWeapons.integer & (1 << WP_REPEATER) || g_startingWeapons.integer & (1 << WP_FLECHETTE) || g_startingWeapons.integer & (1 << WP_CONCUSSION))
+				client->ps.ammo[AMMO_METAL_BOLTS] = 600;
+			if (g_startingWeapons.integer & (1 << WP_ROCKET_LAUNCHER))
+				client->ps.ammo[AMMO_ROCKETS] = 25;
+			if (g_startingWeapons.integer & (1 << WP_DET_PACK))
+				client->ps.ammo[AMMO_DETPACK] = 10;
+			if (g_startingWeapons.integer & (1 << WP_TRIP_MINE))
+				client->ps.ammo[AMMO_TRIPMINE] = 10;
+			if (g_startingWeapons.integer & (1 << WP_THERMAL))
+				client->ps.ammo[AMMO_THERMAL] = 10;
+		}
+	}
 }
 
 /*

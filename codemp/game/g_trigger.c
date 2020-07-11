@@ -1471,12 +1471,11 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 			player->client->ps.jetpackFuel = 100;
 		}
 		else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //Set their forcepoints back to prevent coop pre fp drain/tele boost tactic
+			player->client->ps.fd.forcePower = 100; //whatever
 			if (player->client->ps.fd.forcePowersActive & (1 << FP_RAGE))
 				player->client->ps.fd.forcePower -= 50;
 			if (player->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
 				player->client->ps.fd.forcePower -= 50;
-			if (player->client->ps.fd.forcePower < 0)
-				player->client->ps.fd.forcePower = 0;
 		}
 
 		//If racemode and _coop, adjust timer for their partner if needed

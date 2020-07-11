@@ -2855,7 +2855,7 @@ void Cmd_AmMapList_f(gentity_t *ent)
 				baseMapCount++;
 				continue;
 			}
-			tmpMsg = va( " ^3%-32s    ", sortedMaps[i]);
+			tmpMsg = va( " %s%-32s    ", ((i%2) ? S_COLOR_GREEN : S_COLOR_YELLOW), sortedMaps[i]);
 			if (count >= limit) {
 				tmpMsg = va("\n   %s", tmpMsg);
 				count = 0;
@@ -7850,8 +7850,6 @@ void Cmd_ServerConfig_f(gentity_t *ent) //loda fixme fix indenting on this, make
 		Q_strcat(buf, sizeof(buf), "   ^5Prevents suiciding/spectating to avoid a kill\n");
 	else if (g_fixKillCredit.integer > 1)
 		Q_strcat(buf, sizeof(buf), "   ^5Prevents suiciding/spectating/disconnecting to avoid a kill\n");
-	if (g_corpseRemovalTime.integer != 30)
-		Q_strcat(buf, sizeof(buf), va("   ^5Corpses dissapear after ^2%i ^5seconds\n", g_corpseRemovalTime.integer));
 	if (g_newBotAI.integer)
 		Q_strcat(buf, sizeof(buf), va("   ^5New bot AI for force and saber-only combat\n", g_corpseRemovalTime.integer));
 	if (g_raceMode.integer == 1 && level.gametype == GT_FFA)
@@ -8001,6 +7999,8 @@ void Cmd_ServerConfig_f(gentity_t *ent) //loda fixme fix indenting on this, make
 			Q_strcat(buf, sizeof(buf), "   ^5Gunroll enabled\n");
 		if (g_tweakWeapons.integer & WT_NERFED_PISTOL)
 			Q_strcat(buf, sizeof(buf), "   ^5Lower max damage on pistol alt fire\n");
+		if (g_tweakForce.integer & FT_BUFFMELEE)
+			Q_strcat(buf, sizeof(buf), "   ^5Reworked melee combat\n");
 		trap->SendServerCommand(ent-g_entities, va("print \"%s\"", buf));
 	}
 
@@ -8057,7 +8057,7 @@ void Cmd_ServerConfig_f(gentity_t *ent) //loda fixme fix indenting on this, make
 	else if (g_flipKick.integer > 2)
 		Q_strcat(buf, sizeof(buf), "   ^5Flipkick enabled with JK2 style\n");
 	if (g_glitchKickDamage.integer >= 0)
-		Q_strcat(buf, sizeof(buf), va("   ^5Glitch kick randomness removed, now does ^3%i ^5bonus damage\n", g_glitchKickDamage.integer));
+		Q_strcat(buf, sizeof(buf), va("   ^5Glitch kick randomness removed, now does ^3%i ^2bonus damage\n", g_glitchKickDamage.integer));
 	if (g_nonRandomKnockdown.integer == 1)
 		Q_strcat(buf, sizeof(buf), "   ^5Nonrandom flipkick knockdowns\n");
 	else if (g_nonRandomKnockdown.integer == 2)
@@ -8074,6 +8074,8 @@ void Cmd_ServerConfig_f(gentity_t *ent) //loda fixme fix indenting on this, make
 		Q_strcat(buf, sizeof(buf), "   ^5Fixed physics for NPCs on slick surfaces\n");
 	else if (g_fixSlidePhysics.integer > 1)
 		Q_strcat(buf, sizeof(buf), "   ^5Fixed physics for players on slick surfaces\n");
+	else if (g_fixPlayerCollision.integer)
+		Q_strcat(buf, sizeof(buf), "   ^5Fixed physics for player-player collisions\n");
 	trap->SendServerCommand(ent-g_entities, va("print \"%s\"", buf));
 	
 	//Force changes

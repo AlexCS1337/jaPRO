@@ -483,6 +483,9 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	if (self->client->sess.raceMode)//racemode
 		return;
 
+	if (g_gunGame.integer)
+		return;
+
 	if ((g_rabbit.integer == 2) && (weapon == WP_DISRUPTOR))//rabbit, only cuz of snipers idk?
 		return;
 
@@ -592,6 +595,9 @@ void TossClientItems( gentity_t *self ) {
 		return;
 
 	if (self->client->sess.raceMode)//racemode
+		return;
+
+	if (g_gunGame.integer)
 		return;
 
 	// drop the weapon if not a gauntlet or machinegun
@@ -2132,6 +2138,8 @@ extern void Rancor_DropVictim( gentity_t *self );
 
 void ResetPlayerTimers(gentity_t *ent, qboolean print);//extern ?
 void G_AddSimpleStat(gentity_t *self, gentity_t *other, int type);
+void G_GiveGunGameWeapon(gclient_t* client);
+void Svcmd_ResetScores_f(void);
 extern qboolean g_dontFrickinCheck;
 extern qboolean g_endPDuel;
 extern qboolean g_noPDuelCheck;
@@ -2718,26 +2726,31 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 					}
 					if (self->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed flag carrier
 						AddScore( attacker, self->r.currentOrigin, killed_carrier ); 
-						G_AddSimpleStat(attacker, self, 1);
-						attacker->client->pers.stats.kills++;//JAPRO STATS
 					}
 					else if (attacker->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed while holding flag
 						AddScore( attacker, self->r.currentOrigin, carrier_bonus ); 
-						G_AddSimpleStat(attacker, self, 1);
-						attacker->client->pers.stats.kills++;//JAPRO STATS
 					}
 					else {
-						G_AddSimpleStat(attacker, self, 1);
-						attacker->client->pers.stats.kills++;//JAPRO STATS
 						if (killed_other)
 							AddScore( attacker, self->r.currentOrigin, killed_other ); //we dont care about other kills? just rabbit?
 					}
+					G_AddSimpleStat(attacker, self, 1);
+					attacker->client->pers.stats.kills++;//JAPRO STATS
 				}
 				else
 				{
 					AddScore( attacker, self->r.currentOrigin, 1 );
 					G_AddSimpleStat(attacker, self, 1);
 					attacker->client->pers.stats.kills++;//JAPRO STATS
+					if (g_gunGame.integer && !attacker->client->sess.raceMode) {
+						//Print winner, resetscores so we dont fuck up racemode
+						if (meansOfDeath == MOD_SABER) {
+							Svcmd_ResetScores_f();
+							trap->SendServerCommand(-1, va("print \"^3%s won the gungame\n\"", attacker->client->pers.netname));
+							trap->SendServerCommand(-1, va("cp \"%s won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", attacker->client->pers.netname));
+						}
+						G_GiveGunGameWeapon(attacker->client);
+					}
 				}
 
 				if( meansOfDeath == MOD_STUN_BATON ) {

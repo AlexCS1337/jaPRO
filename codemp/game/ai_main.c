@@ -6740,6 +6740,9 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	if (bs->runningLikeASissy) //Dont attack when chasing them with strafe i guess
 		return;
 
+	if (bs->currentEnemy->client->invulnerableTimer && bs->currentEnemy->client->invulnerableTimer > level.time) //don't attack them if they can't take dmg
+		return;
+
 	if (bs->cur_ps.weapon == WP_SABER) {//Fullforce saber attacks
 		g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STRONG;
 

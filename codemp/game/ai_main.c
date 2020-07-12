@@ -6547,7 +6547,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 1100) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6578,7 +6578,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
@@ -6603,7 +6603,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -6629,7 +6629,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6658,7 +6658,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) { //Most DPS!
@@ -6684,7 +6684,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -6696,7 +6696,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_DISRUPTOR;
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6711,7 +6711,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
 				bestWeapon = WP_STUN_BATON;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
@@ -6736,7 +6736,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -6778,8 +6778,9 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	if (bs->runningLikeASissy) //Dont attack when chasing them with strafe i guess
 		return;
 
-	if (bs->currentEnemy->client->invulnerableTimer && (bs->currentEnemy->client->invulnerableTimer > level.time)) //don't attack them if they can't take dmg
+	if (bs->currentEnemy->client->invulnerableTimer && (bs->currentEnemy->client->invulnerableTimer > level.time)) {//don't attack them if they can't take dmg
 		return;
+	}
 
 	if (bs->cur_ps.weapon == WP_SABER) {//Fullforce saber attacks
 		g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STRONG;
@@ -6809,16 +6810,19 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 		return;
 	}
 	
-	if (!bs->frame_Enemy_Vis && (bs->cur_ps.weapon != WP_DEMP2)) //Dont waste ammo if we cant see them..?
+	if (!bs->frame_Enemy_Vis && (bs->cur_ps.weapon != WP_DEMP2)) { //Dont waste ammo if we cant see them..?
 		return;
+	}
 
 	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs)) {//Ehhh..
 		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
 			return;
-		trap->EA_Alt_Attack(bs->client);
+		if (level.framenum % 2)
+			trap->EA_Alt_Attack(bs->client);
 	}
 	else if ((bs->cur_ps.weapon == weapon) && (weapon != WP_THERMAL)) {//we are using desired weapon
-		trap->EA_Attack(bs->client);
+		if (level.framenum % 2)
+			trap->EA_Attack(bs->client);
 	}
 }
 

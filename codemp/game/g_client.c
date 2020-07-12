@@ -3583,14 +3583,27 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		client->ps.ammo[AMMO_THERMAL] = 999;
 		client->ps.weapon = WP_THERMAL;
 	}
-	else if (score >= 12) {
+	else if (score == 12) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
 	}
 	else if (score >= 13) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
+		int i;
+		gentity_t* ent;
+
 		Svcmd_ResetScores_f();
 		trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
 		trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
+
+		for (i = 0; i < level.numConnectedClients; i++) {
+			ent = &g_entities[level.sortedClients[i]];
+			if (ent->inuse && ent->client && !ent->client->sess.raceMode) {
+				ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
+				ent->client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+				ent->client->ps.weapon = WP_CONCUSSION;
+			}
+		}
+		//We reset for everyone though?
 	}
 }
 

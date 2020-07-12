@@ -2744,11 +2744,6 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 					attacker->client->pers.stats.kills++;//JAPRO STATS
 					if (g_gunGame.integer && !attacker->client->sess.raceMode) {
 						//Print winner, resetscores so we dont fuck up racemode
-						if (meansOfDeath == MOD_SABER) {
-							Svcmd_ResetScores_f();
-							trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", attacker->client->pers.netname));
-							trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", attacker->client->pers.netname));
-						}
 						G_GiveGunGameWeapon(attacker->client);
 						if (attacker->client->ps.stats[STAT_HEALTH] < 100)
 							attacker->health = attacker->client->ps.stats[STAT_HEALTH] = 100;

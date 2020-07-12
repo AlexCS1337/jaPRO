@@ -3587,6 +3587,11 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
 	}
+	else if (score >= 13) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
+		Svcmd_ResetScores_f();
+		trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
+		trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
+	}
 }
 
 void GiveClientWeapons(gclient_t *client) {

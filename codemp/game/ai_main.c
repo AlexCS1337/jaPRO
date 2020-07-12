@@ -4604,6 +4604,8 @@ float BotWeaponCanLead(bot_state_t *bs)
 		return 0.35f;
 	case WP_ROCKET_LAUNCHER:
 		return 0.9f;
+	case WP_CONCUSSION:
+		return 0.2f;
 	case WP_FLECHETTE:
 		return 0.3f;
 	case WP_DISRUPTOR:
@@ -6565,7 +6567,6 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_BOWCASTER)) {
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1500;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
@@ -6743,6 +6744,9 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 	if (bestWeapon == WP_THERMAL) {
 		bs->doAltAttack = 1;
 		bs->altChargeTime = 1500;
+	}
+	else if (bestWeapon == WP_BOWCASTER) {
+		bs->doAltAttack = 1;
 	}
 
 	return bestWeapon;

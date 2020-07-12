@@ -2745,7 +2745,7 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 					if (g_gunGame.integer && !attacker->client->sess.raceMode) {
 						//Print winner, resetscores so we dont fuck up racemode
 						G_GiveGunGameWeapon(attacker->client);
-						if (attacker->client->ps.stats[STAT_HEALTH] < 100)
+						if (attacker->health > 0 && attacker->health < 100)
 							attacker->health = attacker->client->ps.stats[STAT_HEALTH] = 100;
 					}
 				}

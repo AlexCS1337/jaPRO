@@ -6817,7 +6817,7 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs)) {//Ehhh..
 		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
 			return;
-		if (level.framenum % 2)
+		//if (level.framenum % 2)
 			trap->EA_Alt_Attack(bs->client);
 	}
 	else if ((bs->cur_ps.weapon == weapon) && (weapon != WP_THERMAL)) {//we are using desired weapon

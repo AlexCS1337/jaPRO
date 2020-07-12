@@ -2750,6 +2750,8 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 							trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", attacker->client->pers.netname));
 						}
 						G_GiveGunGameWeapon(attacker->client);
+						if (attacker->client->ps.stats[STAT_HEALTH] < 100)
+							attacker->client->ps.stats[STAT_HEALTH] = 100;
 					}
 				}
 

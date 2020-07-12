@@ -6539,7 +6539,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 1100) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6559,13 +6559,15 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_BOWCASTER)) {
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
+				bs->altChargeTime = 1500;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
 			if (BotWeaponSelectableAltFire(bs, WP_FLECHETTE)) {
@@ -6589,7 +6591,8 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 	}
 
@@ -6609,7 +6612,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6633,7 +6636,8 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) { //Most DPS!
 			if (BotWeaponSelectable(bs, WP_REPEATER))
@@ -6658,7 +6662,8 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 	}
 
@@ -6669,7 +6674,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_DISRUPTOR;
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6684,7 +6689,8 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
 				bestWeapon = WP_STUN_BATON;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
 			if (BotWeaponSelectable(bs, WP_REPEATER))
@@ -6708,9 +6714,16 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_SABER))
+				bestWeapon = WP_SABER;
 		}
 	}
+
+	if (bestWeapon == WP_THERMAL) {
+		bs->doAltAttack = 1;
+		bs->altChargeTime = 1500;
+	}
+
 	return bestWeapon;
 }
 
@@ -6740,7 +6753,7 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	if (bs->runningLikeASissy) //Dont attack when chasing them with strafe i guess
 		return;
 
-	if (bs->currentEnemy->client->invulnerableTimer && bs->currentEnemy->client->invulnerableTimer > level.time) //don't attack them if they can't take dmg
+	if (bs->currentEnemy->client->invulnerableTimer && (bs->currentEnemy->client->invulnerableTimer > level.time)) //don't attack them if they can't take dmg
 		return;
 
 	if (bs->cur_ps.weapon == WP_SABER) {//Fullforce saber attacks
@@ -6779,8 +6792,9 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 			return;
 		trap->EA_Alt_Attack(bs->client);
 	}
-	else if (bs->cur_ps.weapon == weapon) //we are using desired weapon
+	else if ((bs->cur_ps.weapon == weapon) && (weapon != WP_THERMAL)) {//we are using desired weapon
 		trap->EA_Attack(bs->client);
+	}
 }
 
 void NewBotAI_GetGroundDodge(bot_state_t *bs) {
@@ -7271,7 +7285,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 	if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse; //Sad hack not sure why?
 
-	if (useTheForce && (level.framenum % 2))
+	if (useTheForce && (level.framenum % 2) && !bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time))
 		trap->EA_ForcePower(bs->client);
 }
 
@@ -7389,7 +7403,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 	if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse;
 
-	if (useTheForce) {
+	if (useTheForce && !bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)) {
 		trap->EA_ForcePower(bs->client);
 	}
 }
@@ -7427,7 +7441,8 @@ void NewBotAI_DSvDS(bot_state_t *bs)
 	}
 
 	NewBotAI_GetMovement(bs);
-	NewBotAI_GetDSForcepower(bs);
+	if (g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839)
+		NewBotAI_GetDSForcepower(bs);
 	NewBotAI_GetAttack(bs);
 }
 
@@ -7455,7 +7470,8 @@ void NewBotAI_DSvLS(bot_state_t *bs)
 	}
 
 	NewBotAI_GetMovement(bs);
-	NewBotAI_GetDSForcepower(bs);
+	if (g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839)
+		NewBotAI_GetDSForcepower(bs);
 	NewBotAI_GetAttack(bs);
 }
 
@@ -7476,7 +7492,8 @@ void NewBotAI_LSvDS(bot_state_t *bs)
 		NewBotAI_Absorbing(bs);
 	
 	NewBotAI_GetMovement(bs);
-	NewBotAI_GetLSForcepower(bs);
+	if (g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839)
+		NewBotAI_GetLSForcepower(bs);
 	NewBotAI_GetAttack(bs);
 }
 
@@ -7497,7 +7514,8 @@ void NewBotAI_LSvLS(bot_state_t *bs)
 		NewBotAI_Absorbing(bs);
 
 	NewBotAI_GetMovement(bs);
-	NewBotAI_GetLSForcepower(bs);
+	if (g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839)
+		NewBotAI_GetLSForcepower(bs);
 	NewBotAI_GetAttack(bs);
 }
 
@@ -7507,7 +7525,7 @@ void NewBotAI_NF(bot_state_t *bs)
 	const float speed = NewBotAI_GetSpeedTowardsEnemy(bs);
 
 	NewBotAI_GetAim(bs);
-	
+
 	if (bs->cur_ps.forceHandExtend == HANDEXTEND_KNOCKDOWN) {
 		NewBotAI_Getup(bs);
 		return;
@@ -7901,7 +7919,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	}
 	*/
 
-	if ((g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839) || g_flipKick.integer) {
+	if ((g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839) || (g_flipKick.integer) || (bs->cur_ps.weapon != WP_SABER)) {
 		if (bs->currentEnemy->client->ps.fd.forceSide == FORCE_LIGHTSIDE) { // They are LS.
 			if (bs->cur_ps.fd.forceSide == FORCE_LIGHTSIDE)
 				NewBotAI_LSvLS(bs);

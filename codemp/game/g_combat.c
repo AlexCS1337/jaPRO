@@ -2746,8 +2746,8 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 						//Print winner, resetscores so we dont fuck up racemode
 						if (meansOfDeath == MOD_SABER) {
 							Svcmd_ResetScores_f();
-							trap->SendServerCommand(-1, va("print \"^3%s won the gungame\n\"", attacker->client->pers.netname));
-							trap->SendServerCommand(-1, va("cp \"%s won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", attacker->client->pers.netname));
+							trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", attacker->client->pers.netname));
+							trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", attacker->client->pers.netname));
 						}
 						G_GiveGunGameWeapon(attacker->client);
 					}

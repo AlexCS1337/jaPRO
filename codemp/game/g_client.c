@@ -3543,41 +3543,46 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		client->ps.weapon = WP_REPEATER;
 	}
 	else if (client->pers.stats.kills == 4) {
-		client->ps.stats[STAT_WEAPONS] = (1 << WP_DISRUPTOR);
-		client->ps.ammo[AMMO_POWERCELL] = 999;
-		client->ps.weapon = WP_DISRUPTOR;
-	}
-	else if (client->pers.stats.kills == 5) {
+		client->ps.zoomMode = 0;//hehh
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_FLECHETTE);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_FLECHETTE;
 	}
+	else if (client->pers.stats.kills == 5) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_STUN_BATON);
+		client->ps.weapon = WP_STUN_BATON;
+	}
 	else if (client->pers.stats.kills == 6) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_DISRUPTOR);
+		client->ps.ammo[AMMO_POWERCELL] = 999;
+		client->ps.weapon = WP_DISRUPTOR;
+	}
+	else if (client->pers.stats.kills == 7) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BOWCASTER);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_BOWCASTER;
 	}
-	else if (client->pers.stats.kills == 7) {
+	else if (client->pers.stats.kills == 8) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_DEMP2);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_DEMP2;
 	}
-	else if (client->pers.stats.kills == 8) {
+	else if (client->pers.stats.kills == 9) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_OLD);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_OLD;
 	}
-	else if (client->pers.stats.kills == 9) {
+	else if (client->pers.stats.kills == 10) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_PISTOL);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_PISTOL;
 	}
-	else if (client->pers.stats.kills == 10) {
+	else if (client->pers.stats.kills == 11) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_THERMAL);
 		client->ps.ammo[AMMO_THERMAL] = 999;
 		client->ps.weapon = WP_THERMAL;
 	}
-	else if (client->pers.stats.kills >= 11) {
+	else if (client->pers.stats.kills >= 12) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
 	}

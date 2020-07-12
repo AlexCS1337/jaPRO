@@ -4590,6 +4590,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 	switch ( bs->cur_ps.weapon )
 	{
 	case WP_BRYAR_PISTOL:
+	case WP_BRYAR_OLD:
 		return 0.5f;
 	case WP_BLASTER:
 		return 0.35f;
@@ -6534,6 +6535,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectable(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
 			}
+			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
@@ -6560,6 +6566,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1500;
+			}
+			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
@@ -6607,6 +6618,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
+			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
@@ -6630,6 +6646,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_BOWCASTER)) {
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
+			}
+			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;

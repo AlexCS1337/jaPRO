@@ -3520,69 +3520,70 @@ void GiveClientItems(gclient_t *client) {
 }
 
 void G_GiveGunGameWeapon(gclient_t* client) {
+	int score = client->pers.stats.kills - client->ps.fd.suicides;
 	//set other ammo to 0, force change to wep?
 	client->ps.stats[STAT_WEAPONS] = 0;
-	if (client->pers.stats.kills == 0) {
+	if (score <= 0) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_CONCUSSION;
 	}
-	else if (client->pers.stats.kills == 1) {
+	else if (score == 1) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_ROCKET_LAUNCHER);
 		client->ps.ammo[AMMO_ROCKETS] = 999;
 		client->ps.weapon = WP_ROCKET_LAUNCHER;
 	}
-	else if (client->pers.stats.kills == 2) {
+	else if (score == 2) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BLASTER);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BLASTER;
 	}
-	else if (client->pers.stats.kills == 3) {
+	else if (score == 3) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_REPEATER);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_REPEATER;
 	}
-	else if (client->pers.stats.kills == 4) {
+	else if (score == 4) {
 		client->ps.zoomMode = 0;//hehh
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_FLECHETTE);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_FLECHETTE;
 	}
-	else if (client->pers.stats.kills == 5) {
+	else if (score == 5) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_STUN_BATON);
 		client->ps.weapon = WP_STUN_BATON;
 	}
-	else if (client->pers.stats.kills == 6) {
+	else if (score == 6) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_DISRUPTOR);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_DISRUPTOR;
 	}
-	else if (client->pers.stats.kills == 7) {
+	else if (score == 7) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BOWCASTER);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_BOWCASTER;
 	}
-	else if (client->pers.stats.kills == 8) {
+	else if (score == 8) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_DEMP2);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_DEMP2;
 	}
-	else if (client->pers.stats.kills == 9) {
+	else if (score == 9) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_OLD);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_OLD;
 	}
-	else if (client->pers.stats.kills == 10) {
+	else if (score == 10) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_PISTOL);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_PISTOL;
 	}
-	else if (client->pers.stats.kills == 11) {
+	else if (score == 11) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_THERMAL);
 		client->ps.ammo[AMMO_THERMAL] = 999;
 		client->ps.weapon = WP_THERMAL;
 	}
-	else if (client->pers.stats.kills >= 12) {
+	else if (score >= 12) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
 	}

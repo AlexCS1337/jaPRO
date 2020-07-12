@@ -2751,7 +2751,7 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 						}
 						G_GiveGunGameWeapon(attacker->client);
 						if (attacker->client->ps.stats[STAT_HEALTH] < 100)
-							attacker->client->ps.stats[STAT_HEALTH] = 100;
+							attacker->health = attacker->client->ps.stats[STAT_HEALTH] = 100;
 					}
 				}
 

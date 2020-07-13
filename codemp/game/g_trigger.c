@@ -1548,10 +1548,6 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		return;
 	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE && player->client->ps.pm_type != PM_JETPACK) 
 		return;
-	if (!player->client->pers.stats.startTime)
-		return;
-	if (!player->client->pers.stats.coopStarted)
-		return;
 	if (player->client->sess.raceMode && g_fixTimerOOB.integer > 1 && !trap->InPVS(player->client->ps.origin, player->client->ps.origin)) { //Check if they are OOB (not in a PVS?)
 			player->client->pers.stats.startLevelTime = 0;
 			player->client->pers.stats.startTime = 0;
@@ -1563,6 +1559,11 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 	}
 
 	multi_trigger(trigger, player);
+
+	if (!player->client->pers.stats.startTime)
+		return;
+	if (!player->client->pers.stats.coopStarted)
+		return;
 
 	if (1) {
 		char styleStr[32] = { 0 }, timeStr[32] = { 0 }, playerName[MAX_NETNAME] = { 0 };

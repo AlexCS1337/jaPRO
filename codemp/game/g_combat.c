@@ -2139,7 +2139,6 @@ extern void Rancor_DropVictim( gentity_t *self );
 void ResetPlayerTimers(gentity_t *ent, qboolean print);//extern ?
 void G_AddSimpleStat(gentity_t *self, gentity_t *other, int type);
 void G_GiveGunGameWeapon(gclient_t* client);
-void Svcmd_ResetScores_f(void);
 extern qboolean g_dontFrickinCheck;
 extern qboolean g_endPDuel;
 extern qboolean g_noPDuelCheck;

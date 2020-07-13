@@ -3519,6 +3519,7 @@ void GiveClientItems(gclient_t *client) {
 	}
 }
 
+void Svcmd_ResetScores_f(void);
 void G_GiveGunGameWeapon(gclient_t* client) {
 	int score = client->pers.stats.kills - client->ps.fd.suicides;
 	//set other ammo to 0, force change to wep?

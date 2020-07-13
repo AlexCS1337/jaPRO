@@ -4670,16 +4670,72 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 	predictedSpot[2] = headlevel[2] + (movementVector[2]*x);
 
 	if (g_newBotAI.integer) {
+		float eta = 0;
+
 		if ((bs->cur_ps.weapon == WP_REPEATER) && bs->doAltAttack) { //Aim higher for the orbs
-			const float eta = (bs->frame_Enemy_Len/(1100 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
+			eta = (bs->frame_Enemy_Len/(1100 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;
 		}
 		else if ((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) { //Aim higher for the orbs
-			const float eta = (bs->frame_Enemy_Len/(10000 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
+			eta = (bs->frame_Enemy_Len/(10000 * g_projectileVelocityScale.value));
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;
 		}
+
+		if (bs->currentEnemy->client->ps.groundEntityNum == ENTITYNUM_NONE) { //In Air
+
+			if (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION))) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
+				float bulletvel = 0, drop;
+				vec3_t predictedSpotGrav;
+				trace_t tr;
+
+				if (!eta) {
+					if (bs->cur_ps.weapon == WP_BRYAR_OLD || bs->cur_ps.weapon == WP_BRYAR_PISTOL || bs->cur_ps.weapon == WP_REPEATER)
+						bulletvel = 1600;
+					else if (bs->cur_ps.weapon == WP_BLASTER)
+						bulletvel = 2300;
+					else if (bs->cur_ps.weapon == WP_BOWCASTER) //normal fire.. ew
+						bulletvel = 1300;
+					else if (bs->cur_ps.weapon == WP_DEMP2) //normal fire.. ew
+						bulletvel = 1800;
+					else if ((bs->cur_ps.weapon == WP_FLECHETTE) && (g_tweakWeapons.integer & WT_STAKE_GUN)) //normal fire.. ew
+						bulletvel = 3000;
+					else if ((bs->cur_ps.weapon == WP_FLECHETTE) && bs->doAltAttack)
+						bulletvel = 1150;
+					else if (bs->cur_ps.weapon == WP_FLECHETTE)
+						bulletvel = 3500;
+					else if (bs->cur_ps.weapon == WP_ROCKET_LAUNCHER)
+						bulletvel = 900;
+					else if (bs->cur_ps.weapon == WP_CONCUSSION)
+						bulletvel = 3000;
+					else if (bs->cur_ps.weapon == WP_THERMAL)
+						bulletvel = 900;
+
+					if (bulletvel)
+						eta = (bs->frame_Enemy_Len / (bulletvel * g_projectileVelocityScale.value));
+				}
+				if (eta) {
+
+					drop = (0.5f) * g_gravity.integer * (eta * eta);
+
+					predictedSpotGrav[0] = predictedSpot[0];
+					predictedSpotGrav[1] = predictedSpot[1];
+					predictedSpotGrav[2] = predictedSpot[2] - drop;
+
+					JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0);
+					predictedSpot[2] = tr.endpos[2];
+				}
+			}
+
+			//Get our weapon velocity.
+			//Get ETA to target
+			//Calculate how far they would drop in that duration
+			//Adjust our aim based on that
+			//Trace from thatpos (curheight) to thatpos, if its below floor, have them aim at that spot on floor.
+			//Are they affected by gravity rn (forcejump) or later
+		}
+
 
 #if 0
 		else if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //poke/wiggle
@@ -4769,8 +4825,7 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 	}
 
 
-	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && 
-	g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke
+	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke
 		vec3_t saberDiff;
 		VectorSubtract(bs->currentEnemy->client->ps.origin, g_entities[bs->client].client->saber[0].blade[0].trail.tip, saberDiff);
 		VectorAdd(saberDiff, predictedSpot, predictedSpot);
@@ -6537,18 +6592,32 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectable(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
 			}
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+				bestWeapon = WP_ROCKET_LAUNCHER;
+				bs->doAltAttack = 1;
+			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 800;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1500;
+				bs->altChargeTime = 1200;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 800;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+				bestWeapon = WP_BRYAR_PISTOL;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1200;
+			}
 		}
 		else if (distance > 350 && distance < 1100) { //Have some padding between distance tiers so we dont weaponswitch spam
 			if (distance < 900 && BotWeaponSelectableAltFire(bs, WP_REPEATER)) {
@@ -6571,14 +6640,14 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 800;
 			}
 			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1500;
+				bs->altChargeTime = 1200;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
@@ -6603,11 +6672,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
 		}
 	}
-
 
 	else if (hisWeapon == WP_ROCKET_LAUNCHER || hisWeapon == WP_REPEATER || hisWeapon == WP_CONCUSSION || hisWeapon == WP_FLECHETTE) { //Likely going to splash damage us, so dont bother trying to block with saber
 		if (distance > 1024) {
@@ -6619,17 +6687,21 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+				bestWeapon = WP_ROCKET_LAUNCHER;
+				bs->doAltAttack = 1;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 800;
 			}
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1500;
+				bs->altChargeTime = 1200;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6648,17 +6720,17 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 800;
 			}
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1500;
+				bs->altChargeTime = 1200;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) { //Most DPS!
@@ -6684,7 +6756,17 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 800;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+				bestWeapon = WP_BRYAR_PISTOL;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1200;
+			}
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -6696,8 +6778,22 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_DISRUPTOR;
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+				bestWeapon = WP_ROCKET_LAUNCHER;
+				bs->doAltAttack = 1;
+			}
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 800;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+				bestWeapon = WP_BRYAR_PISTOL;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1200;
+			}
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
 			if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
@@ -6711,8 +6807,18 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_LG) && !(g_tweakWeapons.integer & WT_STUN_HEAL)) {
 				bestWeapon = WP_STUN_BATON;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 800;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+				bestWeapon = WP_BRYAR_PISTOL;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1200;
+			}
 		}
 		else if (distance < 200) {
 			if (BotWeaponSelectable(bs, WP_REPEATER))
@@ -6736,8 +6842,18 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_STUN_BATON;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_SABER))
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+				bestWeapon = WP_BRYAR_OLD;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 800;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+				bestWeapon = WP_BRYAR_PISTOL;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1200;
+			}
 		}
 	}
 

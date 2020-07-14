@@ -1166,7 +1166,7 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 	//This has to be done like, 15k times currently.  15k x 10ms = like 4 minutes :(
 
 	//Get season rank
-	sql = "SELECT id FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC"; //assume just one per person to speed this up..
+	sql = "SELECT id FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC, average DESC"; //assume just one per person to speed this up..
 	CALL_SQLITE(prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL));
 	CALL_SQLITE(bind_text(stmt, 1, coursename, -1, SQLITE_STATIC));
 	CALL_SQLITE(bind_int(stmt, 2, style));
@@ -1193,7 +1193,7 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 
 	//can we index on duration_ms ?
 	//Get global rank - if its a season PB but not a global PB, leave global rank at 0
-	sql = "SELECT id, MIN(duration_ms) AS duration FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration ASC, end_time ASC";
+	sql = "SELECT id, MIN(duration_ms) AS duration FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration ASC, end_time ASC, average DESC";
 	CALL_SQLITE(prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL));
 	CALL_SQLITE(bind_text(stmt, 1, coursename, -1, SQLITE_STATIC));
 	CALL_SQLITE(bind_int(stmt, 2, style));
@@ -1884,7 +1884,7 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 		CALL_SQLITE(finalize(stmt));
 
 		//Get season rank
-		sql = "SELECT duration_ms FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC"; //assume just one per person to speed this up..
+		sql = "SELECT duration_ms FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC, average DESC"; //assume just one per person to speed this up..
 		CALL_SQLITE(prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL));
 		CALL_SQLITE(bind_text(stmt, 1, coursename, -1, SQLITE_STATIC));
 		CALL_SQLITE(bind_int(stmt, 2, style));
@@ -1911,7 +1911,7 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 		i = 1; //oh no no
 
 		//Get global rank, could union this with previous query maybe
-		sql = "SELECT MIN(duration_ms) FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration_ms ASC, end_time ASC";
+		sql = "SELECT MIN(duration_ms) FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration_ms ASC, end_time ASC, average DESC";
 		CALL_SQLITE(prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL));
 		CALL_SQLITE(bind_text(stmt, 1, coursename, -1, SQLITE_STATIC));
 		CALL_SQLITE(bind_int(stmt, 2, style));
@@ -5982,9 +5982,9 @@ void Cmd_DFTop10_f(gentity_t *ent) {
 		//fix by grouping by username here? and using min() so it shows right one? who knows if that will work
 		//could be cheaper by using where rank != 0 instead of min(duration_ms) but w/e
 		if (season == -1)
-			sql = "SELECT username, MIN(duration_ms) AS duration, topspeed, average, end_time FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration ASC, end_time ASC LIMIT ?, 10";
+			sql = "SELECT username, MIN(duration_ms) AS duration, topspeed, average, end_time FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration ASC, end_time ASC, average DESC LIMIT ?, 10";
 		else 
-			sql = "SELECT username, MIN(duration_ms) AS duration, topspeed, average, end_time FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? GROUP BY username ORDER BY duration ASC, end_time ASC LIMIT ?, 10";
+			sql = "SELECT username, MIN(duration_ms) AS duration, topspeed, average, end_time FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? GROUP BY username ORDER BY duration ASC, end_time ASC, average DESC LIMIT ?, 10";
 		CALL_SQLITE (prepare_v2 (db, sql, strlen (sql) + 1, & stmt, NULL));
 		CALL_SQLITE (bind_text (stmt, 1, fullCourseName, -1, SQLITE_STATIC));
 		CALL_SQLITE (bind_int (stmt, 2, style));

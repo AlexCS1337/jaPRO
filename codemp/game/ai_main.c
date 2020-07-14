@@ -4682,6 +4682,16 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 			const float drop = (0.5)*(800)*(eta*eta);
 			predictedSpot[2] += drop;
 		}
+		else if ((bs->cur_ps.weapon == WP_ROCKET_LAUNCHER) && bs->doAltAttack && (g_tweakWeapons.integer & WT_ROCKET_MORTAR)) { //Aim higher for the orbs
+			eta = (bs->frame_Enemy_Len / (1400 * g_projectileVelocityScale.value));
+			const float drop = (0.5) * (800) * (eta * eta);
+			predictedSpot[2] += drop;
+		}
+		else if ((bs->cur_ps.weapon == WP_FLECHETTE) && (g_tweakWeapons.integer & WT_STAKE_GUN)) { //Aim higher for the orbs
+			eta = (bs->frame_Enemy_Len / (3000 * g_projectileVelocityScale.value));
+			const float drop = (0.5) * (800) * (eta * eta);
+			predictedSpot[2] += drop;
+		}
 
 		if (bs->currentEnemy->client->ps.groundEntityNum == ENTITYNUM_NONE) { //In Air
 
@@ -4699,8 +4709,6 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 						bulletvel = 1300;
 					else if (bs->cur_ps.weapon == WP_DEMP2) //normal fire.. ew
 						bulletvel = 1800;
-					else if ((bs->cur_ps.weapon == WP_FLECHETTE) && (g_tweakWeapons.integer & WT_STAKE_GUN)) //normal fire.. ew
-						bulletvel = 3000;
 					else if ((bs->cur_ps.weapon == WP_FLECHETTE) && bs->doAltAttack)
 						bulletvel = 1150;
 					else if (bs->cur_ps.weapon == WP_FLECHETTE)
@@ -6606,7 +6614,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 			else if (BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
@@ -6647,7 +6655,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) {
@@ -6672,7 +6680,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -6701,7 +6709,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6730,7 +6738,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) { //Most DPS!
@@ -6766,7 +6774,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
-			else if (bs->cur_ps.stats[STAT_WEAPONS] & WP_SABER)
+			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
 	}
@@ -7430,7 +7438,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 	if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse; //Sad hack not sure why?
 
-	if (useTheForce && (level.framenum % 2) && !bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time))
+	if (useTheForce && (level.framenum % 2) && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)))
 		trap->EA_ForcePower(bs->client);
 }
 
@@ -7548,7 +7556,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 	if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse;
 
-	if (useTheForce && !bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)) {
+	if (useTheForce && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time))) {
 		trap->EA_ForcePower(bs->client);
 	}
 }

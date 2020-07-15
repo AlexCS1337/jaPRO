@@ -2050,13 +2050,13 @@ void PrintStats(int client) {
 	qboolean	showAccuracy = qtrue, showTeamPowers = qtrue, showDrain = qtrue;
 	gclient_t	*cl;
 
-	if (gametype != GT_CTF && gametype != GT_TEAM)
+	if (gametype != GT_CTF && gametype != GT_TEAM && !g_gunGame.integer)
 		return;
-	if ((g_weaponDisable.integer > (1<<WP_CONCUSSION)) && (g_startingWeapons.integer == 8))
+	if (((g_weaponDisable.integer > (1<<WP_CONCUSSION)) && (g_startingWeapons.integer == 8)) && !g_gunGame.integer)
 		showAccuracy = qfalse;
-	if ((g_forcePowerDisable.integer & (1<<FP_TEAM_HEAL)) && (g_forcePowerDisable.integer & (1<<FP_TEAM_FORCE))) //TE and TH are disabled
+	if ((((g_forcePowerDisable.integer & (1<<FP_TEAM_HEAL)) && (g_forcePowerDisable.integer & (1<<FP_TEAM_FORCE)))) || g_gunGame.integer) //TE and TH are disabled
 		showTeamPowers = qfalse;
-	if ((g_forcePowerDisable.integer & (1<<FP_DRAIN)) || !g_friendlyFire.integer) //Team Drain is disabled
+	if ((((g_forcePowerDisable.integer & (1<<FP_DRAIN)) || !g_friendlyFire.integer)) || g_gunGame.integer) //Team Drain is disabled
 		showDrain = qfalse;
 
 	Q_strncpyz(msg, "\n"S_COLOR_CYAN, sizeof(msg));

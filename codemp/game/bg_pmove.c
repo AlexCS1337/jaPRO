@@ -8125,6 +8125,21 @@ static void PM_Weapon( void )
 			return;
 		}
 	}
+	else if (pm->ps->clientNum < MAX_CLIENTS) { //Human
+		gentity_t* gent = (gentity_t*)pm_entSelf;
+
+		if (gent && gent->inuse && gent->client) {
+			if (gent->client->forcedFireMode == 2 && (pm->cmd.buttons & BUTTON_ATTACK)) {
+				pm->cmd.buttons &= ~BUTTON_ATTACK;
+				pm->cmd.buttons |= BUTTON_ALT_ATTACK;
+			}
+			else if (gent->client->forcedFireMode == 1 && (pm->cmd.buttons & BUTTON_ALT_ATTACK)) {
+				pm->cmd.buttons |= BUTTON_ATTACK;
+				pm->cmd.buttons &= ~BUTTON_ALT_ATTACK;
+			}
+		}
+
+	}
 #endif
 
 	if (!pm->ps->emplacedIndex &&

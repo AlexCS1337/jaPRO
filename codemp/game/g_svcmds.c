@@ -567,6 +567,8 @@ void Svcmd_ResetScores_f (void) {
 			ent->client->pers.stats.teamEnergizeGiven = 0;
 			ent->client->pers.stats.enemyDrainDamage = 0;
 			ent->client->pers.stats.teamDrainDamage = 0;
+			ent->client->accuracy_shots = 0;
+			ent->client->accuracy_hits = 0;
 
 			ent->client->ps.fd.suicides = 0;
 			//Cmd_ForceChange_f(ent);

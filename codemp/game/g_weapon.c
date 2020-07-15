@@ -5675,10 +5675,12 @@ int BG_EmplacedView(vec3_t baseAngles, vec3_t angles, float *newYaw, float const
 void FireWeapon( gentity_t *ent, qboolean altFire ) {
 	int seed = ent->client->pers.cmd.serverTime % 10000;// % 256; //JAPRO seed
 
-	if (ent->client && ent->client->pers.amfreeze)
-		return;
-	if (ent->client && ent->client->sess.raceMode && !((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_JETPACK) || (ent->client->sess.movementStyle == MV_COOP_JKA)))
-		return;	
+	if (ent->client) {
+		if (ent->client->pers.amfreeze)
+			return;
+		if (ent->client->sess.raceMode && !((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_JETPACK) || (ent->client->sess.movementStyle == MV_COOP_JKA)))
+			return;
+	}
 
 	// track shots taken for accuracy tracking.  Grapple is not a weapon and gauntet is just not tracked
 	if( ent->s.weapon != WP_SABER && (ent->s.weapon != WP_STUN_BATON || ((g_tweakWeapons.integer && WT_STUN_LG) || (g_tweakWeapons.integer && WT_STUN_SHOCKLANCE))) && ent->s.weapon != WP_MELEE ) 

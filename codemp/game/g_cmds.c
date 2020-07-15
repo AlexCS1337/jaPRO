@@ -946,21 +946,26 @@ void G_Kill( gentity_t *ent ) {
 
 	if (ent->client && ent->client->sess.raceMode)
 		DeletePlayerProjectiles(ent); //Not sure how ppl could realisticly abuse this.. but might as well add it
-
-	if ((level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL) &&
-		level.numPlayingClients > 1 && !level.warmupTime)
-	{
-		if (!g_allowDuelSuicide.integer)
+	else {
+		if ((level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL) &&
+			level.numPlayingClients > 1 && !level.warmupTime)
 		{
-			trap->SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")) );
-			return;
+			if (!g_allowDuelSuicide.integer)
+			{
+				trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
+				return;
+			}
 		}
-	}
-	else if (level.gametype >= GT_TEAM && level.numPlayingClients > 1 && !level.warmupTime)
-	{
-		if (!g_allowTeamSuicide.integer)
+		else if (level.gametype >= GT_TEAM && level.numPlayingClients > 1 && !level.warmupTime)
 		{
-			trap->SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")) );
+			if (!g_allowTeamSuicide.integer)
+			{
+				trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
+				return;
+			}
+		}
+		else if (g_gunGame.integer > 1 && level.numPlayingClients > 1 && !level.warmupTime) {
+			trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
 			return;
 		}
 	}
@@ -5892,8 +5897,8 @@ static void Cmd_Jetpack_f(gentity_t *ent)
 void PrintStats(int client);
 static void Cmd_PrintStats_f(gentity_t *ent)
 {
-	if (level.gametype != GT_CTF && level.gametype != GT_TEAM) {
-		trap->SendServerCommand( ent-g_entities, "print \"Command only allowed in TFFA or CTF. (printStats).\n\"" );
+	if (level.gametype != GT_CTF && level.gametype != GT_TEAM && !g_gunGame.integer) {
+		trap->SendServerCommand( ent-g_entities, "print \"Command only allowed in TFFA or CTF or Gun Game. (printStats).\n\"" );
 		return;
 	}
 	//Uhh.. any restrictions on this? idk.. floodprotect?

@@ -3520,81 +3520,120 @@ void GiveClientItems(gclient_t *client) {
 }
 
 void Svcmd_ResetScores_f(void);
+void PrintStats(int client);
 void G_GiveGunGameWeapon(gclient_t* client) {
 	int score = client->pers.stats.kills - client->ps.fd.suicides;
 	//set other ammo to 0, force change to wep?
 	client->ps.stats[STAT_WEAPONS] = 0;
+	client->forcedFireMode = 0;
+
+	//how is it less than 0 on end? should be kills = 0, suicides = 0.  is one not getting reset?
 	if (score <= 0) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_CONCUSSION;
+		client->forcedFireMode = 1;
 	}
 	else if (score == 1) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_ROCKET_LAUNCHER);
 		client->ps.ammo[AMMO_ROCKETS] = 999;
 		client->ps.weapon = WP_ROCKET_LAUNCHER;
+		client->forcedFireMode = 1;
 	}
 	else if (score == 2) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_ROCKET_LAUNCHER);
+		client->ps.ammo[AMMO_ROCKETS] = 999;
+		client->ps.weapon = WP_ROCKET_LAUNCHER;
+		client->forcedFireMode = 2;
+	}
+	else if (score == 3) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BLASTER);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BLASTER;
 	}
-	else if (score == 3) {
+	else if (score == 4) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_REPEATER);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_REPEATER;
+		client->forcedFireMode = 2;
 	}
-	else if (score == 4) {
-		client->ps.zoomMode = 0;//hehh
+	else if (score == 5) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_REPEATER);
+		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+		client->ps.weapon = WP_REPEATER;
+		client->forcedFireMode = 1;
+	}
+	else if (score == 6) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_FLECHETTE);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_FLECHETTE;
 	}
-	else if (score == 5) {
+	else if (score == 7 ) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
+		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+		client->ps.weapon = WP_CONCUSSION;
+		client->forcedFireMode = 2;
+	}
+	else if (score == 8) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_STUN_BATON);
 		client->ps.weapon = WP_STUN_BATON;
 	}
-	else if (score == 6) {
+	else if (score == 9) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_DISRUPTOR);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_DISRUPTOR;
 	}
-	else if (score == 7) {
+	else if (score == 10) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BOWCASTER);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_BOWCASTER;
 	}
-	else if (score == 8) {
+	else if (score == 11) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_DEMP2);
 		client->ps.ammo[AMMO_POWERCELL] = 999;
 		client->ps.weapon = WP_DEMP2;
+		client->forcedFireMode = 1;
 	}
-	else if (score == 9) {
+	else if (score == 12) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_DEMP2);
+		client->ps.ammo[AMMO_POWERCELL] = 999;
+		client->ps.weapon = WP_DEMP2;
+		client->forcedFireMode = 2;
+	}
+	else if (score == 13) {
+		client->ps.stats[STAT_WEAPONS] = (1 << WP_THERMAL);
+		client->ps.ammo[AMMO_THERMAL] = 999;
+		client->ps.weapon = WP_THERMAL;
+		client->forcedFireMode = 2;
+	}
+	else if (score == 14) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_OLD);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_OLD;
 	}
-	else if (score == 10) {
+	else if (score == 15) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_BRYAR_PISTOL);
 		client->ps.ammo[AMMO_BLASTER] = 999;
 		client->ps.weapon = WP_BRYAR_PISTOL;
 	}
-	else if (score == 11) {
+	else if (score == 16) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_THERMAL);
 		client->ps.ammo[AMMO_THERMAL] = 999;
 		client->ps.weapon = WP_THERMAL;
+		client->forcedFireMode = 1;
 	}
-	else if (score == 12) {
+	else if (score == 17) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
 	}
-	else if (score >= 13) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
+	else if (score >= 18) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
 		int i;
 		gentity_t* ent;
 
-		Svcmd_ResetScores_f();
 		trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
 		trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
+		PrintStats(-1);//JAPRO STATS
+		Svcmd_ResetScores_f();
 
 		for (i = 0; i < level.numConnectedClients; i++) {
 			ent = &g_entities[level.sortedClients[i]];
@@ -3606,6 +3645,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		}
 		//We reset for everyone though?
 	}
+	client->ps.zoomMode = 0;//hehh
 }
 
 void GiveClientWeapons(gclient_t *client) {

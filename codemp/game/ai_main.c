@@ -4605,7 +4605,10 @@ float BotWeaponCanLead(bot_state_t *bs)
 	case WP_ROCKET_LAUNCHER:
 		return 0.9f;
 	case WP_CONCUSSION:
-		return 0.2f;
+		if (bs->doAltAttack)
+			return 0.03f;
+		else
+			return 0.2f;
 	case WP_FLECHETTE:
 		return 0.3f;
 	case WP_DISRUPTOR:
@@ -6581,6 +6584,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 	const int /*hisHealth = bs->currentEnemy->health,*/ distance = bs->frame_Enemy_Len;
 	int hisWeapon = WP_SABER;
 	int bestWeapon = bs->cur_ps.weapon;
+	const int forcedFireMode = level.clients[bs->client].forcedFireMode;
 	
 	bs->doAltAttack = 0;
 
@@ -6593,14 +6597,14 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 		if (distance > 1300) {
 			if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
-			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2)) {
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
 			}
-			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO) && forcedFireMode != 1) {
 				bestWeapon = WP_ROCKET_LAUNCHER;
 				bs->doAltAttack = 1;
 			}
@@ -6628,7 +6632,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 		}
 		else if (distance > 350 && distance < 1100) { //Have some padding between distance tiers so we dont weaponswitch spam
-			if (distance < 900 && BotWeaponSelectableAltFire(bs, WP_REPEATER)) {
+			if (distance < 900 && BotWeaponSelectableAltFire(bs, WP_REPEATER) && forcedFireMode != 1) {
 				bestWeapon = WP_REPEATER;
 				bs->doAltAttack = 1;
 			}
@@ -6664,13 +6668,13 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				if (!(g_tweakWeapons.integer & WT_STAKE_GUN))
 					bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER))
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && forcedFireMode != 2)
 				bestWeapon = WP_ROCKET_LAUNCHER;
 			else if (BotWeaponSelectableAltFire(bs, WP_REPEATER)) {
 				bestWeapon = WP_REPEATER;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_CONCUSSION))
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 2)
 				bestWeapon = WP_CONCUSSION;
 			else if (BotWeaponSelectableAltFire(bs, WP_STUN_BATON) && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) {
 				bestWeapon = WP_STUN_BATON;
@@ -6689,13 +6693,13 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 		if (distance > 1024) {
 			if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
-			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2)) {
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO) && forcedFireMode != 1) {
 				bestWeapon = WP_ROCKET_LAUNCHER;
 				bs->doAltAttack = 1;
 			}
@@ -6717,7 +6721,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_REPEATER))
+			else if (BotWeaponSelectable(bs, WP_REPEATER) && forcedFireMode != 2)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
@@ -6742,7 +6746,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_SABER;
 		}
 		else if (distance < 200) { //Most DPS!
-			if (BotWeaponSelectable(bs, WP_REPEATER))
+			if (BotWeaponSelectable(bs, WP_REPEATER) && forcedFireMode != 2)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
@@ -6752,7 +6756,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_FLECHETTE;
 			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER))
 				bestWeapon = WP_ROCKET_LAUNCHER;
-			else if (BotWeaponSelectable(bs, WP_CONCUSSION))
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 2)
 				bestWeapon = WP_CONCUSSION;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
@@ -6786,7 +6790,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_DISRUPTOR;
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
-			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO)) {
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && (g_tweakWeapons.integer & WT_INFINITE_AMMO) && forcedFireMode != 1) {
 				bestWeapon = WP_ROCKET_LAUNCHER;
 				bs->doAltAttack = 1;
 			}
@@ -6808,7 +6812,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (BotWeaponSelectable(bs, WP_REPEATER))
+			else if (BotWeaponSelectable(bs, WP_REPEATER) && forcedFireMode != 2)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;
@@ -6829,7 +6833,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 		}
 		else if (distance < 200) {
-			if (BotWeaponSelectable(bs, WP_REPEATER))
+			if (BotWeaponSelectable(bs, WP_REPEATER) && forcedFireMode != 2)
 				bestWeapon = WP_REPEATER;
 			else if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
@@ -6837,9 +6841,9 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 			else if (BotWeaponSelectable(bs, WP_FLECHETTE))
 				bestWeapon = WP_FLECHETTE;
-			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER))
+			else if (BotWeaponSelectable(bs, WP_ROCKET_LAUNCHER) && forcedFireMode != 2)
 				bestWeapon = WP_ROCKET_LAUNCHER;
-			else if (BotWeaponSelectable(bs, WP_CONCUSSION))
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 2)
 				bestWeapon = WP_CONCUSSION;
 			else if (BotWeaponSelectable(bs, WP_DISRUPTOR))
 				bestWeapon = WP_DISRUPTOR;

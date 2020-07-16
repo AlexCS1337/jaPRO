@@ -1210,8 +1210,9 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 
 	if (player->client->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
 		return qfalse;
-	if (((style == MV_RJQ3) || (style == MV_RJCPM)) && g_knockback.value != 1000.0f)
+	if ((style == MV_RJQ3 || style == MV_RJCPM) && g_knockback.value != 1000.0f)
 		return qfalse;
+
 	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA) { //Ignore forcejump restrictions if in onlybhop movement modes
 		if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
 			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
@@ -1766,6 +1767,20 @@ void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//J
 			trap->SendServerCommand(player - g_entities, va("print \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
 		else if (player->client->pers.showChatCP)
 			trap->SendServerCommand( player-g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+
+		if (player->client->sess.movementStyle >= MV_COOP_JKA && player->client->ps.duelInProgress && player->client->pers.stats.coopStarted)
+		{ //send checkpoint to coop partner
+			gentity_t *partner = &g_entities[player->client->ps.duelIndex];
+			if (partner && partner->inuse && partner->client && (level.time - partner->client->pers.stats.lastCheckpointTime > 1000))
+			{
+				if (partner->client->pers.showCenterCP)
+					trap->SendServerCommand( partner - g_entities, va("cp \"^3%.3fs^5, avg ^3%i^5u, max ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+				if (partner->client->pers.showConsoleCP)
+					trap->SendServerCommand(partner - g_entities, va("print \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+				else if (partner->client->pers.showChatCP)
+					trap->SendServerCommand( partner - g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+			}
+		}
 		
 		for (i=0; i<MAX_CLIENTS; i++) {//Also print to anyone spectating them..
 			if (!g_entities[i].inuse)

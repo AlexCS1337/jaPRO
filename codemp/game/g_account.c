@@ -3311,7 +3311,7 @@ void Cmd_ACRegister_f( gentity_t *ent ) { //Temporary, until global shit is done
 	if (!username[0]) {
 		return;
 	}
-	if (!Q_stricmp(username, "none") || !Q_stricmp(username, "null") || !Q_stricmp(username, "0")) {
+	if (!Q_stricmp(username, "none") || !Q_stricmp(username, "null") || !Q_stricmp(username, "0") || !Q_stricmp(username, "hidden")) {
 		return;
 	}
 	if (!Q_stricmp(username, password)) {

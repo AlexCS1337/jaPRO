@@ -946,29 +946,6 @@ void G_Kill( gentity_t *ent ) {
 
 	if (ent->client && ent->client->sess.raceMode)
 		DeletePlayerProjectiles(ent); //Not sure how ppl could realisticly abuse this.. but might as well add it
-	else {
-		if ((level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL) &&
-			level.numPlayingClients > 1 && !level.warmupTime)
-		{
-			if (!g_allowDuelSuicide.integer)
-			{
-				trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
-				return;
-			}
-		}
-		else if (level.gametype >= GT_TEAM && level.numPlayingClients > 1 && !level.warmupTime)
-		{
-			if (!g_allowTeamSuicide.integer)
-			{
-				trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
-				return;
-			}
-		}
-		else if (g_gunGame.integer > 1 && level.numPlayingClients > 1 && !level.warmupTime) {
-			trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
-			return;
-		}
-	}
 
 	ent->flags &= ~FL_GODMODE;
 	ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
@@ -981,6 +958,28 @@ Cmd_Kill_f
 =================
 */
 void Cmd_Kill_f( gentity_t *ent ) {
+	if ((level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL) &&
+		level.numPlayingClients > 1 && !level.warmupTime)
+	{
+		if (!g_allowDuelSuicide.integer)
+		{
+			trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
+			return;
+		}
+	}
+	else if (level.gametype >= GT_TEAM && level.numPlayingClients > 1 && !level.warmupTime)
+	{
+		if (!g_allowTeamSuicide.integer)
+		{
+			trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
+			return;
+		}
+	}
+	else if (g_gunGame.integer > 1 && level.numPlayingClients > 1 && !level.warmupTime) {
+		trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
+		return;
+	}
+
 	G_Kill( ent );
 }
 
@@ -7477,6 +7476,12 @@ void Cmd_Race_f(gentity_t *ent)
 		G_Kill( ent ); //stop abuse
 		ent->client->ps.persistant[PERS_SCORE] = 0;
 		ent->client->ps.persistant[PERS_KILLED] = 0;
+		ent->client->pers.stats.kills = 0;
+		ent->client->pers.stats.damageGiven = 0;
+		ent->client->pers.stats.damageTaken = 0;
+		ent->client->accuracy_shots = 0;
+		ent->client->accuracy_hits = 0;
+		ent->client->ps.fd.suicides = 0;
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 	}
 }

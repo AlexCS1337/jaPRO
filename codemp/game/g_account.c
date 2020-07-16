@@ -1524,17 +1524,19 @@ void PrintRaceTime(char *username, char *playername, char *message, char *style,
 
 	//Com_Printf("SOldrank %i SNewrank %i GOldrank %i GNewrank %i Addscore %.1f\n", season_oldRank, season_newRank, global_oldRank, global_newRank, addedScore);
 
-	if (global_newRank == 1) {//WR, Play the sound
-		//if (awesomenoise)
-			//PlayActualGlobalSound(awesomenoise); //Only for simple PB not WR i guess..
-		//else
+	if (topspeed || average) { //weird hack to not play double sound coop
+		if (global_newRank == 1) {//WR, Play the sound
+			//if (awesomenoise)
+				//PlayActualGlobalSound(awesomenoise); //Only for simple PB not WR i guess..
+			//else
 			PlayActualGlobalSound(G_SoundIndex("sound/chars/rosh_boss/misc/victory3"));
-	}
-	else if (global_newRank > 0) {//PB
-		if (awesomenoise)
-			PlayActualGlobalSound(awesomenoise);
-		else if (awesomenoise != -1)
-			PlayActualGlobalSound(G_SoundIndex("sound/chars/rosh/misc/taunt1"));
+		}
+		else if (global_newRank > 0) {//PB
+			if (awesomenoise)
+				PlayActualGlobalSound(awesomenoise);
+			else if (awesomenoise != -1)
+				PlayActualGlobalSound(G_SoundIndex("sound/chars/rosh/misc/taunt1"));
+		}
 	}
 
 	nameColor = 7 - (clientNum % 8);//sad hack

@@ -693,7 +693,6 @@ void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		ent->client->ps.powerups[PW_FORCE_BOON] = 0;
 		ent->client->pers.haste = qfalse;
 		if (ent->health > 0) {
-			ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
 			ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 			ent->client->ps.stats[STAT_ARMOR] = 25;
 		}
@@ -754,6 +753,7 @@ void QINLINE ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 void QINLINE ResetPlayerTimers(gentity_t *ent, qboolean print)
 {
 	ResetSpecificPlayerTimers(ent, print);
+	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
 
 	if (ent->client->ps.duelInProgress && ent->client->ps.duelIndex != ENTITYNUM_NONE) {
 		gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];

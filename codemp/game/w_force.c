@@ -1682,7 +1682,12 @@ void ForceRage( gentity_t *self )
 
 	if (self->client->ps.fd.forceRageRecoveryTime >= level.time)
 	{
-		return;
+		if (self->client->sess.raceMode && !self->client->pers.stats.startTime) {
+			//remove rage recovery timer if they are in racemode and havn't started course yet?
+		}
+		else {
+			return;
+		}
 	}
 
 	if (self->health < 10)

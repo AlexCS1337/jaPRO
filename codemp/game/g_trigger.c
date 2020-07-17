@@ -1453,7 +1453,6 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	player->client->pers.stats.topSpeed = 0;
 	player->client->pers.stats.displacement = 0;
 	player->client->pers.stats.displacementSamples = 0;
-	player->client->pers.stats.coopStarted = qtrue;
 
 	if (player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) { //Reset their telemark on map start if this is the case
 		player->client->pers.telemarkOrigin[0] = 0;
@@ -1481,6 +1480,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 
 		//If racemode and _coop, adjust timer for their partner if needed
 		//If partner already has a dueltime, set our dueltime and (starttime? to that)
+		player->client->pers.stats.coopStarted = qtrue;
 		if (player->client->ps.duelInProgress) {
 			if (player->client->ps.duelIndex != ENTITYNUM_NONE) {
 				gentity_t* duelAgainst = &g_entities[player->client->ps.duelIndex];
@@ -1489,6 +1489,13 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 				//If we have a timer and our partner does, reset both?
 
 				if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
+					duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+					duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
+					duelAgainst->client->pers.keepDemo = qfalse;
+					duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+
+
+#if 0
 					if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
 						duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
 						duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
@@ -1514,6 +1521,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 							player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
 						*/
 					}
+#endif
 				}
 			}
 		}
@@ -1768,7 +1776,7 @@ void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//J
 		else if (player->client->pers.showChatCP)
 			trap->SendServerCommand( player-g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
 
-		if (player->client->sess.movementStyle >= MV_COOP_JKA && player->client->ps.duelInProgress && player->client->pers.stats.coopStarted)
+		if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress && player->client->pers.stats.coopStarted)
 		{ //send checkpoint to coop partner
 			gentity_t *partner = &g_entities[player->client->ps.duelIndex];
 			if (partner && partner->inuse && partner->client && (level.time - partner->client->pers.stats.lastCheckpointTime > 1000))

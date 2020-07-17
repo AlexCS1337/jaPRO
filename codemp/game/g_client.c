@@ -3633,9 +3633,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
 		trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
 		PrintStats(-1);//JAPRO STATS
-		Svcmd_ResetScores_f();
-
-		for (i = 0; i < level.numConnectedClients; i++) {
+		for (i = 0; i < level.numConnectedClients; i++) { //Kill every1? or every1 but me? or just reset weps? 
 			ent = &g_entities[level.sortedClients[i]];
 			if (ent->inuse && ent->client && !ent->client->sess.raceMode) {
 				ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
@@ -3643,6 +3641,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 				ent->client->ps.weapon = WP_CONCUSSION;
 			}
 		}
+		Svcmd_ResetScores_f();
 		//We reset for everyone though?
 	}
 	client->ps.zoomMode = 0;//hehh

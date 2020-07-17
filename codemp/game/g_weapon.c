@@ -3941,7 +3941,7 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 	qboolean	hitDodged = qfalse;
 	vec3_t shot_mins, shot_maxs;
 	int			i;
-	const int   shove = -400 * g_selfDamageScale.value; //this seems like a dumb idea though?
+	int   shove = -200; //this seems like a dumb idea though?
 	qboolean	ghoul2 = qfalse;
 
 //[JAPRO - Serverside - Weapons - Tweak weapons Buff Conc alt - Start]
@@ -3954,6 +3954,9 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 
 	//Shove us backwards for half a second
 	//VectorMA( ent->client->ps.velocity, -200, forward, ent->client->ps.velocity );
+	if (!ent->client->sess.raceMode)
+		shove = -400 * g_selfDamageScale.value;
+
 	if (shove) {
 		VectorMA( ent->client->ps.velocity, shove, forward, ent->client->ps.velocity );
 		ent->client->ps.groundEntityNum = ENTITYNUM_NONE;

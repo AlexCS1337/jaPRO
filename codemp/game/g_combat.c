@@ -5049,21 +5049,24 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			}
 
 			if (targ->client && targ->client->sess.raceMode) {
-				VectorScale(dir, (g_knockback.value* (float)knockback / mass), kvel); //hardcode g_knockback after tests
+				VectorScale(dir, (500 * (float)knockback / mass), kvel); //hardcode g_knockback after tests
 			}
 			else {
 				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
 			}
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - Start]
-		else if ((g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))
+		else if ((!targ->client || !targ->client->sess.raceMode) && (g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))
 		{
 			VectorScale(dir, 0.01 * g_knockback.value * (float)knockback / mass, kvel);
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - End]
 		else
 		{
-			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
+			if (targ->client && targ->client->sess.raceMode)
+				VectorScale(dir, 1000 * (float)knockback / mass, kvel);
+			else
+				VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
 		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity); //wallbug?
 

@@ -5058,8 +5058,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				}
 				saberKnockbackScale = 1.0f;
 			}
-
-			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*saberKnockbackScale, kvel);
+			else {
+				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
+			}
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - Start]
 		else if ((g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))

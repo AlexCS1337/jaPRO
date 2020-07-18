@@ -5049,6 +5049,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			}
 
 			if (targ->client && targ->client->sess.raceMode) {
+#if 0//dumb
 				const float xyvel = sqrtf(targ->client->ps.velocity[0] * targ->client->ps.velocity[0] + targ->client->ps.velocity[1] * targ->client->ps.velocity[1]) * 2;
 
 				//Com_Printf("%i xyvel speed %f\n", targ->client->ps.clientNum, xyvel);
@@ -5056,6 +5057,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 					trap->SendServerCommand(attacker - g_entities, va("print \"kb capped at %.0f %i\n\"", xyvel, knockback));
 					return;
 				}
+#endif
 				saberKnockbackScale = 1.0f;
 			}
 

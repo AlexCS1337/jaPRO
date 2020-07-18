@@ -4837,6 +4837,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 			{ //apply the damage immediately, this will call G_Damage for us (this matches 1.02's setup)
 				if (self->client->ps.saberAttackWound < level.time) {
 					WP_SaberApplyDamage(self);
+					self->client->ps.saberAttackWound = level.time + 100;
 				}
 				WP_SaberClearDamage();
 			}

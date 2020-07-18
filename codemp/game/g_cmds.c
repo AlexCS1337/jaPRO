@@ -975,7 +975,7 @@ void Cmd_Kill_f( gentity_t *ent ) {
 			return;
 		}
 	}
-	else if (g_gunGame.integer > 1 && level.numPlayingClients > 1 && !level.warmupTime) {
+	else if (ent->client && !ent->client->sess.raceMode && level.numPlayingClients > 1 && !level.warmupTime && g_gunGame.integer > 1) {
 		trap->SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStringEdString("MP_SVGAME", "ATTEMPTDUELKILL")));
 		return;
 	}

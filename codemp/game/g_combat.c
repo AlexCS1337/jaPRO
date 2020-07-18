@@ -5004,7 +5004,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 		mass = 200;
 
-		if (mod == MOD_SABER && !(targ->client && targ->client->sess.raceMode))
+		if (mod == MOD_SABER)
 		{
 			float saberKnockbackScale = g_saberDmgVelocityScale.value;
 			if ( (dflags&DAMAGE_SABER_KNOCKBACK1)
@@ -5048,6 +5048,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				}
 			}
 
+			if (targ->client && targ->client->sess.raceMode) {
+				saberKnockbackScale = 1.0f;
+				if (VectorLength(targ->client->ps.velocity) >= 800)
+					return;
+			}
+
 			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*saberKnockbackScale, kvel);
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - Start]
@@ -5058,10 +5064,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - End]
 		else
 		{
-			if (targ->client && targ->client->sess.raceMode)
-				VectorScale(dir, 0.5f*g_knockback.value * (float)knockback / mass, kvel); //hardcode at 500
-			else
-				VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
+			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
 		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity); //wallbug?
 

@@ -4712,7 +4712,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
 		if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) {
-			if (mod != MOD_BLASTER && mod != MOD_SABER)
+			if (mod != MOD_BLASTER)
 				return;
 		}
 		else if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
@@ -4997,15 +4997,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		knockback = 0;
 	}
 
-	if (inflictor->client && targ->client &&
-		inflictor->client->sess.raceMode && inflictor->client->sess.movementStyle >= MV_COOP_JKA &&
-		targ->client->sess.raceMode && targ->client->sess.raceMode >= MV_COOP_JKA) {
-		if (!(dflags & DAMAGE_SABER_KNOCKBACK1)) {
-			dflags |= DAMAGE_SABER_KNOCKBACK1;
-		}
-		knockback = 5;
-	}
-
 	// figure momentum add, even if the damage won't be taken
 	if ( knockback && targ->client ) {
 		vec3_t	kvel;
@@ -5013,7 +5004,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 		mass = 200;
 
-		if (mod == MOD_SABER)
+		if (mod == MOD_SABER && !(targ->client && targ->client->sess.raceMode))
 		{
 			float saberKnockbackScale = g_saberDmgVelocityScale.value;
 			if ( (dflags&DAMAGE_SABER_KNOCKBACK1)
@@ -5054,54 +5045,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 							saberKnockbackScale *= attacker->client->saber[1].knockbackScale2;
 						}
 					}
-				}
-			}
-
-			if (inflictor->client && targ->client &&
-				inflictor->client->sess.raceMode && inflictor->client->sess.movementStyle >= MV_COOP_JKA &&
-				targ->client->sess.raceMode && targ->client->sess.movementStyle >= MV_COOP_JKA)
-			{ //co-op saber knockback - accurately emulates 1.02 damage system
-				saberKnockbackScale = 1.0f;
-
-				if (inflictor->client->ps.duelInProgress && targ->client->ps.duelInProgress &&
-					inflictor->client->ps.duelIndex == inflictor->client->ps.duelIndex)
-				{
-					int dmg = 5;
-
-					if (BG_SaberInAttack(inflictor->client->ps.saberMove) && inflictor->client->ps.saberAttackWound < level.time)
-					{
-						dmg = 35; //SABER_HITDAMAGE;//*self->client->ps.fd.saberAnimLevel;
-
-						if (inflictor->client->ps.fd.saberAnimLevel >= SS_STRONG) {
-							dmg = 100;
-						}
-						else if (inflictor->client->ps.fd.saberAnimLevel == SS_MEDIUM || inflictor->client->ps.fd.saberAnimLevel == SS_STAFF || inflictor->client->ps.fd.saberAnimLevel == SS_DUAL) {
-							dmg = 60;
-						}
-					}
-
-					switch (inflictor->client->ps.saberMove)
-					{ //do extra damage for special unblockables
-						default: break;
-						case LS_A_BACK:
-						case LS_A_BACK_CR:
-						case LS_A_BACKSTAB:
-							dmg += 40;
-							break;
-						case LS_A_JUMP_T__B_:
-							dmg += 60; //20; //could fallthru here
-							break;
-					}
-
-					if (g_locationBasedDamage.integer)
-						G_LocationBasedDamageModifier(targ, point, mod, dflags, &dmg);
-
-					damage = dmg;
-					knockback = dmg;
-
-					//maybe we need to recalculate the dir? vert swings don't give as much height as they would in JK2..
-					//VectorSubtract(point, targ->client->ps.origin, dir);
-					//vectoangles(dir, dir);
 				}
 			}
 
@@ -5171,6 +5114,15 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			targ->client->ps.otherKillerDebounceTime = level.time + 25000;
 		}
 //JAPRO - Serverside - Fix Kill credit - End
+	}
+
+	if (targ->client && targ->client->sess.raceMode && mod == MOD_SABER)
+	{ //add the shield effect and get out here (stops pain spam)
+		gentity_t *evEnt = G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT);
+		evEnt->s.otherEntityNum = targ->s.number;
+		evEnt->s.eventParm = DirToByte(dir);
+		evEnt->s.time2 = 100;
+		return;
 	}
 
 	if ( (g_jediVmerc.integer || level.gametype == GT_SIEGE)

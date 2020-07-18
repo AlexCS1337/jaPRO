@@ -3805,8 +3805,13 @@ static float saberHitFraction = 1.0f;
 //This is a large function. I feel sort of bad inlining it. But it does get called tons of times per frame.
 qboolean BG_SuperBreakWinAnim( int anim );
 
+#define JK2_DMGSYSTEM(ent) ((qboolean)(g_tweakSaber.integer & ST_JK2_DMGSYSTEM) || (ent->client && ent->client->sess.raceMode))
 static QINLINE int SaberSPStyle(gentity_t *self)
 {
+	if (JK2_DMGSYSTEM(self)) {
+		return 0;
+	}
+
 	if (self->client && self->client->ps.duelInProgress) {
 		if (dueltypes[self->client->ps.clientNum] == 0)
 			return g_saberDuelSPDamage.integer; //NF duel gives us this
@@ -3854,6 +3859,8 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 	qboolean otherUnblockable = qfalse;
 	qboolean tryDeflectAgain = qfalse;
 
+	const qboolean jk2Damage = JK2_DMGSYSTEM(self);
+
 	gentity_t *otherOwner;
 
 	if (BG_SabersOff( &self->client->ps ))
@@ -3871,7 +3878,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 		VectorClear(saberTrMins);
 		VectorClear(saberTrMaxs);
 	}
-	else if (d_saberGhoul2Collision.integer)
+	else if (d_saberGhoul2Collision.integer && !jk2Damage)
 	{
 		if ( SaberSPStyle(self) )
 		{//SP-size saber damage traces
@@ -4253,25 +4260,25 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 			else if (self->client->ps.fd.saberAnimLevel == SS_STRONG)//Red Style 
 			{
 				if (self->client->ps.saberMove == LS_A_T2B) { //Red Vert
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 100*g_redDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 30*g_redDamageScale.value, 70*g_redDamageScale.value, 0.65f);
 				}
 				else if (self->client->ps.saberMove == LS_A_BACK) {//Red Backslash
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 120*g_backslashDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 30*g_backslashDamageScale.value, 0.5f);
 				}
 				else if (self->client->ps.saberMove == LS_A_BACK_CR) { //Red DBS
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 140*g_backslashDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 40*g_backslashDamageScale.value, 0.5f);
 				}
 				else if (self->client->ps.saberMove == LS_A_JUMP_T__B_) {//Red DFA
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 120*g_redDFADamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 70*g_redDFADamageScale.value, 0.65f);
@@ -4279,7 +4286,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 				else if (self->client->ps.saberMove == LS_A3_SPECIAL)
 					dmg = 20*g_redDamageScale.value;
 				else {//Regular swing
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 100*g_redDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 30*g_redDamageScale.value, 85*g_redDamageScale.value, 0.65f);
@@ -4288,19 +4295,19 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 			else if (self->client->ps.fd.saberAnimLevel == SS_MEDIUM)//Yellow Style
 			{
 				if (self->client->ps.saberMove == LS_A_FLIP_STAB || self->client->ps.saberMove == LS_A_FLIP_SLASH) { //Yellow DFA and something else?
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 60*g_yellowDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 50*g_yellowDamageScale.value, 0.5f);
 				}
 				else if (self->client->ps.saberMove == LS_A_BACK) { //Yellow Backslash
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 140*g_backslashDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 30*g_backslashDamageScale.value, 0.5f);
 				}
 				else if (self->client->ps.saberMove == LS_A_BACK_CR) {//Yellow DBS
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 140*g_backslashDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 40*g_backslashDamageScale.value, 0.5f);
@@ -4322,7 +4329,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 				else if (self->client->ps.saberMove >= LS_KICK_F_AIR && self->client->ps.saberMove <= LS_KICK_L_AIR)
 					dmg = 55;
 				else if (self->client->ps.saberMove == LS_A_T2B) {//now what is this
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 60*g_yellowDamageScale.value;
 					else
 						dmg = 30*g_yellowDamageScale.value;
@@ -4330,7 +4337,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 				else if (self->client->ps.saberMove == LS_A2_SPECIAL)
 					dmg = 20*g_yellowDamageScale.value;
 				else {//Normal yellow swing
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 60*g_yellowDamageScale.value;
 					else
 						dmg = 40*g_yellowDamageScale.value;
@@ -4339,13 +4346,13 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 			else if (self->client->ps.fd.saberAnimLevel == SS_FAST)//Blue Style
 			{
 				if (self->client->ps.saberMove == LS_A_LUNGE) {//Blue Lunge
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 40*g_blueDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 20*g_blueDamageScale.value, 40*g_blueDamageScale.value, 0.3f);
 				}
 				else if (self->client->ps.saberMove == LS_A_BACKSTAB) { //Blue Backstab
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 25*g_blueDamageScale.value;
 					else
 						dmg = G_GetAttackDamage(self, 2, 25*g_blueDamageScale.value, 0.5f);
@@ -4363,7 +4370,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 				else if (self->client->ps.saberMove == LS_A2_SPECIAL)
 					dmg = 20*g_blueDamageScale.value;
 				else {//Normal blue swing
-					if (g_tweakSaber.integer & ST_JK2_DMGSYSTEM)
+					if (jk2Damage)
 						dmg = 20*g_blueDamageScale.value;
 					else
 						dmg = 10*g_blueDamageScale.value;//was 35
@@ -4428,7 +4435,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 		unblockable = qtrue;
 		self->client->ps.saberBlocked = 0;
 
-		if (!SaberSPStyle(self) && !inBackAttack && !(g_tweakSaber.integer & ST_JK2_DMGSYSTEM))
+		if (!SaberSPStyle(self) && !inBackAttack && !jk2Damage)
 		{
 			if (self->client->ps.saberMove == LS_A_JUMP_T__B_)
 			{ //do extra damage for special unblockables
@@ -4677,7 +4684,7 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 
 		didHit = qtrue;
 
-		if ( !SaberSPStyle(self)//let's trying making blocks have to be blocked by a saber
+		if (!SaberSPStyle(self)//let's trying making blocks have to be blocked by a saber
 			&& g_entities[tr.entityNum].client
 			&& !unblockable
 			&& WP_SaberCanBlock(&g_entities[tr.entityNum], tr.endpos, 0, MOD_SABER, qfalse, attackStr))
@@ -4818,7 +4825,18 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 				}
 			}
 
+			if (jk2Damage && dmg > SABER_NONATTACK_DAMAGE)
+			{ //clear out any damage flags that would prevent saber knockback
+				knockbackFlags &= ~(DAMAGE_NO_KNOCKBACK|DAMAGE_SABER_KNOCKBACK1|DAMAGE_SABER_KNOCKBACK2|DAMAGE_SABER_KNOCKBACK1|DAMAGE_SABER_KNOCKBACK2_B2);
+				knockbackFlags |= DAMAGE_NO_DAMAGE;
+			}
+
 			WP_SaberDamageAdd( tr.entityNum, dir, tr.endpos, dmg, doDismemberment, knockbackFlags );
+
+			if (jk2Damage && dmg > SABER_NONATTACK_DAMAGE)
+			{ //apply the damage immediately, this will call G_Damage for us (this matches 1.02's setup)
+				WP_SaberApplyDamage(self);
+			}
 
 			if (g_entities[tr.entityNum].client)
 			{
@@ -5212,7 +5230,7 @@ blockStuff:
 			}
 		}
 
-		if (d_saberGhoul2Collision.integer && !didDefense && dmg <= SABER_NONATTACK_DAMAGE && !otherUnblockable) //with perpoly, it looks pretty weird to have clash flares coming off the guy's face and whatnot
+		if ((d_saberGhoul2Collision.integer && !jk2Damage) && !didDefense && dmg <= SABER_NONATTACK_DAMAGE && !otherUnblockable) //with perpoly, it looks pretty weird to have clash flares coming off the guy's face and whatnot
 		{
 			if (!PM_SaberInParry(otherOwner->client->ps.saberMove) &&
 				!PM_SaberInBrokenParry(otherOwner->client->ps.saberMove) &&

@@ -5052,15 +5052,14 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				const float xyvel = sqrtf(targ->client->ps.velocity[0] * targ->client->ps.velocity[0] + targ->client->ps.velocity[1] * targ->client->ps.velocity[1]) * 2;
 
 				//Com_Printf("%i xyvel speed %f\n", targ->client->ps.clientNum, xyvel);
-				if (xyvel >= 750.0f) {
-					//trap->SendServerCommand(attacker - g_entities, va("print \"kb capped at %.0f %i\n\"", xyvel, knockback));
+				if (xyvel >= g_debugMelee.integer /*750.0f*/) {
+					trap->SendServerCommand(attacker - g_entities, va("print \"kb capped at %.0f %i\n\"", xyvel, knockback));
 					return;
 				}
 				saberKnockbackScale = 1.0f;
 			}
-			else {
-				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
-			}
+
+			VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - Start]
 		else if ((g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))

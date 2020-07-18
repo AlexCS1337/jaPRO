@@ -4672,14 +4672,17 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 
 		//Might as well make this a new cvar to avoid any possible conflicts, also able to make it an array much easier.
 		//Well this has to be a 2d array to have debounce specific to attacker-target?
-		if (self->client && g_saberDmgDelay_Hit.integer) { //g_entities[tr.entityNum].client && tr.entityNum < MAX_CLIENTS
+		if (self->client && (g_saberDmgDelay_Hit.integer || (self->client->sess.raceMode && self->client->sess.movementStyle == MV_COOP_JKA))) { //g_entities[tr.entityNum].client && tr.entityNum < MAX_CLIENTS
 			int targetNum = tr.entityNum; //Ranges from 0 to MAX_CLIENTS(32)
+			int delay = g_saberDmgDelay_Hit.integer;
+			if (self->client->sess.raceMode && self->client->sess.movementStyle == MV_COOP_JKA)
+				delay = 500;
 			if (targetNum > MAX_CLIENTS || targetNum < 0)
 				targetNum = MAX_CLIENTS;
-			if (self->client->saberHitWound[self->client->ps.clientNum][targetNum] > level.time && self->client->saberHitWound[self->client->ps.clientNum][targetNum] != level.time + g_saberDmgDelay_Hit.integer) { //maybe allow same hits from leveltime?
+			if (self->client->saberHitWound[self->client->ps.clientNum][targetNum] > level.time && self->client->saberHitWound[self->client->ps.clientNum][targetNum] != level.time + delay) { //maybe allow same hits from leveltime?
 				return qfalse; //Yeah this is just a failure, dunno
 			}
-			self->client->saberHitWound[self->client->ps.clientNum][targetNum] = level.time + g_saberDmgDelay_Hit.integer;
+			self->client->saberHitWound[self->client->ps.clientNum][targetNum] = level.time + delay;
 		}
 
 		didHit = qtrue;

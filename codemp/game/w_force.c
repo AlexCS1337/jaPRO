@@ -634,6 +634,9 @@ qboolean WP_ForcePowerAvailable( gentity_t *self, forcePowers_t forcePower, int 
 		if ((forcePower == FP_SPEED) || (forcePower == FP_RAGE))
 			return qfalse;
 	}
+	if (self->client->sess.raceMode && (forcePower == FP_SPEED)) {
+		drain = 75;
+	}
 
 	if (self->client->ps.fd.forcePowersActive & (1 << forcePower))
 	{ //we're probably going to deactivate it..
@@ -1133,12 +1136,12 @@ void WP_ForcePowerStart( gentity_t *self, forcePowers_t forcePower, int override
 	
 	self->client->ps.fd.forcePowerDebounce[forcePower] = 0;
 
-	if ((int)forcePower == FP_SPEED && overrideAmt)
+	if ((int)forcePower == FP_SPEED && self->client->sess.raceMode) {
+		BG_ForcePowerDrain(&self->client->ps, forcePower, 75);
+	}
+	else if ((int)forcePower == FP_SPEED && overrideAmt)
 	{
-		if (self->client->sess.raceMode)
-			BG_ForcePowerDrain(&self->client->ps, forcePower, 75);
-		else
-			BG_ForcePowerDrain( &self->client->ps, forcePower, overrideAmt*0.025 );
+		BG_ForcePowerDrain( &self->client->ps, forcePower, overrideAmt*0.025 );
 	}
 	else if ((int)forcePower != FP_GRIP && (int)forcePower != FP_DRAIN)
 	{ //grip and drain drain as damage is done

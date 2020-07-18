@@ -5058,7 +5058,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - End]
 		else
 		{
-			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
+			if (targ->client && targ->client->sess.raceMode)
+				VectorScale(dir, 0.5f*g_knockback.value * (float)knockback / mass, kvel); //hardcode at 500
+			else
+				VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
 		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity); //wallbug?
 

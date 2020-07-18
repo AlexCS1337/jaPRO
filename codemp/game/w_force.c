@@ -3772,13 +3772,25 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					//fullbody push effect
 					push_list[x]->client->pushEffectTime = level.time + 600;
 
-					if (((g_tweakForce.integer & FT_PULLSTRENGTH) || push_list[x]->client->sess.raceMode) && pull) {
-						push_list[x]->client->ps.velocity[0] += pushDir[0]*pushPowerMod; //FT_WEAKPULL?
-						push_list[x]->client->ps.velocity[1] += pushDir[1]*pushPowerMod;
+					if (push_list[x]->client->sess.raceMode) { //push and pull.. OP?
+						if (pull) {
+							push_list[x]->client->ps.velocity[0] += pushDir[0] * pushPowerMod;
+							push_list[x]->client->ps.velocity[1] += pushDir[1] * pushPowerMod;
+						}
+						else {
+							push_list[x]->client->ps.velocity[0] += pushDir[0] * pushPowerMod * 0.75f;
+							push_list[x]->client->ps.velocity[1] += pushDir[1] * pushPowerMod * 0.75f;
+						}
 					}
 					else {
-						push_list[x]->client->ps.velocity[0] = pushDir[0]*pushPowerMod;
-						push_list[x]->client->ps.velocity[1] = pushDir[1]*pushPowerMod;
+						if ((g_tweakForce.integer & FT_PULLSTRENGTH) && pull) {
+							push_list[x]->client->ps.velocity[0] += pushDir[0] * pushPowerMod; //FT_WEAKPULL?
+							push_list[x]->client->ps.velocity[1] += pushDir[1] * pushPowerMod;
+						}
+						else {
+							push_list[x]->client->ps.velocity[0] = pushDir[0] * pushPowerMod;
+							push_list[x]->client->ps.velocity[1] = pushDir[1] * pushPowerMod;
+						}
 					}
 
 					if ((int)push_list[x]->client->ps.velocity[2] == 0)
@@ -3792,7 +3804,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					}
 					else
 					{
-						if (((g_tweakForce.integer & FT_PULLSTRENGTH) || push_list[x]->client->sess.raceMode) && pull)
+						if ((g_tweakForce.integer & FT_PULLSTRENGTH) && (push_list[x]->client->sess.raceMode || pull))
 							push_list[x]->client->ps.velocity[2] += pushDir[2]*pushPowerMod;
 						else
 							push_list[x]->client->ps.velocity[2] = pushDir[2]*pushPowerMod;

@@ -4835,7 +4835,10 @@ static QINLINE qboolean CheckSaberDamage(gentity_t *self, int rSaberNum, int rBl
 
 			if (jk2Damage && dmg > SABER_NONATTACK_DAMAGE)
 			{ //apply the damage immediately, this will call G_Damage for us (this matches 1.02's setup)
-				WP_SaberApplyDamage(self);
+				if (self->client->ps.saberAttackWound < level.time) {
+					WP_SaberApplyDamage(self);
+				}
+				WP_SaberClearDamage();
 			}
 
 			if (g_entities[tr.entityNum].client)

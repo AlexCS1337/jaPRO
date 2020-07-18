@@ -5049,9 +5049,15 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			}
 
 			if (targ->client && targ->client->sess.raceMode) {
-				saberKnockbackScale = 1.0f;
-				if (VectorLength(targ->client->ps.velocity) >= 800)
+				const float xyvel = sqrtf(targ->s.pos.trDelta[0] * targ->client->ps.velocity[0] + targ->client->ps.velocity[1] * targ->client->ps.velocity[1]) * 2;
+
+				//Com_Printf("%i xyvel speed %f\n", targ->client->ps.clientNum, xyvel);
+				if (xyvel >= 750) {
+					//Com_Printf("Capping knockback speed\n");
 					return;
+				}
+
+				saberKnockbackScale = 1.0f;
 			}
 
 			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*saberKnockbackScale, kvel);

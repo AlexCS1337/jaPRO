@@ -8432,7 +8432,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 			!BG_InGrappleMove(self->client->ps.torsoAnim) || !BG_InGrappleMove(self->client->ps.legsAnim) ||
 			!self->client->grappleState || !grappler->client->grappleState ||
 			grappler->health < 1 || self->health < 1 ||
-			!G_PrettyCloseIGuess(self->client->ps.origin[2], grappler->client->ps.origin[2], 4.0f))
+			!G_PrettyCloseIGuess(self->client->ps.origin[2], grappler->client->ps.origin[2], 4.0f)) //This is why they have to be on same level
 		{
 			self->client->grappleState = 0;
 			if ((BG_InGrappleMove(self->client->ps.torsoAnim) && self->client->ps.torsoTimer > 100) ||
@@ -8493,7 +8493,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 					if (!trace.startsolid && !trace.allsolid && trace.fraction == 1.0f)
 					{ //go there
 						G_SetOrigin(self, idealSpot);
-						VectorCopy(idealSpot, self->client->ps.origin);
+						VectorCopy(idealSpot, self->client->ps.origin); //problem
 					}
 				}
 				else if (self->client->grappleState >= 1)
@@ -8583,7 +8583,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 								if (grappler->health > 0)
 								{ //if still alive knock them down
 									grappler->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
-									grappler->client->ps.forceHandExtendTime = level.time + 1300;
+									grappler->client->ps.forceHandExtendTime = level.time + 1300; //why not always kd them?
 								}
 							}
 						}
@@ -9585,6 +9585,9 @@ static int G_SaberPierceLevelForStance( int stance ) {
 		break;
 	}
 	return 0;
+
+	//Current:
+	//New:    Strong > Desann > Staff > Tavion > Yellow > Duals > Blue   ??
 }
 
 static QINLINE qboolean WP_SaberCanBlockSwing(int ourStr, int attackStr) //If this returns false, we dont block the saber during our swing? (default true)

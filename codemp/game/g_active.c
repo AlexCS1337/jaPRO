@@ -3505,7 +3505,9 @@ void ClientThink_real( gentity_t *ent ) {
 					forceSingle = qtrue;
 			}
 
-			if ((g_saberDisable.integer & SABERSTYLE_STAFF) && (g_saberDisable.integer & SABERSTYLE_DUAL) && (Q_stricmp(client->pers.saber1, "kyle") || Q_stricmp(client->pers.saber2, "none"))) {//No staff or duel.. force single kyle saber if not already.
+			if ((((g_saberDisable.integer & SABERSTYLE_STAFF) && (g_saberDisable.integer & SABERSTYLE_DUAL)) || (ent->client && ent->client->sess.raceMode && ent->client->sess.movementStyle >= MV_COOP_JKA))
+				&& (Q_stricmp(client->pers.saber1, "kyle") || Q_stricmp(client->pers.saber2, "none")))
+			{//No staff or dual.. force single kyle saber if not already.
 				forceSingle = qtrue;
 			}
 

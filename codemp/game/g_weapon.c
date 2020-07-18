@@ -3710,7 +3710,7 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	VectorNormalize (dir);
 
-	VectorMA( start, 8, forward, start );
+	VectorMA( start, 8, forward, start );  //why is this fucked
 
 	bolt = G_Spawn(qfalse);
 	bolt->classname = "detpack";

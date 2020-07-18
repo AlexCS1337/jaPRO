@@ -4621,220 +4621,93 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 }
 
+float G_NewBotAIGetProjectileSpeed(int weapon, qboolean altFire) {
+	float projectileSpeed = 0;
+
+	if (weapon == WP_BRYAR_OLD || weapon == WP_BRYAR_PISTOL || weapon == WP_REPEATER)
+		projectileSpeed = 1600;
+	else if (weapon == WP_BLASTER)
+		projectileSpeed = 2300;
+	else if (weapon == WP_BOWCASTER)
+		projectileSpeed = 1300;
+	else if (weapon == WP_DEMP2 && !altFire)
+		projectileSpeed = 1800;
+	else if (weapon == WP_FLECHETTE && (g_tweakWeapons.integer & WT_STAKE_GUN))
+		projectileSpeed = 3000;
+	else if ((weapon == WP_FLECHETTE) && altFire)
+		projectileSpeed = 1150;
+	else if (weapon == WP_FLECHETTE && !altFire)
+		projectileSpeed = 3500;
+	else if (weapon == WP_FLECHETTE && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && altFire)
+		projectileSpeed = 1400;
+	else if (weapon == WP_ROCKET_LAUNCHER && !altFire)
+		projectileSpeed = 900;
+	else if (weapon == WP_ROCKET_LAUNCHER && altFire)
+		projectileSpeed = 450;
+	else if (weapon == WP_CONCUSSION && !altFire)
+		projectileSpeed = 3000;
+	else if (weapon == WP_THERMAL)
+		projectileSpeed = 900;
+
+	return projectileSpeed * g_projectileVelocityScale.value;
+}
+
+/*
+trace between us and this new point, if there is something there, see how far away it is, and if its close enough to splash damage us dont fire, or just dont fire at all? - or switch to demp2 alt if it would dmg them
+if no LOS, aim at someone else if LOS.. ?
+*/
 //offset the desired view angles with aim leading in mind
-QINLINE float G_GetAnimPoint(gentity_t *self);
-void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
-{
-	int x;
-	vec3_t predictedSpot;
-	vec3_t movementVector;
-	vec3_t a, ang;
-	float vtotal;
+void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
+	vec3_t predictedSpot, a, ang;
+	float eta = 0, projectileDrop = 0;
+	int projectileSpeed;
 
 	if (!bs->currentEnemy || !bs->currentEnemy->client)
 		return;
 
-	if (!g_newBotAI.integer && !bs->frame_Enemy_Len)
-		return;
+	projectileSpeed = G_NewBotAIGetProjectileSpeed(bs->cur_ps.weapon, bs->doAltAttack);
 
-	vtotal = 0;
-
-	if (bs->currentEnemy->client->ps.velocity[0] < 0)
-		vtotal += -bs->currentEnemy->client->ps.velocity[0];
-	else
-		vtotal += bs->currentEnemy->client->ps.velocity[0];
-
-	if (bs->currentEnemy->client->ps.velocity[1] < 0)
-		vtotal += -bs->currentEnemy->client->ps.velocity[1];
-	else
-		vtotal += bs->currentEnemy->client->ps.velocity[1];
-
-	if (bs->currentEnemy->client->ps.velocity[2] < 0)
-		vtotal += -bs->currentEnemy->client->ps.velocity[2];
-	else
-		vtotal += bs->currentEnemy->client->ps.velocity[2];
-
-	//trap->Print("Leadin target with a velocity total of %f\n", vtotal);
-
-	VectorCopy(bs->currentEnemy->client->ps.velocity, movementVector);
-	VectorNormalize(movementVector);
-	x = bs->frame_Enemy_Len*leadAmount; //hardly calculated with an exact science, but it works
-
-	if (vtotal > 400)
-		vtotal = 400;
-
-	if (vtotal)
-		x = (bs->frame_Enemy_Len*0.9)*leadAmount*(vtotal*0.0012); //hardly calculated with an exact science, but it works
-	else
-		x = (bs->frame_Enemy_Len*0.9)*leadAmount; //hardly calculated with an exact science, but it works
-
-	predictedSpot[0] = headlevel[0] + (movementVector[0]*x);
-	predictedSpot[1] = headlevel[1] + (movementVector[1]*x);
-	predictedSpot[2] = headlevel[2] + (movementVector[2]*x);
-
-	if (g_newBotAI.integer) {
-		float eta = 0;
-
-		if ((bs->cur_ps.weapon == WP_REPEATER) && bs->doAltAttack) { //Aim higher for the orbs
-			eta = (bs->frame_Enemy_Len/(1100 * g_projectileVelocityScale.value)); //REPEATER_ALT_VELOCITY = 1100
-			const float drop = (0.5)*(800)*(eta*eta);
-			predictedSpot[2] += drop;
-		}
-		else if ((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) { //Aim higher for the orbs
-			eta = (bs->frame_Enemy_Len/(10000 * g_projectileVelocityScale.value));
-			const float drop = (0.5)*(800)*(eta*eta);
-			predictedSpot[2] += drop;
-		}
-		else if ((bs->cur_ps.weapon == WP_ROCKET_LAUNCHER) && bs->doAltAttack && (g_tweakWeapons.integer & WT_ROCKET_MORTAR)) { //Aim higher for the orbs
-			eta = (bs->frame_Enemy_Len / (1400 * g_projectileVelocityScale.value));
-			const float drop = (0.5) * (800) * (eta * eta);
-			predictedSpot[2] += drop;
-		}
-		else if ((bs->cur_ps.weapon == WP_FLECHETTE) && (g_tweakWeapons.integer & WT_STAKE_GUN)) { //Aim higher for the orbs
-			eta = (bs->frame_Enemy_Len / (3000 * g_projectileVelocityScale.value));
-			const float drop = (0.5) * (800) * (eta * eta);
-			predictedSpot[2] += drop;
+	if (projectileSpeed) {
+		eta = (bs->frame_Enemy_Len / projectileSpeed); //TODO: Adjust if its a curved projectile arc
+		VectorMA(headlevel, eta, bs->currentEnemy->client->ps.velocity, predictedSpot); //Multiple vel by eta, and add it to their origin to get predicted spot
+		if (((bs->cur_ps.weapon == WP_REPEATER) && bs->doAltAttack) ||
+			((bs->cur_ps.weapon == WP_DISRUPTOR) && (g_tweakWeapons.integer & WT_PROJ_SNIPER)) ||
+			((bs->cur_ps.weapon == WP_ROCKET_LAUNCHER) && bs->doAltAttack && (g_tweakWeapons.integer & WT_ROCKET_MORTAR)) ||
+			((bs->cur_ps.weapon == WP_FLECHETTE) && (g_tweakWeapons.integer & WT_STAKE_GUN)) ||
+			((bs->cur_ps.weapon == WP_FLECHETTE) && !(g_tweakWeapons.integer & WT_STAKE_GUN) && bs->doAltAttack) ||
+			(bs->cur_ps.weapon == WP_THERMAL) ||
+			(g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY)) {
+			projectileDrop = (0.5) * (800) * (eta * eta); //If weapon has gravity, compensate to aim higher
+			predictedSpot[2] += projectileDrop;
 		}
 
 		if (bs->currentEnemy->client->ps.groundEntityNum == ENTITYNUM_NONE) { //In Air
-
 			if (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION))) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
-				float bulletvel = 0, drop;
 				vec3_t predictedSpotGrav;
 				trace_t tr;
+				float playerDrop = (0.5f) * g_gravity.integer * (eta * eta);
 
-				if (!eta) {
-					if (bs->cur_ps.weapon == WP_BRYAR_OLD || bs->cur_ps.weapon == WP_BRYAR_PISTOL || bs->cur_ps.weapon == WP_REPEATER)
-						bulletvel = 1600;
-					else if (bs->cur_ps.weapon == WP_BLASTER)
-						bulletvel = 2300;
-					else if (bs->cur_ps.weapon == WP_BOWCASTER) //normal fire.. ew
-						bulletvel = 1300;
-					else if (bs->cur_ps.weapon == WP_DEMP2) //normal fire.. ew
-						bulletvel = 1800;
-					else if ((bs->cur_ps.weapon == WP_FLECHETTE) && bs->doAltAttack)
-						bulletvel = 1150;
-					else if (bs->cur_ps.weapon == WP_FLECHETTE)
-						bulletvel = 3500;
-					else if (bs->cur_ps.weapon == WP_ROCKET_LAUNCHER)
-						bulletvel = 900;
-					else if (bs->cur_ps.weapon == WP_CONCUSSION)
-						bulletvel = 3000;
-					else if (bs->cur_ps.weapon == WP_THERMAL)
-						bulletvel = 900;
+				predictedSpotGrav[0] = predictedSpot[0];
+				predictedSpotGrav[1] = predictedSpot[1];
+				predictedSpotGrav[2] = predictedSpot[2] - playerDrop;
 
-					if (bulletvel)
-						eta = (bs->frame_Enemy_Len / (bulletvel * g_projectileVelocityScale.value));
-				}
-				if (eta) {
+				JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //eh?
+				predictedSpot[2] = tr.endpos[2];
 
-					drop = (0.5f) * g_gravity.integer * (eta * eta);
+				//Sanity check if ETA is longer than their forcejump could possibly last?
 
-					predictedSpotGrav[0] = predictedSpot[0];
-					predictedSpotGrav[1] = predictedSpot[1];
-					predictedSpotGrav[2] = predictedSpot[2] - drop;
-
-					JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0);
-					predictedSpot[2] = tr.endpos[2];
-				}
+				//now trace from us to pos and see if its a los, if not don't fire? or...,.,.,.,.,
+				//def never fire if within selfkill range
+				//y headlevel dont work?
 			}
-
-			//Get our weapon velocity.
-			//Get ETA to target
-			//Calculate how far they would drop in that duration
-			//Adjust our aim based on that
-			//Trace from thatpos (curheight) to thatpos, if its below floor, have them aim at that spot on floor.
-			//Are they affected by gravity rn (forcejump) or later
 		}
-
-
-#if 0
-		else if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //poke/wiggle
-			//1 - Aim so that tip of saber is closest to enemy
-			//2 - Wiggle back and forth/up down
-
-
-			/*
-			vec3_t saberEnd, saberAngs;
-			VectorCopy(g_entities[bs->client].client->saber[0].blade[0].trail.tip, saberEnd); //Vector of the tip of the saber 
-			VectorSubtract(saberEnd, bs->origin, saberEnd);//This might be backwards, but its the vector of saber tip relative to us
-		
-			vectoangles(saberEnd, saberAngs); //Turn saber tip into angles
-
-			saberAngs[YAW] -= 150;
-
-			saberAngs[PITCH] += 25;//who knows!
-
-			saberAngs[YAW] = AngleSubtract(saberAngs[YAW], bs->viewangles[YAW]);
-			saberAngs[PITCH] = AngleSubtract(saberAngs[PITCH], bs->viewangles[PITCH]);
-
-			bs->ideal_viewangles[YAW] -= saberAngs[YAW]; //Offset our ideal angles by this to keep saber tip always pointed at enemy?
-			bs->ideal_viewangles[PITCH] -= saberAngs[PITCH] * 0.5;
-		
-		*/
-			
-			//Poke time!
-			/*
-			if (level.time % 200 > 100)  {
-				if (bs->aimOffsetAmtYaw > 0) {
-					bs->aimOffsetAmtYaw = -10;
-				}
-				else {
-					bs->aimOffsetAmtYaw = 10;
-				}
-			}
-			*/
-
-
-			//Get our saber tip location.
-			//Get enemy location.
-			//Get difference.
-			//Add difference to desired aim location?
-			//vec3_t saberDiff;
-			//VectorSubtract(g_entities[bs->client].client->saber[0].blade[0].trail.tip, bs->currentEnemy->client->ps.origin, saberDiff);
-			//VectorAdd(saberDiff, predictedSpot, predictedSpot);
-
-			/*U
-			if (g_entities[bs->client].client->ps.saberMove == LS_R_T2B) {
-				if (G_GetAnimPoint(&g_entities[bs->client]) >= 0.9f) { //Start
-					predictedSpot[2] -= 400;	
-				}
-				else { //End
-					predictedSpot[2] += 400;
-				}
-			}
-			*/
-
-			/*
-			if (level.time % 200 > 100)  {
-				predictedSpot[2] += 16;
-			}
-			else {
-				predictedSpot[2] -= 16;
-			}
-
-			if (level.time % 50 > 25)  {
-				predictedSpot[0] += 8;
-			}
-			else {
-				predictedSpot[0] -= 8;
-			}
-
-			if (level.time % 100 > 50)  {
-				predictedSpot[1] += 8;
-			}
-			else {
-				predictedSpot[1] -= 8;
-			}
-			*/
-			
-
-
-		}
-
-#endif
 	}
-
+	else { //Hitscan, maybe tweak this so it leads a tiny bit for netcode
+		vec3_t dir;
+		VectorCopy(bs->currentEnemy->client->ps.velocity, dir);
+		VectorNormalize(dir);
+		VectorMA(headlevel, 4, dir, predictedSpot); //Lead them by 4u in their direction of motion?
+	}
 
 	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke
 		vec3_t saberDiff;
@@ -4847,53 +4720,106 @@ void BotAimLeading(bot_state_t *bs, vec3_t headlevel, float leadAmount)
 	vectoangles(a, ang);
 	VectorCopy(ang, bs->goalAngles);
 
-
-	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && 
+	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE &&
 		g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke and Wiggle
 
-
-			/*
-		vec3_t saberEnd, saberAngs;
-		VectorCopy(g_entities[bs->client].client->saber[0].blade[0].trail.tip, saberEnd); //Vector of the tip of the saber 
-		VectorSubtract(saberEnd, bs->origin, saberEnd);//This might be backwards, but its the vector of saber tip relative to us
-		
-		vectoangles(saberEnd, saberAngs); //Turn saber tip into angles
-
-		saberAngs[YAW] -= 150;
-
-		saberAngs[PITCH] += 25;//who knows!
-
-		saberAngs[YAW] = AngleSubtract(saberAngs[YAW], bs->viewangles[YAW]);
-		saberAngs[PITCH] = AngleSubtract(saberAngs[PITCH], bs->viewangles[PITCH]);
-
-		bs->goalAngles[YAW] -= saberAngs[YAW]; //Offset our ideal angles by this to keep saber tip always pointed at enemy?
-		bs->goalAngles[PITCH] -= saberAngs[PITCH] * 0.5;
-		*/
-
-
-
-		
-
-		if (level.time % 100 > 50)  {
-			bs->goalAngles[YAW] += 3.0f;	
+		if (level.time % 100 > 50) {
+			bs->goalAngles[YAW] += 3.0f;
 		}
 		else {
-			bs->goalAngles[YAW] -= 3.0f;	
+			bs->goalAngles[YAW] -= 3.0f;
 		}
 
-		if (level.time % 200 > 100)  {
-			bs->goalAngles[PITCH] += 6.0f;	
+		if (level.time % 200 > 100) {
+			bs->goalAngles[PITCH] += 6.0f;
 		}
 		else {
-			bs->goalAngles[PITCH] -= 6.0f;	
+			bs->goalAngles[PITCH] -= 6.0f;
 		}
-		
 
 		bs->goalAngles[YAW] = AngleNormalize360(bs->goalAngles[YAW]);
 		bs->goalAngles[PITCH] = AngleNormalize360(bs->goalAngles[PITCH]);
 	}
+}
 
+//offset the desired view angles with aim leading in mind
+void BotAimLeading(bot_state_t* bs, vec3_t headlevel, float leadAmount)
+{
+	int x;
+	vec3_t predictedSpot;
+	vec3_t movementVector;
+	vec3_t a, ang;
+	float vtotal;
 
+	if (!bs->currentEnemy ||
+		!bs->currentEnemy->client)
+	{
+		return;
+	}
+
+	if (!bs->frame_Enemy_Len)
+	{
+		return;
+	}
+
+	vtotal = 0;
+
+	if (bs->currentEnemy->client->ps.velocity[0] < 0)
+	{
+		vtotal += -bs->currentEnemy->client->ps.velocity[0];
+	}
+	else
+	{
+		vtotal += bs->currentEnemy->client->ps.velocity[0];
+	}
+
+	if (bs->currentEnemy->client->ps.velocity[1] < 0)
+	{
+		vtotal += -bs->currentEnemy->client->ps.velocity[1];
+	}
+	else
+	{
+		vtotal += bs->currentEnemy->client->ps.velocity[1];
+	}
+
+	if (bs->currentEnemy->client->ps.velocity[2] < 0)
+	{
+		vtotal += -bs->currentEnemy->client->ps.velocity[2];
+	}
+	else
+	{
+		vtotal += bs->currentEnemy->client->ps.velocity[2];
+	}
+
+	//G_Printf("Leadin target with a velocity total of %f\n", vtotal);
+
+	VectorCopy(bs->currentEnemy->client->ps.velocity, movementVector);
+
+	VectorNormalize(movementVector);
+
+	x = bs->frame_Enemy_Len * leadAmount; //hardly calculated with an exact science, but it works
+
+	if (vtotal > 400)
+	{
+		vtotal = 400;
+	}
+
+	if (vtotal)
+	{
+		x = (bs->frame_Enemy_Len * 0.9) * leadAmount * (vtotal * 0.0012); //hardly calculated with an exact science, but it works
+	}
+	else
+	{
+		x = (bs->frame_Enemy_Len * 0.9) * leadAmount; //hardly calculated with an exact science, but it works
+	}
+
+	predictedSpot[0] = headlevel[0] + (movementVector[0] * x);
+	predictedSpot[1] = headlevel[1] + (movementVector[1] * x);
+	predictedSpot[2] = headlevel[2] + (movementVector[2] * x);
+
+	VectorSubtract(predictedSpot, bs->eye, a);
+	vectoangles(a, ang);
+	VectorCopy(ang, bs->goalAngles);
 }
 
 //wobble our aim around based on our sk1llz
@@ -6288,10 +6214,15 @@ void NewBotAI_GetAim(bot_state_t *bs)
 
 	//Saber is inrange , AND  nearest target is far enough away OR thrower is nearest target(?
 	if (saberDistance < 200*200 && (bs->frame_Enemy_Len > 200 || bs->currentEnemy->client->ps.clientNum == saberOwner)) { //Dont aim at it if theres a diff enemy in saber range?
+		vec3_t a, ang;
 		saber = &g_entities[closestSaber];
 
-		VectorCopy(saber->s.pos.trBase, headlevel);
-		BotAimLeading(bs, headlevel, bLeadAmount);
+		//VectorCopy(saber->s.pos.trBase, headlevel);
+		//BotAimLeading(bs, headlevel, bLeadAmount);
+
+		VectorSubtract(saber->s.pos.trBase, bs->eye, a);
+		vectoangles(a, ang);
+		VectorCopy(ang, bs->goalAngles);
 	}
 
 	/*
@@ -6313,9 +6244,7 @@ void NewBotAI_GetAim(bot_state_t *bs)
 
 		if (bs->currentEnemy->client)
 			headlevel[2] += bs->currentEnemy->client->ps.viewheight - 24;//aim at chest?
-
-		bLeadAmount = BotWeaponCanLead(bs);
-		BotAimLeading(bs, headlevel, bLeadAmount);
+		G_NewBotAIAimLeading(bs, headlevel);
 	}
 
 	VectorCopy(bs->goalAngles, bs->ideal_viewangles);
@@ -6600,6 +6529,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
@@ -6630,6 +6560,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 		}
 		else if (distance > 350 && distance < 1100) { //Have some padding between distance tiers so we dont weaponswitch spam
 			if (distance < 900 && BotWeaponSelectableAltFire(bs, WP_REPEATER) && forcedFireMode != 1) {
@@ -6659,6 +6593,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
@@ -6684,6 +6622,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BLASTER;
 				bs->doAltAttack = 1;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
@@ -6696,6 +6638,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
@@ -6712,6 +6655,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
+			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6741,6 +6688,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
+			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6778,6 +6729,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
@@ -6806,6 +6761,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
 			if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
@@ -6830,6 +6789,10 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
+			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
 			}
 		}
 		else if (distance < 200) {
@@ -6866,16 +6829,27 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;
 			}
+			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
+				bestWeapon = WP_CONCUSSION;
+				bs->doAltAttack = 1;
+			}
 		}
 	}
 
 	if (bestWeapon == WP_THERMAL) {
-		bs->doAltAttack = 1;
-		bs->altChargeTime = 1500;
+		//bs->doAltAttack = 1;
+		bs->altChargeTime = 1250;
 	}
 	else if (bestWeapon == WP_BOWCASTER) {
 		bs->doAltAttack = 1;
 	}
+
+	if (forcedFireMode == 1)
+		bs->doAltAttack = 0;
+	else if (forcedFireMode == 2)
+		bs->doAltAttack = 1;
+
+	//todo- weapon table.
 
 	return bestWeapon;
 }
@@ -6890,7 +6864,7 @@ int NewBotAI_GetAltCharge(bot_state_t *bs)
 		return 0;
 
 	if ((bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT) && (level.time - bs->cur_ps.weaponChargeTime) > bs->altChargeTime)
-		return 0;//release charge.. was 2 ?
+		return 2;//release charge.. was 2 ?
 
 	return 1;
 }
@@ -6942,13 +6916,13 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 		return;
 	}
 
-	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs)) {//Ehhh..
+	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs) == 1) {//Ehhh..
 		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
 			return;
 		//if (level.framenum % 2)
 			trap->EA_Alt_Attack(bs->client);
 	}
-	else if ((bs->cur_ps.weapon == weapon) && (weapon != WP_THERMAL)) {//we are using desired weapon
+	else if ((bs->cur_ps.weapon == weapon)) {//we are using desired weapon
 		if (level.framenum % 2)
 			trap->EA_Attack(bs->client);
 	}

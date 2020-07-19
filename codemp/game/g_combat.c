@@ -5049,7 +5049,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			}
 
 			if (targ->client && targ->client->sess.raceMode) {
-				VectorScale(dir, (500 * (float)knockback / mass), kvel); //hardcode g_knockback after tests
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
 			}
 			else {
 				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
@@ -5064,7 +5064,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		else
 		{
 			if (targ->client && targ->client->sess.raceMode)
-				VectorScale(dir, 1000 * (float)knockback / mass, kvel);
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
 			else
 				VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}

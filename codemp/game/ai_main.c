@@ -6583,12 +6583,12 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_BOWCASTER;
 				bs->doAltAttack = 1;
 			}
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
+			else if (distance > 600 && BotWeaponSelectableAltFire(bs, WP_BRYAR_OLD)) {
 				bestWeapon = WP_BRYAR_OLD;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 800;
 			}
-			else if (distance > 500 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
+			else if (distance > 700 && BotWeaponSelectableAltFire(bs, WP_BRYAR_PISTOL)) {
 				bestWeapon = WP_BRYAR_PISTOL;
 				bs->doAltAttack = 1;
 				bs->altChargeTime = 1200;

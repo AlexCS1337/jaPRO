@@ -4638,7 +4638,7 @@ float G_NewBotAIGetProjectileSpeed(int weapon, qboolean altFire) {
 		projectileSpeed = 1150;
 	else if (weapon == WP_FLECHETTE && !altFire)
 		projectileSpeed = 3500;
-	else if (weapon == WP_FLECHETTE && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && altFire)
+	else if (weapon == WP_ROCKET_LAUNCHER && (g_tweakWeapons.integer & WT_ROCKET_MORTAR) && altFire)
 		projectileSpeed = 1400;
 	else if (weapon == WP_ROCKET_LAUNCHER && !altFire)
 		projectileSpeed = 900;
@@ -4660,14 +4660,14 @@ if no LOS, aim at someone else if LOS.. ?
 void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 	vec3_t predictedSpot, a, ang;
 	float eta = 0, projectileDrop = 0;
-	int projectileSpeed;
+	float projectileSpeed;
 
 	if (!bs->currentEnemy || !bs->currentEnemy->client)
 		return;
 
 	projectileSpeed = G_NewBotAIGetProjectileSpeed(bs->cur_ps.weapon, bs->doAltAttack);
 
-	if (projectileSpeed) {
+	if (projectileSpeed) { //this should be done after playr movement
 		eta = (bs->frame_Enemy_Len / projectileSpeed); //TODO: Adjust if its a curved projectile arc
 		VectorMA(headlevel, eta, bs->currentEnemy->client->ps.velocity, predictedSpot); //Multiple vel by eta, and add it to their origin to get predicted spot
 		if (((bs->cur_ps.weapon == WP_REPEATER) && bs->doAltAttack) ||
@@ -4682,7 +4682,13 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		}
 
 		if (bs->currentEnemy->client->ps.groundEntityNum == ENTITYNUM_NONE) { //In Air
-			if (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION))) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
+			if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION)) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
+				const float diff = (predictedSpot[2] - bs->cur_ps.fd.forceJumpZStart);
+				if (diff > forceJumpHeight[bs->currentEnemy->client->ps.fd.forcePowerLevel[FP_LEVITATION]]) { //We predict they will be higher than they can possibly jump to, so correct
+					predictedSpot[2] -= (diff - forceJumpHeight[bs->currentEnemy->client->ps.fd.forcePowerLevel[FP_LEVITATION]]);
+				}
+			}
+			else {
 				vec3_t predictedSpotGrav;
 				trace_t tr;
 				float playerDrop = (0.5f) * g_gravity.integer * (eta * eta);
@@ -4691,10 +4697,8 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 				predictedSpotGrav[1] = predictedSpot[1];
 				predictedSpotGrav[2] = predictedSpot[2] - playerDrop;
 
-				JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //eh?
+				JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //eh? do this if any eta tbh.. not just if jumping
 				predictedSpot[2] = tr.endpos[2];
-
-				//Sanity check if ETA is longer than their forcejump could possibly last?
 
 				//now trace from us to pos and see if its a los, if not don't fire? or...,.,.,.,.,
 				//def never fire if within selfkill range
@@ -6480,6 +6484,11 @@ void NewBotAI_Absorbing(bot_state_t *bs)
 	}
 }
 
+void NewBotAI_SaberThrowing(bot_state_t* bs)
+{
+	trap->EA_Alt_Attack(bs->client);
+}
+
 float BS_GroundDistance(bot_state_t *bs)
 {
 	return (bs->origin[2] - bs->cur_ps.fd.forceJumpZStart);
@@ -6599,6 +6608,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 		}
 		else if (distance < 200) {
 			if (BotWeaponSelectableAltFire(bs, WP_FLECHETTE)) {
@@ -6628,6 +6642,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 		}
 	}
 
@@ -6693,6 +6712,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_CONCUSSION;
 				bs->doAltAttack = 1;
 			}
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
@@ -6733,6 +6757,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_CONCUSSION;
 				bs->doAltAttack = 1;
 			}
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
 		}
@@ -6765,6 +6794,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 				bestWeapon = WP_CONCUSSION;
 				bs->doAltAttack = 1;
 			}
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
+			}
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
 			if (BotWeaponSelectableAltFire(bs, WP_BLASTER)) {
@@ -6793,6 +6827,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
 				bestWeapon = WP_CONCUSSION;
 				bs->doAltAttack = 1;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 		}
 		else if (distance < 200) {
@@ -6832,6 +6871,11 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectable(bs, WP_CONCUSSION) && forcedFireMode != 1) {
 				bestWeapon = WP_CONCUSSION;
 				bs->doAltAttack = 1;
+			}
+			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
+				bestWeapon = WP_DEMP2;
+				bs->doAltAttack = 1;
+				bs->altChargeTime = 1000;
 			}
 		}
 	}
@@ -6893,6 +6937,7 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 				if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) || 
 					 ((bs->cur_ps.fd.forcePower < 60) || ((bs->frame_Enemy_Len < 70) && (bs->currentEnemy->client->ps.origin[2] - bs->cur_ps.origin[2]) > 50 ))) {
 						trap->EA_Attack(bs->client);
+						return;
 				}
 			}
 		}
@@ -7141,10 +7186,7 @@ void NewBotAI_GetMovement(bot_state_t *bs)
 		}
 	}
 }
-
-qboolean BG_InKnockDown( int anim );
-
-
+qboolean BG_InKnockDown(int anim);
 qboolean BG_InRoll3(int anim)
 {
 	switch (anim)
@@ -7413,6 +7455,24 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 		}
 	}
 
+	//Check if we should saberthrow I guess.
+	if (bs->cur_ps.weapon == WP_SABER && /*(bs->cur_ps.fd.forcePowersKnown & (1 << FP_SABERTHROW)*/ bs->frame_Enemy_Len < 400 && (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim))) {
+		g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERTHROW] = 3;
+		g_entities[bs->client].client->ps.fd.forcePowersKnown |= (1 << FP_SABERTHROW);
+
+		if (bs->cur_ps.fd.forcePower > 40 && (bs->currentEnemy->health + bs->currentEnemy->client->ps.stats[STAT_ARMOR]) <= 50) {
+			trap->EA_Alt_Attack(bs->client);
+			return;
+		}
+		/*
+		else if ((((bs->cur_ps.fd.forcePower > bs->currentEnemy->client->ps.fd.forcePower) && bs->cur_ps.fd.forcePower > 40) || (bs->cur_ps.fd.forcePower > 70)) && g_entities[bs->client].health > 75 && bs->currentEnemy->health < 70) {
+			trap->EA_Alt_Attack(bs->client);
+			Com_Printf("Throwing 2\n");
+			return;
+		}
+		*/
+	}
+
 	if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		useTheForce = qfalse; //Sad hack not sure why?
 
@@ -7569,6 +7629,10 @@ void NewBotAI_DSvDS(bot_state_t *bs)
 
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_RAGE)) {
 		NewBotAI_Raging(bs);
+	}
+
+	if (bs->cur_ps.saberInFlight) {
+		NewBotAI_SaberThrowing(bs);
 	}
 
 	NewBotAI_GetMovement(bs);

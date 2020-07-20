@@ -1162,11 +1162,12 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 	char * sql;
 	sqlite3_stmt * stmt;
 	int s, season_rank = 0, global_rank = 0, i = 1;
+	int duration = 0, lastDuration = 0;
 
 	//This has to be done like, 15k times currently.  15k x 10ms = like 4 minutes :(
 
 	//Get season rank
-	sql = "SELECT id FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC, average DESC"; //assume just one per person to speed this up..
+	sql = "SELECT id, duration_ms FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? ORDER BY duration_ms ASC, end_time ASC, average DESC"; //assume just one per person to speed this up..
 	CALL_SQLITE(prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL));
 	CALL_SQLITE(bind_text(stmt, 1, coursename, -1, SQLITE_STATIC));
 	CALL_SQLITE(bind_int(stmt, 2, style));
@@ -1174,6 +1175,13 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 	while (1) {
 		s = sqlite3_step(stmt);
 		if (s == SQLITE_ROW) {
+			if (style == MV_COOP_JKA) {
+				duration = sqlite3_column_int(stmt, 1);
+				if (duration == lastDuration) {
+					i--;
+				}
+				lastDuration = duration;
+			}
 			if (id == sqlite3_column_int(stmt, 0)) {
 				season_rank = i;
 				break;
@@ -1190,6 +1198,7 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 	CALL_SQLITE(finalize(stmt));
 
 	i = 1; // AH HA ha
+	lastDuration = 0;
 
 	//can we index on duration_ms ?
 	//Get global rank - if its a season PB but not a global PB, leave global rank at 0
@@ -1200,6 +1209,14 @@ void G_GetRaceScore(int id, char *username, char *coursename, int style, int sea
 	while (1) {
 		s = sqlite3_step(stmt);
 		if (s == SQLITE_ROW) {
+			if (style == MV_COOP_JKA) {
+				duration = sqlite3_column_int(stmt, 1);
+				if (duration == lastDuration) {
+					i--;
+				}
+				lastDuration = duration;
+			}
+
 			if (id == sqlite3_column_int(stmt, 0)) {
 				global_rank = i;
 				break;

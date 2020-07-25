@@ -8059,6 +8059,8 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	int i;
 	qboolean someonesHere = qfalse;
 
+	bs->isCamper = 0; //reset this
+
 	for (i=0; i<level.numConnectedClients; i++) { //Go through each client, see if they are "afk", if everyone is afk, fuck this then.
 		gentity_t *ent = &g_entities[level.sortedClients[i]];
 

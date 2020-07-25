@@ -3523,7 +3523,8 @@ void Svcmd_ResetScores_f(void);
 void PrintStats(int client);
 void G_GiveGunGameWeapon(gclient_t* client) {
 	int score;
-	if (g_gametype.integer == GT_TEAM || g_gametype.integer == GT_CTF) {
+	qboolean finishedGG = qfalse;
+	if (level.gametype == GT_TEAM || level.gametype == GT_CTF) {
 		score = level.teamScores[client->ps.persistant[PERS_TEAM]] - client->ps.fd.suicides;
 	}
 	else {
@@ -3574,7 +3575,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_FLECHETTE;
 	}
-	else if (score == 7 ) {
+	else if (score == 7) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
 		client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 		client->ps.weapon = WP_CONCUSSION;
@@ -3633,10 +3634,14 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		client->ps.weapon = WP_SABER;
 	}
 	else if (score >= 18) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
-		int i;
-		gentity_t* ent;
+		finishedGG = qtrue;
+	}
 
-		if (g_gametype.integer == GT_TEAM || g_gametype.integer == GT_CTF) {
+	if (finishedGG) {
+		int i;
+		gentity_t* other;
+
+		if (level.gametype == GT_TEAM || level.gametype == GT_CTF) {
 			trap->SendServerCommand(-1, va("print \"%s team (%s)^3 won the gungame\n\"", TeamName(client->ps.persistant[PERS_TEAM]), client->pers.netname));
 			trap->SendServerCommand(-1, va("cp \"%s team (%s)^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", TeamName(client->ps.persistant[PERS_TEAM]), client->pers.netname));
 		}
@@ -3646,17 +3651,31 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		}
 		PrintStats(-1);//JAPRO STATS
 		for (i = 0; i < level.numConnectedClients; i++) { //Kill every1? or every1 but me? or just reset weps? 
-			ent = &g_entities[level.sortedClients[i]];
-			if (ent->inuse && ent->client && !ent->client->sess.raceMode) {
-				ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
-				ent->client->ps.ammo[AMMO_METAL_BOLTS] = 999;
-				ent->client->ps.weapon = WP_CONCUSSION;
+			other = &g_entities[level.sortedClients[i]];
+			if (other->inuse && other->client && !other->client->sess.raceMode) {
+				other->client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
+				other->client->ps.ammo[AMMO_METAL_BOLTS] = 999;
+				other->client->ps.weapon = WP_CONCUSSION;
+				other->client->ps.zoomMode = 0;
 			}
 		}
 		Svcmd_ResetScores_f();
-		//We reset for everyone though?
 	}
-	client->ps.zoomMode = 0;//hehh
+	else if (level.gametype == GT_TEAM || level.gametype == GT_CTF) { //Update our teams guns
+		int i, j;
+		gentity_t* other;
+		for (i = 0; i < level.numConnectedClients; i++) {
+			other = &g_entities[level.sortedClients[i]];
+			if (other->inuse && other->client && !other->client->sess.raceMode && (other->client->ps.persistant[PERS_TEAM] == client->ps.persistant[PERS_TEAM])) {
+				other->client->ps.stats[STAT_WEAPONS] = client->ps.stats[STAT_WEAPONS];
+				for (j = AMMO_BLASTER; j < AMMO_MAX; j++)//w/e
+					other->client->ps.ammo[i] = client->ps.ammo[i];
+				other->client->ps.weapon = client->ps.weapon;
+				other->client->ps.zoomMode = 0;
+			}
+		}
+	}
+	client->ps.zoomMode = 0;
 }
 
 void GiveClientWeapons(gclient_t *client) {

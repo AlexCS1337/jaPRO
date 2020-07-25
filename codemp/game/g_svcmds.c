@@ -612,7 +612,7 @@ qboolean G_CallSpawn( gentity_t *ent );
 void Svcmd_ChangeGametype_f (void) {
 	char	input[16];
 	int		gametype, i;
-	gclient_t	*cl;
+	gentity_t* ent;
 
 	if ( trap->Argc() != 2 ) {
 		trap->Print("Usage: gametype <#>\n");
@@ -661,14 +661,14 @@ void Svcmd_ChangeGametype_f (void) {
 		RemoveCTFFlags();
 	}
 
-	for (i=0;  i<level.numPlayingClients; i++) { //Move people to the proper team if changing from team to non team gametype etc
-		cl = &level.clients[level.sortedClients[i]];
-
-		if (level.gametype < GT_TEAM && (cl->sess.sessionTeam == TEAM_RED || cl->sess.sessionTeam == TEAM_BLUE)) {
-			cl->sess.sessionTeam = TEAM_FREE;
-		}
-		else if (level.gametype >= GT_TEAM && !g_raceMode.integer && cl->sess.sessionTeam == TEAM_FREE) {
-			cl->sess.sessionTeam = TEAM_SPECTATOR;
+	for (i = 0; i < MAX_CLIENTS; i++) {//Build a list of clients.. sv_maxclients? w/e
+		ent = &g_entities[i];
+		if (!ent->client || !ent->inuse)
+			continue;
+		if (level.gametype < GT_TEAM && (ent->client->sess.sessionTeam == TEAM_RED) || (ent->client->sess.sessionTeam == TEAM_BLUE))
+			SetTeam(ent, "f", qtrue);
+		if (level.gametype >= GT_TEAM && (ent->client->sess.sessionTeam == TEAM_FREE) && !ent->client->sess.raceMode) {
+			SetTeam(ent, "s", qtrue);
 		}
 	}
 
@@ -676,7 +676,6 @@ void Svcmd_ChangeGametype_f (void) {
 
 	//Spawn / clear ctf flags?  
 	//who knows what needs to be done for siege.. forget it.
-
 }
 
 void Svcmd_AmKick_f(void) {

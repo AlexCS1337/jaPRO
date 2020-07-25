@@ -6611,7 +6611,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 		}
 		else if (distance < 200) {
@@ -6645,7 +6645,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 		}
 	}
@@ -6657,7 +6657,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
@@ -6715,7 +6715,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6760,7 +6760,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6797,7 +6797,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6831,7 +6831,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 		}
 		else if (distance < 200) {
@@ -6875,7 +6875,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 1200;
 			}
 		}
 	}

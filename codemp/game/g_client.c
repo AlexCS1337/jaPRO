@@ -3522,7 +3522,13 @@ void GiveClientItems(gclient_t *client) {
 void Svcmd_ResetScores_f(void);
 void PrintStats(int client);
 void G_GiveGunGameWeapon(gclient_t* client) {
-	int score = client->pers.stats.kills - client->ps.fd.suicides;
+	int score;
+	if (g_gametype.integer == GT_TEAM || g_gametype.integer == GT_CTF) {
+		score = level.teamScores[client->ps.persistant[PERS_TEAM]] - client->ps.fd.suicides;
+	}
+	else {
+		score = client->pers.stats.kills - client->ps.fd.suicides;
+	}
 	//set other ammo to 0, force change to wep?
 	client->ps.stats[STAT_WEAPONS] = 0;
 	client->forcedFireMode = 0;
@@ -3630,8 +3636,14 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 		int i;
 		gentity_t* ent;
 
-		trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
-		trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
+		if (g_gametype.integer == GT_TEAM || g_gametype.integer == GT_CTF) {
+			trap->SendServerCommand(-1, va("print \"%s team (%s)^3 won the gungame\n\"", TeamName(client->ps.persistant[PERS_TEAM]), client->pers.netname));
+			trap->SendServerCommand(-1, va("cp \"%s team (%s)^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", TeamName(client->ps.persistant[PERS_TEAM]), client->pers.netname));
+		}
+		else {
+			trap->SendServerCommand(-1, va("print \"%s^3 won the gungame\n\"", client->pers.netname));
+			trap->SendServerCommand(-1, va("cp \"%s^3 won the gungame\n\n\n\n\n\n\n\n\n\n\n\n\"", client->pers.netname));
+		}
 		PrintStats(-1);//JAPRO STATS
 		for (i = 0; i < level.numConnectedClients; i++) { //Kill every1? or every1 but me? or just reset weps? 
 			ent = &g_entities[level.sortedClients[i]];

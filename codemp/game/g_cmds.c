@@ -7184,7 +7184,8 @@ void Cmd_Warp_f(gentity_t *ent)
 	for (i = 0;i < MAX_NUM_WARPS; i++) {
 		if (!warpList[i].name[0]) //dis right? 
 			break;
-		if (!Q_stricmp(enteredWarpName, warpList[i].name)) {
+		//if (!Q_stricmp(warpList[i].name, enteredWarpName)) {
+		if (strstr(Q_strlwr(warpList[i].name), Q_strlwr(enteredWarpName))) {
 			warpNum = i;
 			break;
 		}

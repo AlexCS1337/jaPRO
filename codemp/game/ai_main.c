@@ -4624,7 +4624,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 float G_NewBotAIGetProjectileSpeed(int weapon, qboolean altFire) {
 	float projectileSpeed = 0;
 
-	if (weapon == WP_BRYAR_OLD || weapon == WP_BRYAR_PISTOL || weapon == WP_REPEATER)
+	if (weapon == WP_BRYAR_OLD || weapon == WP_BRYAR_PISTOL || (weapon == WP_REPEATER && !altFire))
 		projectileSpeed = 1600;
 	else if (weapon == WP_BLASTER)
 		projectileSpeed = 2300;
@@ -4632,6 +4632,8 @@ float G_NewBotAIGetProjectileSpeed(int weapon, qboolean altFire) {
 		projectileSpeed = 1300;
 	else if (weapon == WP_DEMP2 && !altFire)
 		projectileSpeed = 1800;
+	else if (weapon == WP_REPEATER && altFire)
+		projectileSpeed = 1100;
 	else if (weapon == WP_FLECHETTE && (g_tweakWeapons.integer & WT_STAKE_GUN))
 		projectileSpeed = 3000;
 	else if ((weapon == WP_FLECHETTE) && altFire)

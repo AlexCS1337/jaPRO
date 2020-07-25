@@ -1875,6 +1875,7 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 	if (seasonPB) {
 		int season_oldCount = 0, season_newCount, global_oldCount = 0, global_newCount;
 		int i = 1; //1st place is rank 1
+		int duration, lastDuration = 0;
 
 		sql = "SELECT COUNT(*) FROM LocalRun WHERE coursename = ? AND style = ? AND season = ? "
 			"UNION ALL SELECT COUNT(DISTINCT username) FROM LocalRun WHERE coursename = ? AND style = ?"; //entries ?
@@ -1912,7 +1913,15 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 			s = sqlite3_step(stmt);
 			if (s == SQLITE_ROW) {
 				season_newRank = 0; //Make sure this doesnt reset a set newrank, but it wont since we break after setting
-				if (duration_ms < sqlite3_column_int(stmt, 0)) { //We are faster than this time... If we dont find anything newrank stays -1
+				duration = sqlite3_column_int(stmt, 0);
+
+				if (style == MV_COOP_JKA) { //update this for coop ties
+					if (duration == lastDuration) {
+						i--;
+					}
+					lastDuration = duration;
+				}
+				if (duration_ms < duration) { //We are faster than this time... If we dont find anything newrank stays -1
 					season_newRank = i;
 					break;
 				}
@@ -1928,6 +1937,7 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 		CALL_SQLITE(finalize(stmt));
 
 		i = 1; //oh no no
+		lastDuration = 0;
 
 		//Get global rank, could union this with previous query maybe
 		sql = "SELECT MIN(duration_ms) FROM LocalRun WHERE coursename = ? AND style = ? GROUP BY username ORDER BY duration_ms ASC, end_time ASC, average DESC";
@@ -1938,7 +1948,15 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 			s = sqlite3_step(stmt);
 			if (s == SQLITE_ROW) {
 				global_newRank = 0; //Make sure this doesnt reset a set newrank, but it wont since we break after setting --  what?
-				if (duration_ms < sqlite3_column_int(stmt, 0)) { //We are faster than this time... If we dont find anything newrank stays -1
+				duration = sqlite3_column_int(stmt, 0);
+
+				if (style == MV_COOP_JKA) { //update this for coop ties
+					if (duration == lastDuration) {
+						i--;
+					}
+					lastDuration = duration;
+				}	
+				if (duration_ms < duration) { //We are faster than this time... If we dont find anything newrank stays -1
 					global_newRank = i;
 					break;
 				}
@@ -1987,7 +2005,11 @@ void G_AddRaceTime(char *username, char *message, int duration_ms, int style, in
 		}
 
 		if ((season_newRank != season_oldRank || global_newRank != global_oldRank)) { //Do this before messing with out race list rank - does this affect count?
-			G_UpdateOtherLocalRun(db, season_newRank, season_oldRank, global_newRank, global_oldRank, style, coursename, rawtime); //Update other spots in race list
+			if (style == MV_COOP_JKA && topspeed == 0 && average == 0) { //dont update others if its coop and we're the booster.. our partner already updated it
+			}
+			else {
+				G_UpdateOtherLocalRun(db, season_newRank, season_oldRank, global_newRank, global_oldRank, style, coursename, rawtime); //Update other spots in race list
+			}
 		}
 		G_UpdateOurLocalRun(db, season_oldRank, season_newRank, global_oldRank, global_newRank, style, username, coursename, duration_ms, topspeed, average, rawtime, season_newCount, global_newCount);//Update our race list
 

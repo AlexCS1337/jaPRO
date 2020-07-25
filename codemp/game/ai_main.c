@@ -4680,9 +4680,8 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 			projectileDrop = (0.5) * (800) * (eta * eta); //If weapon has gravity, compensate to aim higher
 			predictedSpot[2] += projectileDrop;
 		}
-
 		if (bs->currentEnemy->client->ps.groundEntityNum == ENTITYNUM_NONE) { //In Air
-			if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION)) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
+			if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION) && bs->currentEnemy->client->ps.velocity[2] > JUMP_VELOCITY-10) { //If person is forcejumping up... assume they will keep forcejumping.. until end of jump?
 				const float diff = (predictedSpot[2] - bs->cur_ps.fd.forceJumpZStart);
 				if (diff > forceJumpHeight[bs->currentEnemy->client->ps.fd.forcePowerLevel[FP_LEVITATION]]) { //We predict they will be higher than they can possibly jump to, so correct
 					predictedSpot[2] -= (diff - forceJumpHeight[bs->currentEnemy->client->ps.fd.forcePowerLevel[FP_LEVITATION]]);
@@ -4697,8 +4696,10 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 				predictedSpotGrav[1] = predictedSpot[1];
 				predictedSpotGrav[2] = predictedSpot[2] - playerDrop;
 
-				JP_Trace(&tr, predictedSpot, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //eh? do this if any eta tbh.. not just if jumping
-				predictedSpot[2] = tr.endpos[2];
+				JP_Trace(&tr, headlevel, 0, 0, predictedSpotGrav, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //eh? do this if any eta tbh.. not just if jumping
+				VectorCopy(tr.endpos, predictedSpot);
+
+				//G_CheckGroundPound(bs, eta, tr.fraction * eta); //return if so?
 
 				//now trace from us to pos and see if its a los, if not don't fire? or...,.,.,.,.,
 				//def never fire if within selfkill range
@@ -4711,6 +4712,20 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		VectorCopy(bs->currentEnemy->client->ps.velocity, dir);
 		VectorNormalize(dir);
 		VectorMA(headlevel, 4, dir, predictedSpot); //Lead them by 4u in their direction of motion?
+
+		if (bs->cur_ps.weapon == WP_DEMP2 && bs->doAltAttack && (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE) || bs->currentEnemy->client->ps.velocity[2] < 0) { //stupid demp2 delay compensate, only if they are not in air, or in air and moving down
+			trace_t tr;
+			vec3_t predictedSpotGround;
+
+			VectorMA(headlevel, 0.5f, bs->currentEnemy->client->ps.velocity, predictedSpot); //Lead them by 500ms
+			predictedSpotGround[0] = predictedSpot[0];
+			predictedSpotGround[1] = predictedSpot[1];
+			predictedSpotGround[2] = predictedSpot[2] - 1024;
+			JP_Trace(&tr, headlevel, 0, 0, predictedSpotGround, ENTITYNUM_NONE, MASK_SOLID, qfalse, 0, 0); //aim at ground below them
+			VectorCopy(tr.endpos, predictedSpot);
+
+			//G_CheckGroundPound(bs, 0.2f, tr.fraction * 0.2f); //return if so?
+		}
 	}
 
 	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke
@@ -6206,12 +6221,11 @@ void NewBotAI_GetAim(bot_state_t *bs)
 			VectorSubtract(bs->cur_ps.origin, saber->s.pos.trBase, saberDiff);
 			dist = VectorLengthSquared(saberDiff);
 
-			if (dist < saberDistance && saber->s.pos.trTime) {
+			if ((dist < saberDistance && saber->s.pos.trTime) && bs->frame_Enemy_Vis || !bs->currentEnemy->client || (bs->currentEnemy->client->ps.clientNum != g_entities[i].client->ps.clientNum)) { //Don't count them as target if they are currently our target and not LOS -wat about demp2?
 				saberOwner = i;
 				closestSaber = g_entities[i].client->ps.saberEntityNum;
 				saberDistance = dist;
 			}
-
 		}
 		i++;
 	}
@@ -6247,7 +6261,9 @@ void NewBotAI_GetAim(bot_state_t *bs)
 		VectorCopy(bs->currentEnemy->client->ps.origin, headlevel);
 
 		if (bs->currentEnemy->client)
-			headlevel[2] += bs->currentEnemy->client->ps.viewheight - 24;//aim at chest?
+			headlevel[2] += bs->currentEnemy->client->ps.viewheight - 16;//aim at chest?
+		if (bs->cur_ps.saberInFlight)
+			headlevel[2] += 24; //aim a bit higher for saberthrow
 		G_NewBotAIAimLeading(bs, headlevel);
 	}
 
@@ -6538,7 +6554,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1000;
+				bs->altChargeTime = 2100;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER)) {
 				bestWeapon = WP_BLASTER;
@@ -6611,7 +6627,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 		}
 		else if (distance < 200) {
@@ -6645,7 +6661,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 		}
 	}
@@ -6657,7 +6673,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 			else if (BotWeaponSelectable(bs, WP_BLASTER))
 				bestWeapon = WP_BLASTER;
@@ -6715,7 +6731,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6760,7 +6776,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 			else if (bs->cur_ps.stats[STAT_WEAPONS] & (1 << WP_SABER))
 				bestWeapon = WP_SABER;
@@ -6797,7 +6813,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 		}
 		else if (distance > 350 && distance < 900) { //Have some padding between distance tiers so we dont weaponswitch spam
@@ -6831,7 +6847,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 		}
 		else if (distance < 200) {
@@ -6875,7 +6891,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 			else if (BotWeaponSelectableAltFire(bs, WP_DEMP2) && forcedFireMode != 1) {
 				bestWeapon = WP_DEMP2;
 				bs->doAltAttack = 1;
-				bs->altChargeTime = 1200;
+				bs->altChargeTime = 2100;
 			}
 		}
 	}
@@ -6887,6 +6903,9 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 	else if (bestWeapon == WP_BOWCASTER) {
 		bs->doAltAttack = 1;
 	}
+
+	if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_DEMP2) //dont charge if they can cancel it
+		bs->altChargeTime = 50;
 
 	if (forcedFireMode == 1)
 		bs->doAltAttack = 0;
@@ -6923,6 +6942,9 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 
 	if (bs->runningLikeASissy) //Dont attack when chasing them with strafe i guess
 		return;
+	if (bs->isCamper && (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT) && (bs->cur_ps.weaponstate != WEAPON_CHARGING)) {//don't attack if waiting for them to land to groundpound - modify this so we don't cancel a charge
+		return;
+	}
 
 	if (bs->currentEnemy->client->invulnerableTimer && (bs->currentEnemy->client->invulnerableTimer > level.time)) {//don't attack them if they can't take dmg
 		return;
@@ -6961,7 +6983,7 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 		return;
 	}
 
-	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && NewBotAI_GetAltCharge(bs) == 1) {//Ehhh..
+	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && (NewBotAI_GetAltCharge(bs) == 1) && !bs->isCamper) {//Ehhh.. don't release charge if we are waiting
 		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
 			return;
 		//if (level.framenum % 2)
@@ -7333,9 +7355,8 @@ int NewBotAI_GetDrain(bot_state_t *bs) {
 		return 0;
 	if (hisForce == 0)
 		return 0;
-
-	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT)
-		weight *= 0.9f; //Dont cancel a charge unless its important
+	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && bs->cur_ps.weaponChargeTime > 700) //don't drain if we are at a charge
+		return 0;
 
 	if (bs->currentEnemy->client->ps.saberInFlight) { //They are saberthrowing
 		if (ourHealth > 40) {//We can take the hit
@@ -8079,7 +8100,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 #if _ADVANCEDBOTSHIT
 		DoAloneStuff(bs, thinktime);
 #else
-		StandardBotAI(bs, thinktime);
+		//StandardBotAI(bs, thinktime);
 #endif
 		return;
 	}
@@ -8102,7 +8123,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 #if _ADVANCEDBOTSHIT
 		DoAloneStuff(bs, thinktime);
 #else
-		StandardBotAI(bs, thinktime);
+		//StandardBotAI(bs, thinktime);
 #endif
 		return;
 	}

@@ -611,7 +611,7 @@ void G_CacheGametype( void );
 qboolean G_CallSpawn( gentity_t *ent );
 void Svcmd_ChangeGametype_f (void) {
 	char	input[16];
-	int		gametype, i;
+	int		gametype, i, red = 0;
 	gentity_t* ent;
 
 	if ( trap->Argc() != 2 ) {
@@ -668,7 +668,11 @@ void Svcmd_ChangeGametype_f (void) {
 		if (level.gametype < GT_TEAM && (ent->client->sess.sessionTeam == TEAM_RED) || (ent->client->sess.sessionTeam == TEAM_BLUE))
 			SetTeam(ent, "f", qtrue);
 		if (level.gametype >= GT_TEAM && (ent->client->sess.sessionTeam == TEAM_FREE) && !ent->client->sess.raceMode) {
-			SetTeam(ent, "s", qtrue);
+			if (red)
+				SetTeam(ent, "red", qtrue);
+			else
+				SetTeam(ent, "blue", qtrue);
+			red = !red;
 		}
 	}
 

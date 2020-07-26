@@ -4715,7 +4715,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		VectorNormalize(dir);
 		VectorMA(headlevel, 4, dir, predictedSpot); //Lead them by 4u in their direction of motion?
 
-		if (bs->cur_ps.weapon == WP_DEMP2 && bs->doAltAttack && (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE) || bs->currentEnemy->client->ps.velocity[2] < 0) { //stupid demp2 delay compensate, only if they are not in air, or in air and moving down
+		if ((bs->cur_ps.weapon == WP_DEMP2) && bs->doAltAttack && (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE) || bs->currentEnemy->client->ps.velocity[2] < 0) { //stupid demp2 delay compensate, only if they are not in air, or in air and moving down
 			trace_t tr;
 			vec3_t predictedSpotGround;
 
@@ -6192,7 +6192,6 @@ void NewBotAI_GetStrafeAim(bot_state_t *bs)
 void NewBotAI_GetAim(bot_state_t *bs)
 {
 	vec3_t headlevel;
-	float bLeadAmount = 0;
 	int i = 0;
 	int closestSaber = 0, saberDistance = 9999999, dist, saberOwner;
 	vec3_t saberDiff;
@@ -7374,12 +7373,14 @@ int NewBotAI_GetDrain(bot_state_t *bs) {
 	return 0;
 }
 
+/*
 int NewBotAI_GetWait(bot_state_t *bs) { //Sometimes the best attack is nothing, like when they are trying to saberthrow you and you want to focus on blocking
 	int weight = 0;
 	if (bs->currentEnemy->client->ps.saberInFlight && bs->frame_Enemy_Len > 200)
 		weight = 10;
 	return weight;
 }
+*/
 
 int NewBotAI_GetGrip(bot_state_t *bs) {
 	const int ourHealth = g_entities[bs->client].health, hisHealth = bs->currentEnemy->health, ourForce = bs->cur_ps.fd.forcePower, hisForce = bs->currentEnemy->client->ps.fd.forcePower;
@@ -7428,7 +7429,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 	pushWeight = NewBotAI_GetPush(bs);
 	drainWeight = NewBotAI_GetDrain(bs);
 	gripWeight = NewBotAI_GetGrip(bs);
-	doNothingWeight = NewBotAI_GetWait(bs);
+	//doNothingWeight = NewBotAI_GetWait(bs);
 
 	if (pushWeight > pullWeight && pushWeight > drainWeight && pushWeight > gripWeight && pushWeight > 0) {
 		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PUSH;
@@ -7496,7 +7497,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 		*/
 	}
 
-	if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
+	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL))
 		useTheForce = qfalse; //Sad hack not sure why?
 
 	if (useTheForce && (level.framenum % 2) && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)))
@@ -7533,11 +7534,11 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 					level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
 					useTheForce = qtrue;
 				}
-				if (!(bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT) && (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION)) && ((bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE - 1) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))))) {
+				if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LEVITATION)) && ((bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE - 1) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))))) {
 					level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
 					useTheForce = qtrue;
 				}
-				else if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (bs->currentEnemy->client->ps.saberMove > 1) && bs->currentEnemy->client->ps.fd.saberAnimLevel != SS_STRONG) {
+				else if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (bs->currentEnemy->client->ps.saberMove > 1) && bs->currentEnemy->client->ps.fd.saberAnimLevel != SS_STRONG) {
 					level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
 					useTheForce = qtrue;
 				}
@@ -7546,7 +7547,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 				level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
 				useTheForce = qtrue;
 			}
-			else if (!bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && bs->currentEnemy->health < 40 && (bs->frame_Enemy_Len > 90) && ((BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) || (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE - 1) || (bs->currentEnemy->client->ps.fd.forcePower < 20))) {
+			else if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && bs->currentEnemy->health < 40 && (bs->frame_Enemy_Len > 90) && ((BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) || (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE - 1) || (bs->currentEnemy->client->ps.fd.forcePower < 20))) {
 				level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
 				useTheForce = qtrue;
 			}
@@ -7614,8 +7615,8 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 		}
 	}
 
-	if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
-		useTheForce = qfalse;
+	//if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
+		//useTheForce = qfalse;
 
 	if (useTheForce && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time))) {
 		trap->EA_ForcePower(bs->client);
@@ -7932,7 +7933,7 @@ void DoAloneStuff(bot_state_t *bs, float thinktime) {
 	}
 
 	else if (bs->cur_ps.fd.forceSide == FORCE_DARKSIDE) {
-		if (bs->cur_ps.fd.forcePowersActive & (1 << FP_RAGE)) { 
+		if (bs->cur_ps.fd.forcePowersActive & (1 << FP_RAGE)) {
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_RAGE; //Turn off rage
 			useTheForce = qtrue;
 		}

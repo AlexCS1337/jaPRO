@@ -8020,7 +8020,7 @@ void DoAloneStuff(bot_state_t *bs, float thinktime) {
 	}
 
 	if (!destination) {
-		StandardBotAI(bs, thinktime);
+		//StandardBotAI(bs, thinktime);
 		return;
 	}
 
@@ -8051,7 +8051,7 @@ void DoAloneStuff(bot_state_t *bs, float thinktime) {
 	//Run to it..
 }
 
-#define _ADVANCEDBOTSHIT 0
+#define _ADVANCEDBOTSHIT 1
 
 void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 {

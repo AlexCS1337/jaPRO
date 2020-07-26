@@ -3671,6 +3671,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 				for (j = AMMO_BLASTER; j < AMMO_MAX; j++)//w/e
 					other->client->ps.ammo[i] = client->ps.ammo[i];
 				other->client->ps.weapon = client->ps.weapon;
+				other->client->forcedFireMode = client->forcedFireMode;
 				other->client->ps.zoomMode = 0;
 			}
 		}

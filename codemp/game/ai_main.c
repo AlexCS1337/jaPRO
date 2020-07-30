@@ -4715,7 +4715,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		VectorNormalize(dir);
 		VectorMA(headlevel, 4, dir, predictedSpot); //Lead them by 4u in their direction of motion?
 
-		if ((bs->cur_ps.weapon == WP_DEMP2) && bs->doAltAttack && (bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE) || bs->currentEnemy->client->ps.velocity[2] < 0) { //stupid demp2 delay compensate, only if they are not in air, or in air and moving down
+		if ((bs->cur_ps.weapon == WP_DEMP2) && bs->doAltAttack && ((bs->currentEnemy->client->ps.groundEntityNum != ENTITYNUM_NONE) || bs->currentEnemy->client->ps.velocity[2] < 0)) { //stupid demp2 delay compensate, only if they are not in air, or in air and moving down
 			trace_t tr;
 			vec3_t predictedSpotGround;
 

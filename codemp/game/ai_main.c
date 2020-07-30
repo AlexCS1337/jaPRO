@@ -6222,7 +6222,7 @@ void NewBotAI_GetAim(bot_state_t *bs)
 			VectorSubtract(bs->cur_ps.origin, saber->s.pos.trBase, saberDiff);
 			dist = VectorLengthSquared(saberDiff);
 
-			if ((dist < saberDistance && saber->s.pos.trTime) && bs->frame_Enemy_Vis || !bs->currentEnemy->client || (bs->currentEnemy->client->ps.clientNum != g_entities[i].client->ps.clientNum)) { //Don't count them as target if they are currently our target and not LOS -wat about demp2?
+			if (dist < saberDistance && saber->s.pos.trTime) {
 				saberOwner = i;
 				closestSaber = g_entities[i].client->ps.saberEntityNum;
 				saberDistance = dist;
@@ -6900,6 +6900,7 @@ int NewBotAI_GetWeapon(bot_state_t *bs)
 	if (bestWeapon == WP_THERMAL) {
 		//bs->doAltAttack = 1;
 		bs->altChargeTime = 1250;
+		bs->ChargeTime = 1250;
 	}
 	else if (bestWeapon == WP_BOWCASTER) {
 		bs->doAltAttack = 1;
@@ -6929,9 +6930,29 @@ int NewBotAI_GetAltCharge(bot_state_t *bs)
 
 	if ((bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT) && (level.time - bs->cur_ps.weaponChargeTime) > bs->altChargeTime)
 		return 2;//release charge.. was 2 ?
+	if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT)
+		return 3;
 
 	return 1;
 }
+
+int NewBotAI_GetCharge(bot_state_t* bs)
+{
+	int weap;
+
+	weap = bs->cur_ps.weapon;
+
+	if (bs->cur_ps.ammo[weaponData[weap].ammoIndex] < weaponData[weap].energyPerShot && weap != WP_STUN_BATON)
+		return 0;
+
+	if ((bs->cur_ps.weaponstate == WEAPON_CHARGING) && (level.time - bs->cur_ps.weaponChargeTime) > bs->ChargeTime)
+		return 2;//release charge.. was 2 ?
+	if (bs->cur_ps.weaponstate != WEAPON_CHARGING)
+		return 3;
+
+	return 1;
+}
+
 
 void NewBotAI_GetAttack(bot_state_t *bs)
 {
@@ -6984,15 +7005,29 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 		return;
 	}
 
-	if ((bs->cur_ps.weapon == weapon) && bs->doAltAttack && (NewBotAI_GetAltCharge(bs) == 1) && !bs->isCamper) {//Ehhh.. don't release charge if we are waiting
-		if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) //Weird case for stun baton since low range and low firerate, dont bother until they are in range
-			return;
-		//if (level.framenum % 2)
-			trap->EA_Alt_Attack(bs->client);
-	}
-	else if ((bs->cur_ps.weapon == weapon)) {//we are using desired weapon
-		if (level.framenum % 2)
-			trap->EA_Attack(bs->client);
+	if (!bs->isCamper && (bs->cur_ps.weapon == weapon)) {
+		if (bs->doAltAttack) {
+			const int altCharge = NewBotAI_GetAltCharge(bs);
+			if (weapon == WP_STUN_BATON && bs->frame_Enemy_Len > 240 && (g_tweakWeapons.integer & WT_STUN_SHOCKLANCE)) { //Weird case for stun baton since low range and low firerate, dont bother until they are in range
+			}
+			else if (altCharge == 1) {
+				trap->EA_Alt_Attack(bs->client);
+			}
+			else if (altCharge == 3) {
+				if (level.framenum % 2)
+					trap->EA_Alt_Attack(bs->client);
+			}
+		}
+		else {
+			const int charge = NewBotAI_GetCharge(bs);
+			if (charge == 1) { //0 is no ammo, 1 charging, 2 is release charge, 3 is not charging
+				trap->EA_Attack(bs->client);
+			}
+			else if (charge == 3) {
+				if (level.framenum % 2)
+					trap->EA_Attack(bs->client);
+			}
+		}
 	}
 }
 
@@ -7420,7 +7455,7 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 {
 	vec3_t a_fo;
 	qboolean useTheForce = qfalse;
-	int pushWeight, pullWeight, drainWeight, gripWeight, doNothingWeight;
+	int pushWeight, pullWeight, drainWeight, gripWeight;//, doNothingWeight;
 
 	VectorSubtract(bs->currentEnemy->client->ps.origin, bs->eye, a_fo);
 	vectoangles(a_fo, a_fo);

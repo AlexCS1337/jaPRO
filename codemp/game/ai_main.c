@@ -7104,8 +7104,30 @@ void NewBotAI_GetMovement(bot_state_t *bs)
 	else if (hisWeapon > WP_SABER && bs->cur_ps.weapon > WP_SABER) { //gun battle..
 		bs->runningLikeASissy = 0;
 
-		if (hisWeapon == WP_REPEATER || hisWeapon == WP_ROCKET_LAUNCHER || hisWeapon == WP_CONCUSSION) { //Splash dmg, jump
-			NewBotAI_Flipkick(bs);
+		if (hisWeapon == WP_REPEATER || hisWeapon == WP_ROCKET_LAUNCHER || hisWeapon == WP_CONCUSSION || (hisWeapon == WP_DEMP2 && bs->currentEnemy->client->forcedFireMode == 2)) { //Splash dmg, jump
+			//see if they have jetpack and do movement for that
+			//If we have a jetpack, and enough fuel, activate it
+			//once its active, hold it
+			if (bs->cur_ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) {
+				if (g_tweakJetpack.integer) {
+					if (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE) { //On ground
+						if (bs->cur_ps.jetpackFuel > 90) {
+							trap->EA_Jump(bs->client);
+							bs->runningToEscapeThreat = level.time;
+						}
+					}
+					else { //In Air
+						if (bs->runningToEscapeThreat < level.time - 200)
+							trap->EA_Jump(bs->client);
+					}
+				}
+				else {
+					trap->EA_Jump(bs->client);
+				}
+			}
+			else if (bs->cur_ps.fd.forcePower > 30) {
+				trap->EA_Jump(bs->client);
+			}
 			NewBotAI_GetGroundDodge(bs);
 			trap->EA_MoveForward(bs->client);
 		}

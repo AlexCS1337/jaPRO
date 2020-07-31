@@ -4253,9 +4253,11 @@ void ClientThink_real( gentity_t *ent ) {
 				client->ps.fd.forcePower = 50;
 		}
 		else if (client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) {
-			if (client->ps.fd.forceHealTime > level.time)
+			if (client->ps.fd.forceHealTime > level.time) //lightning bolted
 				client->ps.speed *= 1.28f;
 		}
+		else if (g_gunGame.integer && !client->sess.raceMode && client->ps.weapon == WP_SABER)
+			client->ps.speed *= 1.28f;
 
 		//Check for a siege class speed multiplier
 		if (level.gametype == GT_SIEGE &&

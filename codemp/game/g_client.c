@@ -3656,6 +3656,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 				other->client->ps.stats[STAT_WEAPONS] = (1 << WP_CONCUSSION);
 				other->client->ps.ammo[AMMO_METAL_BOLTS] = 999;
 				other->client->ps.weapon = WP_CONCUSSION;
+				other->client->forcedFireMode = 1;
 				other->client->ps.zoomMode = 0;
 			}
 		}
@@ -3669,7 +3670,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 			if (other->inuse && other->client && !other->client->sess.raceMode && (other->client->ps.persistant[PERS_TEAM] == client->ps.persistant[PERS_TEAM])) {
 				other->client->ps.stats[STAT_WEAPONS] = client->ps.stats[STAT_WEAPONS];
 				for (j = AMMO_BLASTER; j < AMMO_MAX; j++)//w/e
-					other->client->ps.ammo[i] = client->ps.ammo[i];
+					other->client->ps.ammo[j] = client->ps.ammo[j];
 				other->client->ps.weapon = client->ps.weapon;
 				other->client->forcedFireMode = client->forcedFireMode;
 				other->client->ps.zoomMode = 0;

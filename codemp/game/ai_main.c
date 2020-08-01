@@ -2133,7 +2133,7 @@ int PassLovedOneCheck(bot_state_t *bs, gentity_t *ent)
 qboolean G_ThereIsAMaster(void);
 
 //standard check to find a new enemy.
-int ScanForEnemies(bot_state_t *bs)
+int ScanForEnemies(bot_state_t* bs)
 {
 	vec3_t a;
 	float distcheck;
@@ -2142,7 +2142,6 @@ int ScanForEnemies(bot_state_t *bs)
 	int i;
 	float hasEnemyDist = 0;
 	qboolean noAttackNonJM = qfalse;
-	float ourHealth = g_entities[bs->client].health;
 
 	closest = 999999;
 	i = 0;
@@ -2150,59 +2149,23 @@ int ScanForEnemies(bot_state_t *bs)
 
 	if (bs->currentEnemy)
 	{ //only switch to a new enemy if he's significantly closer
-		if (g_newBotAI.integer)
-			hasEnemyDist = 0;
-		else
-			hasEnemyDist = bs->frame_Enemy_Len;
-	}
-
-	if (bs->currentEnemy && bs->currentEnemy->client &&
-		bs->currentEnemy->client->ps.isJediMaster)
-	{ //The Jedi Master must die.
-		return -1;
-	}
-
-	if (level.gametype == GT_JEDIMASTER)
-	{
-		if (G_ThereIsAMaster() && !bs->cur_ps.isJediMaster)
-		{ //if friendly fire is on in jedi master we can attack people that bug us
-			if (!g_friendlyFire.integer)
-			{
-				noAttackNonJM = qtrue;
-			}
-			else
-			{
-				closest = 128; //only get mad at people if they get close enough to you to anger you, or hurt you
-			}
-		}
+		hasEnemyDist = bs->frame_Enemy_Len;
 	}
 
 	while (i <= MAX_CLIENTS)
 	{
-		if (i != bs->client && g_entities[i].client && !OnSameTeam(&g_entities[bs->client], &g_entities[i]) && PassStandardEnemyChecks(bs, &g_entities[i])
-			&& BotPVSCheck(g_entities[i].client->ps.origin, bs->eye) && PassLovedOneCheck(bs, &g_entities[i]))
+		if (i != bs->client && g_entities[i].client && !OnSameTeam(&g_entities[bs->client], &g_entities[i]) && PassStandardEnemyChecks(bs, &g_entities[i]) && BotPVSCheck(g_entities[i].client->ps.origin, bs->eye) && PassLovedOneCheck(bs, &g_entities[i]))
 		{
 			VectorSubtract(g_entities[i].client->ps.origin, bs->eye, a);
-			if (g_newBotAI.integer) {
-				float normalizedHealth = 0.25 + (g_entities[i].health - 1)*(1 - 0.25)/(100-1); //Range .25 to 1
-
-				normalizedHealth += (100 - ourHealth) * 0.005; //Bring normalizedhealth closer to 1 the lower HP we ourselves are?, up to +0.5? 
-				if (normalizedHealth > 1)
-					normalizedHealth = 1;
-
-				distcheck = VectorLength(a) * normalizedHealth;
-			}
-			else
-				distcheck = VectorLength(a);
+			distcheck = VectorLength(a);
 			vectoangles(a, a);
-
-			if (g_entities[i].client->ps.isJediMaster)
-			{ //make us think the Jedi Master is close so we'll attack him above all
-				distcheck = 1;
-			}
-
-			if (distcheck < closest &&
-				(g_newBotAI.integer || (((InFieldOfVision(bs->viewangles, 90, a) && !BotMindTricked(bs->client, i)) || BotCanHear(bs, &g_entities[i], distcheck)) && OrgVisible(bs->eye, g_entities[i].client->ps.origin, -1))))
+			/*
+						if (g_entities[i].client->ps.isJediMaster)
+						{ //make us think the Jedi Master is close so we'll attack him above all
+							distcheck = 1;
+						}
+			*/
+			if (distcheck < closest && ((InFieldOfVision(bs->viewangles, 90, a) && !BotMindTricked(bs->client, i)) || BotCanHear(bs, &g_entities[i], distcheck)) && OrgVisible(bs->eye, g_entities[i].client->ps.origin, -1))
 			{
 				if (BotMindTricked(bs->client, i))
 				{
@@ -2210,7 +2173,7 @@ int ScanForEnemies(bot_state_t *bs)
 					{
 						if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
 						{ //if we have an enemy, only switch to closer if he is 128+ closer to avoid flipping out
-							if (!noAttackNonJM || g_entities[i].client->ps.isJediMaster)
+							if (!noAttackNonJM)	//|| g_entities[i].client->ps.isJediMaster)
 							{
 								closest = distcheck;
 								bestindex = i;
@@ -2222,7 +2185,7 @@ int ScanForEnemies(bot_state_t *bs)
 				{
 					if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
 					{ //if we have an enemy, only switch to closer if he is 128+ closer to avoid flipping out
-						if (!noAttackNonJM || g_entities[i].client->ps.isJediMaster)
+						if (!noAttackNonJM)	//|| g_entities[i].client->ps.isJediMaster)
 						{
 							closest = distcheck;
 							bestindex = i;
@@ -2233,7 +2196,7 @@ int ScanForEnemies(bot_state_t *bs)
 		}
 		i++;
 	}
-	
+
 	return bestindex;
 }
 
@@ -4741,8 +4704,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 	vectoangles(a, ang);
 	VectorCopy(ang, bs->goalAngles);
 
-	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE &&
-		g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke and Wiggle
+	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove != LS_NONE &&	bs->cur_ps.saberMove != LS_READY) { //Poke and Wiggle
 
 		if (level.time % 100 > 50) {
 			bs->goalAngles[YAW] += 3.0f;
@@ -4756,6 +4718,15 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		}
 		else {
 			bs->goalAngles[PITCH] -= 6.0f;
+		}
+
+		if (bs->cur_ps.saberMove == LS_A_T2B) {
+			if (bs->cur_ps.torsoTimer > 400) { //aim lower at start of red swing
+				bs->goalAngles[PITCH] += 45;
+			}
+			else if (bs->cur_ps.torsoTimer < 300) {
+				bs->goalAngles[PITCH] -= 45.0f;
+			}
 		}
 
 		bs->goalAngles[YAW] = AngleNormalize360(bs->goalAngles[YAW]);
@@ -6345,9 +6316,28 @@ void NewBotAI_Getup(bot_state_t *bs)
 
 void NewBotAI_Flipkick(bot_state_t *bs)
 {
+	qboolean enemySwing = qfalse;
+	if (bs->currentEnemy && bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->cur_ps.torsoTimer) {
+		enemySwing = qtrue;
+	}
+
+	if (bs->currentEnemy && bs->currentEnemy->client && bs->cur_ps.saberMove == LS_A_T2B && (bs->currentEnemy->client->ps.saberMove != LS_READY || bs->currentEnemy->client->ps.weapon != WP_SABER || bs->currentEnemy->client->ps.fd.saberAnimLevel != SS_STRONG) && bs->frame_Enemy_Len < 180 && !enemySwing) {//In range and they can't block it
+		if (bs->cur_ps.torsoTimer < 350 && bs->cur_ps.torsoTimer > 100 && bs->frame_Enemy_Len < 130) {
+			return;
+		}
+	}
+
 	if (bs->cur_ps.groundEntityNum == ENTITYNUM_NONE - 1 || bs->cur_ps.fd.forceJumpZStart < 16) {//idk
 		trap->EA_MoveForward(bs->client);
 		trap->EA_Jump(bs->client);
+	}
+
+	//if red swing and during the good part of anim and they are in range of saber dont kick them.. yet
+	if (bs->currentEnemy && bs->currentEnemy->client && bs->cur_ps.saberMove == LS_A_T2B && (bs->currentEnemy->client->ps.saberMove != LS_READY || bs->currentEnemy->client->ps.weapon != WP_SABER || bs->currentEnemy->client->ps.fd.saberAnimLevel != SS_STRONG) && bs->frame_Enemy_Len < 180 && !enemySwing) {//In range and they can't block it
+		if (bs->cur_ps.torsoTimer < 250 && bs->cur_ps.torsoTimer > 100 && bs->frame_Enemy_Len < 110) {
+			trap->EA_Crouch(bs->client);
+			return;
+		}
 	}
 
 	else if (((bs->origin[2] - bs->cur_ps.fd.forceJumpZStart) > 24) && ((bs->origin[2] - bs->cur_ps.fd.forceJumpZStart) < 48))
@@ -6973,28 +6963,58 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	}
 
 	if (bs->cur_ps.weapon == WP_SABER) {//Fullforce saber attacks
-		g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STRONG;
-
-		//todo - skip if we are already during a swing 
-		if ((g_entities[bs->client].client->ps.saberMove == LS_NONE || g_entities[bs->client].client->ps.saberMove == LS_READY) && NewBotAI_GetTimeToInRange(bs, 75, 600) < 600) {
-			if (g_entities[bs->client].health > 70) {
-				if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) || 
-					 ((bs->cur_ps.fd.forcePower < 60) || ((bs->frame_Enemy_Len < 70) && (bs->currentEnemy->client->ps.origin[2] - bs->cur_ps.origin[2]) > 50 ))) {
+	/*	if (0) { //Yellow sweep
+			g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_MEDIUM;
+			if (bs->cur_ps.torsoTimer) {
+				if (bs->cur_ps.torsoTimer < 200) {
+					if (bs->cur_ps.saberMove == LS_A_L2R) {//Right
+						trap->EA_MoveLeft(bs->client);
+					}
+					else if (bs->cur_ps.saberMove == LS_A_R2L) {//Left
+						trap->EA_MoveRight(bs->client);
+					}
+					if (g_entities[bs->client].client->pers.cmd.forwardmove) {
+						trap->EA_MoveBack(bs->client);
+					}
+					if (bs->cur_ps.movementDir == 6 || bs->cur_ps.movementDir == 2)
 						trap->EA_Attack(bs->client);
-						return;
 				}
 			}
-		}
-
-		/*
-		if (((speed >= 0) && ((bs->frame_Enemy_Len / speed) < 1.2f)) || (bs->frame_Enemy_Len < 64)) {
-			if (g_entities[bs->client].health > 60) {
-				if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) || bs->cur_ps.fd.forcePower < 40)
-					trap->EA_Attack(bs->client);
+			else {//Start it w/ a right swing i guess
+				trap->EA_MoveLeft(bs->client);
+				if (g_entities[bs->client].client->pers.cmd.forwardmove) {
+					trap->EA_MoveBack(bs->client);
+				}
+				trap->EA_Attack(bs->client);
 			}
+			//proble we have to stop moving forward, or just hold S?
+			//Get movement dir, if W, add S during start of swing
+			//Get swing anim, if left, do right. if right, do left.
+			//get swing anim point, if less than 50ms left, hold key and attack.  otherwise dont
 		}
-		*/
+		else */{
+			g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STRONG;
 
+			//todo - skip if we are already during a swing 
+			if ((g_entities[bs->client].client->ps.saberMove == LS_NONE || g_entities[bs->client].client->ps.saberMove == LS_READY) && NewBotAI_GetTimeToInRange(bs, 75, 600) < 600) {
+				if (g_entities[bs->client].health > 70) {
+					if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) ||
+						((bs->cur_ps.fd.forcePower < 60) || ((bs->frame_Enemy_Len < 70) && (bs->currentEnemy->client->ps.origin[2] - bs->cur_ps.origin[2]) > 50))) {
+						trap->EA_Attack(bs->client);
+						return;
+					}
+				}
+			}
+
+			/*
+			if (((speed >= 0) && ((bs->frame_Enemy_Len / speed) < 1.2f)) || (bs->frame_Enemy_Len < 64)) {
+				if (g_entities[bs->client].health > 60) {
+					if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) || bs->cur_ps.fd.forcePower < 40)
+						trap->EA_Attack(bs->client);
+				}
+			}
+			*/
+		}
 
 
 
@@ -7237,9 +7257,24 @@ void NewBotAI_GetMovement(bot_state_t *bs)
 					trap->EA_MoveRight(bs->client);
 			}
 		}
-		else
+		else if (bs->frame_Enemy_Len > 80) {
+			float dot;
+			dot = DotProduct(bs->cur_ps.velocity, bs->currentEnemy->client->ps.velocity);
+			//see if they are running away
+			//dot product of our vel and theirs, if its high, bhop to them? or push/pull stun them
+			if (dot > 50000) { //Running away nicely
+				if (bs->cur_ps.groundEntityNum == ENTITYNUM_NONE) {
+					if (level.time % 1000 > 500)
+						trap->EA_MoveRight(bs->client);
+					else
+						trap->EA_MoveLeft(bs->client);
+				}
+				NewBotAI_Flipkick(bs);
+			}
 			trap->EA_MoveForward(bs->client);//Always move forward i guess	
-
+		}
+		else 
+			trap->EA_MoveForward(bs->client);
 
 		if (!crouch && ((bs->cur_ps.groundEntityNum != ENTITYNUM_NONE - 1) || (bs->currentEnemy->client->ps.saberInFlight && saber->s.pos.trTime) || (NewBotAI_GetTimeToInRange(bs, 60, 100) < 100))) { //Jump if they will be in range of flipkick or they are trying to saberthrow
 			if ((bs->cur_ps.groundEntityNum != ENTITYNUM_NONE - 1) && bs->currentEnemy->client->ps.saberInFlight && bs->frame_Enemy_Len > 250 && (BS_GroundDistance(bs) > 20)) {
@@ -7959,7 +7994,7 @@ void NewBotAI_StrafeJump(bot_state_t *bs, float distance)
 	}
 }
 
-void DoAloneStuff(bot_state_t *bs, float thinktime) {
+void NewBotAI_DoAloneStuff(bot_state_t *bs, float thinktime) {
 	qboolean useTheForce = qfalse;
 	int numEnts, i, radiusEnts[256];
 	vec3_t mins = {-1024, -1024, -256}, maxs = {1024, 1024, 256}, waypoint, temp;
@@ -8109,6 +8144,104 @@ void DoAloneStuff(bot_state_t *bs, float thinktime) {
 	//Run to it..
 }
 
+int NewBotAI_ScanForEnemies(bot_state_t* bs)
+{
+	vec3_t a;
+	float distcheck;
+	float closest;
+	int bestindex;
+	int i;
+	float hasEnemyDist = 0;
+	qboolean noAttackNonJM = qfalse;
+	float ourHealth = g_entities[bs->client].health;
+
+	closest = 999999;
+	i = 0;
+	bestindex = -1;
+
+	if (bs->currentEnemy)
+	{ //only switch to a new enemy if he's significantly closer
+		hasEnemyDist = 0;
+	}
+
+	if (bs->currentEnemy && bs->currentEnemy->client &&
+		bs->currentEnemy->client->ps.isJediMaster)
+	{ //The Jedi Master must die.
+		return -1;
+	}
+
+	if (level.gametype == GT_JEDIMASTER)
+	{
+		if (G_ThereIsAMaster() && !bs->cur_ps.isJediMaster)
+		{ //if friendly fire is on in jedi master we can attack people that bug us
+			if (!g_friendlyFire.integer)
+			{
+				noAttackNonJM = qtrue;
+			}
+			else
+			{
+				closest = 128; //only get mad at people if they get close enough to you to anger you, or hurt you
+			}
+		}
+	}
+
+	while (i <= MAX_CLIENTS)
+	{
+		if (i != bs->client && g_entities[i].client && !OnSameTeam(&g_entities[bs->client], &g_entities[i]) && PassStandardEnemyChecks(bs, &g_entities[i])
+			&& BotPVSCheck(g_entities[i].client->ps.origin, bs->eye) && PassLovedOneCheck(bs, &g_entities[i]))
+		{
+			float normalizedHealth = 0.25 + (g_entities[i].health - 1) * (1 - 0.25) / (100 - 1); //Range .25 to 1
+			VectorSubtract(g_entities[i].client->ps.origin, bs->eye, a);
+
+			normalizedHealth += (100 - ourHealth) * 0.005; //Bring normalizedhealth closer to 1 the lower HP we ourselves are?, up to +0.5? 
+			if (normalizedHealth > 1)
+				normalizedHealth = 1;
+
+			//See if we have a LOS to them.  If not, scale the distcheck way up.. expensive?
+
+			distcheck = VectorLength(a) * normalizedHealth;
+			vectoangles(a, a);
+
+			if (g_entities[i].client->ps.isJediMaster)
+			{ //make us think the Jedi Master is close so we'll attack him above all
+				distcheck = 1;
+			}
+
+			if (distcheck < closest)
+			{
+				if (BotMindTricked(bs->client, i))
+				{
+					if (distcheck < 256 || (level.time - g_entities[i].client->dangerTime) < 100)
+					{
+						if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
+						{ //if we have an enemy, only switch to closer if he is 128+ closer to avoid flipping out
+							if (!noAttackNonJM || g_entities[i].client->ps.isJediMaster)
+							{
+								closest = distcheck;
+								bestindex = i;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
+					{ //if we have an enemy, only switch to closer if he is 128+ closer to avoid flipping out
+						if (!noAttackNonJM || g_entities[i].client->ps.isJediMaster)
+						{
+							closest = distcheck;
+							bestindex = i;
+						}
+					}
+				}
+			}
+		}
+		i++;
+	}
+
+	return bestindex;
+}
+
 #define _ADVANCEDBOTSHIT 1
 
 void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
@@ -8116,8 +8249,12 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	int closestID = -1;
 	int i;
 	qboolean someonesHere = qfalse;
+	vec3_t headlevel;
 
 	bs->isCamper = 0; //reset this
+
+	if (bs->cur_ps.stats[STAT_RACEMODE])
+		return;
 
 	for (i=0; i<level.numConnectedClients; i++) { //Go through each client, see if they are "afk", if everyone is afk, fuck this then.
 		gentity_t *ent = &g_entities[level.sortedClients[i]];
@@ -8145,7 +8282,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 		return;
 
 	if (g_newBotAITarget.integer < 0)
-		closestID = ScanForEnemies(bs); //This has been modified to take health into account, and ignore FOV, mindtrick, etc, when newBotAI is being used.
+		closestID = NewBotAI_ScanForEnemies(bs); //This has been modified to take health into account, and ignore FOV, mindtrick, etc, when newBotAI is being used.
 	else {
 		gclient_t	*cl;
 		closestID = g_newBotAITarget.integer;
@@ -8158,32 +8295,44 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 			closestID = -1;
 	}
 	
-	if (closestID == -1 || bs->cur_ps.stats[STAT_RACEMODE] ) {//Its just us, or they are too far away.
+	if (closestID == -1) {//Its just us, or they are too far away.
 #if _ADVANCEDBOTSHIT
-		DoAloneStuff(bs, thinktime);
+		NewBotAI_DoAloneStuff(bs, thinktime);
 #else
 		//StandardBotAI(bs, thinktime);
 #endif
 		return;
 	}
 
-	bs->currentEnemy = &g_entities[closestID];
-	bs->enemySeenTime = level.time + ENEMY_FORGET_MS;
-
-	bs->frame_Enemy_Len = NewBotAI_GetDist(bs);
-	{
-		vec3_t headlevel;
-		VectorCopy(bs->currentEnemy->client->ps.origin, headlevel);
-		headlevel[2] += bs->currentEnemy->client->ps.viewheight - 24;
-		if (OrgVisible(bs->eye, bs->currentEnemy->client->ps.origin, bs->client))
-			bs->frame_Enemy_Vis = 1;
-		else
-			bs->frame_Enemy_Vis = 0;
+	bs->frame_Enemy_Vis = 0;
+	VectorCopy(g_entities[closestID].client->ps.origin, headlevel);
+	headlevel[2] += g_entities[closestID].client->ps.viewheight - 24;
+	if ((bs->cur_ps.weapon == WP_DEMP2 && g_entities[bs->client].client->forcedFireMode != 1) || OrgVisible(bs->eye, g_entities[closestID].client->ps.origin, bs->client)) { //We can see or dmg our closest enemy
+		bs->currentEnemy = &g_entities[closestID];
+		bs->frame_Enemy_Vis = 1;
 	}
+	else { //we can't see our closest enemy, use last attacker
+		const int attacker = g_entities[bs->client].client->ps.persistant[PERS_ATTACKER];
+		if (attacker >= 0 && attacker < MAX_CLIENTS && &g_entities[attacker] && &g_entities[attacker].client) {
+			bs->currentEnemy = &g_entities[g_entities[bs->client].client->ps.persistant[PERS_ATTACKER]];
+
+			VectorCopy(g_entities[closestID].client->ps.origin, headlevel);
+			headlevel[2] += bs->currentEnemy->client->ps.viewheight - 24;
+			if (OrgVisible(bs->eye, bs->currentEnemy->client->ps.origin, bs->client))
+				bs->frame_Enemy_Vis = 1;
+		}
+		else {
+			NewBotAI_DoAloneStuff(bs, thinktime);
+			return;
+		}
+	}
+
+	bs->enemySeenTime = level.time + ENEMY_FORGET_MS;
+	bs->frame_Enemy_Len = NewBotAI_GetDist(bs);
 
 	if (!bs->frame_Enemy_Vis && bs->frame_Enemy_Len > 8096) {
 #if _ADVANCEDBOTSHIT
-		DoAloneStuff(bs, thinktime);
+		NewBotAI_DoAloneStuff(bs, thinktime);
 #else
 		//StandardBotAI(bs, thinktime);
 #endif

@@ -7372,17 +7372,17 @@ int NewBotAI_GetPull(bot_state_t *bs) {
 		weight *= 0.2f; //dont pull red vert swings into us unless we its really important
 
 	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT)
-		weight *= 0.5f; //Dont cancel a charge unless its important
+		weight *= 0.1f; //Dont cancel a charge unless its important
 
 	if (bs->frame_Enemy_Len < 200 && ourForce >= 20) { //Pulling their weapon should be top priority always
-		if (bs->currentEnemy->client->ps.weapon > WP_BLASTER)
+		if (bs->currentEnemy->client->ps.weapon >= WP_BLASTER)
 			return 100;
 	}
 
-	if (NewBotAI_IsEnemyPullable(bs)) {
+	if (NewBotAI_IsEnemyPullable(bs) && (bs->cur_ps.weapon == WP_SABER || bs->cur_ps.weapon == WP_MELEE) && g_flipKick.integer) {
 		if (hisHealth <= 20 && bs->frame_Enemy_Len < 250) {//Check for the insta kill, this should be better maybe... on ground pullablable should be a diff range than in air pullable
 			//Com_Printf("pullable 2\n");
-			return 10;
+			return 100;
 		}
 		if (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) {
 			//Com_Printf("pullable 3\n");
@@ -7559,8 +7559,10 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 
 	if (!useTheForce && !(g_forcePowerDisable.integer & (1 << FP_RAGE)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_RAGE))) {
 		if (((bs->cur_ps.weapon > WP_BRYAR_PISTOL) || (bs->cur_ps.weapon == WP_STUN_BATON)) && (bs->cur_ps.fd.forcePower > 50) && bs->frame_Enemy_Len < 768 && bs->frame_Enemy_Vis) { //Need line of sight
-			level.clients[bs->client].ps.fd.forcePowerSelected = FP_RAGE;
-			useTheForce = qtrue;
+			if (!(g_tweakForce.integer & FT_NORAGEFIRERATE) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_RAGE))) { //only rage if rage isnt nerfed or if our current enemy is using it
+				level.clients[bs->client].ps.fd.forcePowerSelected = FP_RAGE;
+				useTheForce = qtrue;
+			}
 		}
 	}
 
@@ -7588,9 +7590,6 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 		}
 		*/
 	}
-
-	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL))
-		useTheForce = qfalse; //Sad hack not sure why?
 
 	if (useTheForce && (level.framenum % 2) && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)))
 		trap->EA_ForcePower(bs->client);
@@ -8313,7 +8312,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	}
 	else { //we can't see our closest enemy, use last attacker
 		const int attacker = g_entities[bs->client].client->ps.persistant[PERS_ATTACKER];
-		if (attacker >= 0 && attacker < MAX_CLIENTS && &g_entities[attacker] && &g_entities[attacker].client) {
+		if (attacker >= 0 && attacker < MAX_CLIENTS && &g_entities[attacker] && &g_entities[attacker].client && g_entities[attacker].client->sess.sessionTeam != TEAM_SPECTATOR && !g_entities[attacker].client->sess.raceMode) {
 			bs->currentEnemy = &g_entities[g_entities[bs->client].client->ps.persistant[PERS_ATTACKER]];
 
 			VectorCopy(g_entities[closestID].client->ps.origin, headlevel);

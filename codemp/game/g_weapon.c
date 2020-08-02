@@ -56,7 +56,7 @@ static vec3_t muzzle;
 
 #define REPEATER_ALT_SIZE				3	// half of bbox size
 #define	REPEATER_ALT_DAMAGE				60 * g_weaponDamageScale.value
-#define REPEATER_ALT_SPLASH_DAMAGE		60 * g_weaponDamageScale.value
+#define REPEATER_ALT_SPLASH_DAMAGE		60 * g_splashDamageScale.value
 #define REPEATER_ALT_SPLASH_RADIUS		128
 #define REPEATER_ALT_SPLASH_RAD_SIEGE	80
 #define	REPEATER_ALT_VELOCITY			1100 * g_projectileVelocityScale.value
@@ -81,14 +81,14 @@ static vec3_t muzzle;
 #define FLECHETTE_SIZE				1
 #define FLECHETTE_MINE_RADIUS_CHECK	256
 #define FLECHETTE_ALT_DAMAGE		60 * g_weaponDamageScale.value
-#define FLECHETTE_ALT_SPLASH_DAM	60 * g_weaponDamageScale.value
+#define FLECHETTE_ALT_SPLASH_DAM	60 * g_splashDamageScale.value
 #define FLECHETTE_ALT_SPLASH_RAD	128
 
 // Personal Rocket Launcher
 //---------
 #define	ROCKET_VELOCITY				900 * g_projectileVelocityScale.value
 #define	ROCKET_DAMAGE				100 * g_weaponDamageScale.value
-#define	ROCKET_SPLASH_DAMAGE		100 * g_weaponDamageScale.value
+#define	ROCKET_SPLASH_DAMAGE		100 * g_splashDamageScale.value
 #define	ROCKET_SPLASH_RADIUS		160
 #define ROCKET_SIZE					3
 #define ROCKET_ALT_THINK_TIME		100
@@ -103,7 +103,7 @@ static vec3_t muzzle;
 #define	CONC_NPC_DAMAGE_EASY		40
 #define	CONC_NPC_DAMAGE_NORMAL		80
 #define	CONC_NPC_DAMAGE_HARD		100
-#define	CONC_SPLASH_DAMAGE			40  * g_weaponDamageScale.value//50
+#define	CONC_SPLASH_DAMAGE			40  * g_splashDamageScale.value//50
 #define	CONC_SPLASH_RADIUS			200 //300
 //alt
 #define CONC_ALT_DAMAGE				25  * g_weaponDamageScale.value//100

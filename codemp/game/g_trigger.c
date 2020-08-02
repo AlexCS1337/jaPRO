@@ -1257,7 +1257,7 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 			return qfalse;
 		}
 	}
-	if (player->client->pers.noFollow)
+	if (player->client->pers.noFollow && player->client->sess.movementStyle != MV_SIEGE)
 		return qfalse;
 	if (player->client->pers.practice)
 		return qfalse;
@@ -1384,7 +1384,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 
 	//in rename demo, also make sure demo is stopped before renaming? that way we dont have to have the ;wait 20; here
 
-	if ((sv_autoRaceDemo.integer) && !(player->client->pers.noFollow) && !(player->client->pers.practice) && player->client->sess.raceMode && !sv_cheats.integer && player->client->pers.userName[0]) {
+	if ((sv_autoRaceDemo.integer) && (!player->client->pers.noFollow || player->client->sess.movementStyle == MV_SIEGE) && !(player->client->pers.practice) && player->client->sess.raceMode && !sv_cheats.integer && player->client->pers.userName[0]) {
 		if (!player->client->pers.recordingDemo) { //Start the new demo
 			player->client->pers.recordingDemo = qtrue;
 			//trap->SendServerCommand( player-g_entities, "chat \"RECORDING STARTED\"");
@@ -1530,7 +1530,7 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 			//Floodprotect the prints
 			if (!player->client->pers.userName[0]) //In racemode but not logged in
 				trap->SendServerCommand(player-g_entities, "cp \"^3Warning: You are not logged in!\n\n\n\n\n\n\n\n\n\n\"");
-			else if (player->client->pers.noFollow)
+			else if (player->client->pers.noFollow && player->client->sess.movementStyle != MV_SIEGE)
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid while hidden!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
 			else if (player->client->pers.practice)
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid in practice mode!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
@@ -2344,7 +2344,7 @@ trigger_teleport
 
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	gentity_t	*dest;
-	qboolean keepVel = qfalse;
+	int speed;
 
 	if ( self->flags & FL_INACTIVE )
 	{//set by target_deactivate
@@ -2375,14 +2375,16 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	}
 
 	if (self->spawnflags & 2)
-		keepVel = qtrue;
+		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
+	else if (self->spawnflags & 4)
+		speed = 1;
 
 	//Look at dest->speed, and.. dest->spawnflags?   if spawnflags & quake style, multiply their current speed
 	//if not spawnflags & quake style, set their speed to specified speed
 	//if neither, set their speed to 450 or whatever?
 
 
-	TeleportPlayer( other, dest->s.origin, dest->s.angles, keepVel );
+	TeleportPlayer( other, dest->s.origin, dest->s.angles, speed );
 }
 
 
@@ -2818,10 +2820,10 @@ void hyperspace_touch( gentity_t *self, gentity_t *other, trace_t *trace )
 				VectorMA( newOrg, uDiff, up, newOrg );
 				//trap->Print("hyperspace from %s to %s\n", vtos(other->client->ps.origin), vtos(newOrg) );
 				//now put them in the offset position, facing the angles that position wants them to be facing
-				TeleportPlayer( other, newOrg, ent->s.angles, qfalse );
+				TeleportPlayer( other, newOrg, ent->s.angles, 0 );
 				if ( other->m_pVehicle && other->m_pVehicle->m_pPilot )
 				{//teleport the pilot, too
-					TeleportPlayer( (gentity_t*)other->m_pVehicle->m_pPilot, newOrg, ent->s.angles, qfalse );
+					TeleportPlayer( (gentity_t*)other->m_pVehicle->m_pPilot, newOrg, ent->s.angles, 0 );
 					//FIXME: and the passengers?
 				}
 				//make them face the new angle

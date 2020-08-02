@@ -176,7 +176,7 @@ void DeletePlayerProjectiles(gentity_t *ent);
 #if _GRAPPLE
 void Weapon_HookFree (gentity_t *ent);
 #endif
-void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean keepVel ) {
+void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, int speed) {
 	gentity_t	*tent;
 	qboolean	isNPC = qfalse;
 	qboolean	noAngles;
@@ -212,8 +212,8 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean k
 	// spit the player out
 	if ( !noAngles ) {
 		AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
-		if (keepVel)
-			VectorScale( player->client->ps.velocity, pm->xyspeed, player->client->ps.velocity );
+		if (speed)
+			VectorScale( player->client->ps.velocity, speed, player->client->ps.velocity );
 		else
 			VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
 		player->client->ps.pm_time = 160;		// hold time

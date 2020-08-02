@@ -451,7 +451,7 @@ void SP_target_laser (gentity_t *self)
 
 void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	gentity_t	*dest;
-	qboolean keepVel = qfalse;
+	int speed;
 
 	if (!activator->client)
 		return;
@@ -465,9 +465,11 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 	}
 
 	if (self->spawnflags & 1)
-		keepVel = qtrue;
+		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
+	else if (self->spawnflags & 2)
+		speed = 1;
 
-	TeleportPlayer( activator, dest->s.origin, dest->s.angles, keepVel );
+	TeleportPlayer( activator, dest->s.origin, dest->s.angles, speed );
 }
 
 /*QUAKED target_teleporter (1 0 0) (-8 -8 -8) (8 8 8)

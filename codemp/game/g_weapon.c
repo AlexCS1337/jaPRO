@@ -732,22 +732,47 @@ qboolean G_CanDisruptify(gentity_t *ent)
 	return qfalse;
 }
 
-void WP_DisruptorProjectileFire( gentity_t *ent, qboolean altFire)
+void WP_DisruptorProjectileFire(gentity_t* ent, qboolean altFire)
 {
-	int	damage	= 35;
-	gentity_t *missile;
+	gentity_t* missile;
+	int	damage = 30 * g_weaponDamageScale.value;
+	float count;
 
-	if (altFire)
-		damage = 70;
+	missile = CreateMissileNew(muzzle, forward, 9000 * g_projectileVelocityScale.value, 10000, ent, altFire, qtrue, qtrue);
 
-	damage *= g_weaponDamageScale.value;
+	if (altFire) {
+		float boxSize = 0;
+		count = (level.time - ent->client->ps.weaponChargeTime) / 50.0f;
+
+		damage = 50;
+
+		if (count < 1)
+			count = 1;
+		else if (count > 30)
+			count = 30;
+
+		damage += count * 2.5f;
+
+		count = ((count - 1.0f) / (30.0f - 1.0f)) * (20.0f - 1.0f) + 1.0f;//scale count back down to the 1-5 range for bullet size
+		if (count < 2)
+			count = 2;
+
+		missile->s.generic1 = (int)(count + 0.5f); // The missile will then render according to the charge level.
+	}
+	else {
+		missile->s.generic1 = 2;//always make the bullet a little bigger
+		missile->s.eFlags |= EF_ALT_FIRING; //have client render it right
+	}
+
+	if (!d_projectileGhoul2Collision.integer) {
+		VectorSet(missile->r.maxs, 2, 2, 2); //constant hitbox
+		VectorSet(missile->r.mins, -2, -2, -2);
+	}
 
 	VectorMA( muzzle, -6, vright, muzzle );
 		
-	missile = CreateMissileNew( muzzle, forward, 10000*g_projectileVelocityScale.value, 10000, ent, altFire, qtrue, qtrue);
-
-	missile->classname = "blaster_proj";
-	missile->s.weapon = WP_BLASTER;
+	missile->classname = "bryar_proj";
+	missile->s.weapon = WP_BRYAR_PISTOL;
 
 	//VectorSet( missile->r.maxs, BOWCASTER_SIZE, BOWCASTER_SIZE, BOWCASTER_SIZE );
 	//VectorScale( missile->r.maxs, -1, missile->r.mins );
@@ -2717,7 +2742,7 @@ static void WP_CreateMortar( vec3_t start, vec3_t fwd, gentity_t *self)
 {
 	gentity_t	*missile;
 	float velocity = 1400 * g_projectileVelocityScale.value;
-	int lifetime = 3500, damage = 140 * g_weaponDamageScale.value, splashdamage = 140 * g_weaponDamageScale.value, splashradius = 384;
+	int lifetime = 3500, damage = 140 * g_weaponDamageScale.value, splashdamage = 140 * g_splashDamageScale.value, splashradius = 384;
 
 	missile = CreateMissileNew( start, fwd, velocity, lifetime, self, qtrue, qtrue, qtrue );
 

@@ -4591,6 +4591,8 @@ float G_NewBotAIGetProjectileSpeed(int weapon, qboolean altFire) {
 		projectileSpeed = 1600;
 	else if (weapon == WP_BLASTER)
 		projectileSpeed = 2300;
+	else if (weapon == WP_DISRUPTOR && (g_tweakWeapons.integer & WT_PROJ_SNIPER))
+		projectileSpeed = 9000;
 	else if (weapon == WP_BOWCASTER)
 		projectileSpeed = 1300;
 	else if (weapon == WP_DEMP2 && !altFire)

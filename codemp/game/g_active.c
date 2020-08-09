@@ -4256,7 +4256,7 @@ void ClientThink_real( gentity_t *ent ) {
 			if (client->ps.fd.forceHealTime > level.time) //lightning bolted
 				client->ps.speed *= 1.28f;
 		}
-		else if (g_gunGame.integer && !client->sess.raceMode && !client->ps.stats[STAT_RACEMODE] && client->ps.weapon == WP_SABER)
+		else if (g_gunGame.integer && !client->sess.raceMode && !client->ps.stats[STAT_RACEMODE] && client->ps.weapon == WP_SABER && client->forcedFireMode != 2)
 			client->ps.speed *= 1.28f;
 
 		//Check for a siege class speed multiplier

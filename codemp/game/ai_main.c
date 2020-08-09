@@ -6185,23 +6185,25 @@ void NewBotAI_GetAim(bot_state_t *bs)
 	*/
 
 	//Well we should loop through every client and see if they are saberthrowing.  Then get the closest saber to us and aim at that if its close enough.
-	while (i <= MAX_CLIENTS)
-	{
-		if (i != bs->client && g_entities[i].client && g_entities[i].client->ps.saberInFlight && !OnSameTeam(&g_entities[bs->client], &g_entities[i]) && PassStandardEnemyChecks(bs, &g_entities[i])
-			&& PassLovedOneCheck(bs, &g_entities[i]))
+	if (!g_entities[bs->client].client->ps.saberInFlight) {
+		while (i <= MAX_CLIENTS)
 		{
-			saber = &g_entities[g_entities[i].client->ps.saberEntityNum];
-			
-			VectorSubtract(bs->cur_ps.origin, saber->s.pos.trBase, saberDiff);
-			dist = VectorLengthSquared(saberDiff);
+			if (i != bs->client && g_entities[i].client && g_entities[i].client->ps.saberInFlight && !OnSameTeam(&g_entities[bs->client], &g_entities[i]) && PassStandardEnemyChecks(bs, &g_entities[i])
+				&& PassLovedOneCheck(bs, &g_entities[i]))
+			{
+				saber = &g_entities[g_entities[i].client->ps.saberEntityNum];
 
-			if (dist < saberDistance && saber->s.pos.trTime) {
-				saberOwner = i;
-				closestSaber = g_entities[i].client->ps.saberEntityNum;
-				saberDistance = dist;
+				VectorSubtract(bs->cur_ps.origin, saber->s.pos.trBase, saberDiff);
+				dist = VectorLengthSquared(saberDiff);
+
+				if (dist < saberDistance && saber->s.pos.trTime) {
+					saberOwner = i;
+					closestSaber = g_entities[i].client->ps.saberEntityNum;
+					saberDistance = dist;
+				}
 			}
+			i++;
 		}
-		i++;
 	}
 
 	//Saber is inrange , AND  nearest target is far enough away OR thrower is nearest target(?
@@ -7008,6 +7010,11 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 				}
 			}
 
+			if (g_gunGame.integer && g_entities[bs->client].client->forcedFireMode == 2) {
+				trap->EA_Alt_Attack(bs->client);
+				return;
+			}
+
 			/*
 			if (((speed >= 0) && ((bs->frame_Enemy_Len / speed) < 1.2f)) || (bs->frame_Enemy_Len < 64)) {
 				if (g_entities[bs->client].health > 60) {
@@ -7576,21 +7583,23 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 	}
 
 	//Check if we should saberthrow I guess.
-	if (bs->cur_ps.weapon == WP_SABER && /*(bs->cur_ps.fd.forcePowersKnown & (1 << FP_SABERTHROW)*/ bs->frame_Enemy_Len < 400 && (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim))) {
-		g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERTHROW] = 3;
-		g_entities[bs->client].client->ps.fd.forcePowersKnown |= (1 << FP_SABERTHROW);
+	if (bs->cur_ps.weapon == WP_SABER && /*(bs->cur_ps.fd.forcePowersKnown & (1 << FP_SABERTHROW)*/ bs->frame_Enemy_Len < 400) {
+		if (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) {
+			g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERTHROW] = 3;
+			g_entities[bs->client].client->ps.fd.forcePowersKnown |= (1 << FP_SABERTHROW);
 
-		if (bs->cur_ps.fd.forcePower > 40 && (bs->currentEnemy->health + bs->currentEnemy->client->ps.stats[STAT_ARMOR]) <= 50) {
-			trap->EA_Alt_Attack(bs->client);
-			return;
+			if (bs->cur_ps.fd.forcePower > 40 && (bs->currentEnemy->health + bs->currentEnemy->client->ps.stats[STAT_ARMOR]) <= 50) {
+				trap->EA_Alt_Attack(bs->client);
+				return;
+			}
+			/*
+			else if ((((bs->cur_ps.fd.forcePower > bs->currentEnemy->client->ps.fd.forcePower) && bs->cur_ps.fd.forcePower > 40) || (bs->cur_ps.fd.forcePower > 70)) && g_entities[bs->client].health > 75 && bs->currentEnemy->health < 70) {
+				trap->EA_Alt_Attack(bs->client);
+				Com_Printf("Throwing 2\n");
+				return;
+			}
+			*/
 		}
-		/*
-		else if ((((bs->cur_ps.fd.forcePower > bs->currentEnemy->client->ps.fd.forcePower) && bs->cur_ps.fd.forcePower > 40) || (bs->cur_ps.fd.forcePower > 70)) && g_entities[bs->client].health > 75 && bs->currentEnemy->health < 70) {
-			trap->EA_Alt_Attack(bs->client);
-			Com_Printf("Throwing 2\n");
-			return;
-		}
-		*/
 	}
 
 	if (useTheForce && (level.framenum % 2) && (!bs->currentEnemy->client->invulnerableTimer || (bs->currentEnemy->client->invulnerableTimer <= level.time)))

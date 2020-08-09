@@ -451,7 +451,7 @@ void SP_target_laser (gentity_t *self)
 
 void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	gentity_t	*dest;
-	int speed;
+	int speed = 0;
 
 	if (!activator->client)
 		return;

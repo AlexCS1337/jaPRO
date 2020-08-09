@@ -2344,7 +2344,7 @@ trigger_teleport
 
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	gentity_t	*dest;
-	int speed;
+	int speed = 0;
 
 	if ( self->flags & FL_INACTIVE )
 	{//set by target_deactivate

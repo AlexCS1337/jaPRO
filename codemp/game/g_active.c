@@ -5667,7 +5667,12 @@ void ClientThink_real( gentity_t *ent ) {
 										faceKicked->client->ps.forceDodgeAnim = 0; 
 									}
 							}
-							else if (g_nonRandomKnockdown.integer > 4) { //no KDs
+							else if (g_nonRandomKnockdown.integer == 5) { //no KDs
+							}
+							else if (g_nonRandomKnockdown.integer > 5) { //all KDs
+								faceKicked->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
+								faceKicked->client->ps.forceHandExtendTime = level.time + 1100;
+								faceKicked->client->ps.forceDodgeAnim = 0;
 							}						
 						}
 

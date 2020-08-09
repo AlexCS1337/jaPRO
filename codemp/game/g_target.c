@@ -466,8 +466,8 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 
 	if (self->spawnflags & 1)
 		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
-	else if (self->spawnflags & 2)
-		speed = 1;
+	else if (self->speed)
+		speed = self->speed;
 
 	TeleportPlayer( activator, dest->s.origin, dest->s.angles, speed );
 }

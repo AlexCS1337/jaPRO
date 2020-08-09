@@ -2376,8 +2376,8 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 
 	if (self->spawnflags & 2)
 		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
-	else if (self->spawnflags & 4)
-		speed = 1;
+	else if (self->speed)
+		speed = self->speed;
 
 	//Look at dest->speed, and.. dest->spawnflags?   if spawnflags & quake style, multiply their current speed
 	//if not spawnflags & quake style, set their speed to specified speed

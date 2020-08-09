@@ -6403,41 +6403,58 @@ void NewBotAI_ReactToBeingGripped(bot_state_t *bs) //Test this more, does it pus
 	}
 }
 
+qboolean BG_InKnockDown(int anim);
 void NewBotAI_Gripkick(bot_state_t *bs)
 {
 	//float heightDiff = bs->cur_ps.origin[2] - bs->currentEnemy->client->ps.origin[2]; //We are above them by this much
 	int gripTime = level.time - bs->currentEnemy->client->ps.fd.forceGripStarted; //Milliseconds we have been gripping them
 
-	if (gripTime < 1000) { //[0-1] second in the grip (Aim down until in range, kick)
-		bs->ideal_viewangles[PITCH] = 60; //60?
-		trap->EA_MoveForward(bs->client);
+	if (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) { //Splat and enough time? - how to see if they are splattable and were not gripped during midair. forcejumpzheight ?
+		float heightdiff = bs->currentEnemy->client->ps.origin[2] - bs->eye[2]; //Them minus ours,  they are 500, we are 300. height diff is 200.
 
-	} 
-	else if (gripTime < 2000) { //[1-2] seconds in the grip (Aim up, spin)
-		bs->ideal_viewangles[PITCH] = -80; //-80
-
-		if (level.time % 10000 > 5000) {
-			trap->EA_MoveRight(bs->client);
-			bs->ideal_viewangles[YAW] += 80; //80?
+		if (heightdiff < 110) {
+			bs->ideal_viewangles[PITCH] = -90; //60?
 		}
 		else {
-			trap->EA_MoveLeft(bs->client);
-			bs->ideal_viewangles[YAW] -= 80;//80?
+			bs->ideal_viewangles[PITCH] = 90; //-80
 		}
+		if (bs->currentEnemy->client->ps.velocity[2] < -400) {//going fast enough to die, let go
+			return;
+		}
+		//not a good splat, has to predict based on their momentum
 	}
-	else if (gripTime < 2200) { //[2-2.2] seconds in the grip (Aim at center for a split second, so they dont get stuck on our head)
-		bs->ideal_viewangles[PITCH] = 0;
-	}
-	else if (gripTime < 4000) { //[2.2-4] seconds in the grip (Aim down until in range, kick)
-		bs->ideal_viewangles[PITCH] = -70; //-70?
-		trap->EA_MoveForward(bs->client);
-	}
+	else {
+		if (gripTime < 1000) { //[0-1] second in the grip (Aim down until in range, kick)
+			bs->ideal_viewangles[PITCH] = 60; //60?
+			trap->EA_MoveForward(bs->client);
 
-	if ((bs->cur_ps.groundEntityNum == ENTITYNUM_NONE - 1)  && NewBotAI_GetTimeToInRange(bs, 40, 100) < 100) { //Start a kick if we are in range and on ground
-		NewBotAI_Flipkick(bs);
-	}
-	else if (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE - 1) { //Always try to flipkick while we are in air
-		NewBotAI_Flipkick(bs);
+		}
+		else if (gripTime < 2000) { //[1-2] seconds in the grip (Aim up, spin)
+			bs->ideal_viewangles[PITCH] = -80; //-80
+
+			if (level.time % 10000 > 5000) {
+				trap->EA_MoveRight(bs->client);
+				bs->ideal_viewangles[YAW] += 80; //80?
+			}
+			else {
+				trap->EA_MoveLeft(bs->client);
+				bs->ideal_viewangles[YAW] -= 80;//80?
+			}
+		}
+		else if (gripTime < 2200) { //[2-2.2] seconds in the grip (Aim at center for a split second, so they dont get stuck on our head)
+			bs->ideal_viewangles[PITCH] = 0;
+		}
+		else if (gripTime < 4000) { //[2.2-4] seconds in the grip (Aim down until in range, kick)
+			bs->ideal_viewangles[PITCH] = -70; //-70?
+			trap->EA_MoveForward(bs->client);
+		}
+
+		if ((bs->cur_ps.groundEntityNum == ENTITYNUM_NONE - 1) && NewBotAI_GetTimeToInRange(bs, 40, 100) < 100) { //Start a kick if we are in range and on ground
+			NewBotAI_Flipkick(bs);
+		}
+		else if (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE - 1) { //Always try to flipkick while we are in air
+			NewBotAI_Flipkick(bs);
+		}
 	}
 
 	bs->ideal_viewangles[YAW] = AngleNormalize360(bs->ideal_viewangles[YAW]); //Normalize the angles
@@ -7310,7 +7327,7 @@ void NewBotAI_GetMovement(bot_state_t *bs)
 		}
 	}
 }
-qboolean BG_InKnockDown(int anim);
+
 qboolean BG_InRoll3(int anim)
 {
 	switch (anim)

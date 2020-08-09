@@ -5517,7 +5517,7 @@ void ClientThink_real( gentity_t *ent ) {
 	{
 		gentity_t *faceKicked = &g_entities[client->ps.forceKickFlip-1];
 
-		if (faceKicked && faceKicked->client && (!OnSameTeam(ent, faceKicked) || g_friendlyFire.integer) &&
+		if (faceKicked && faceKicked->client && (!OnSameTeam(ent, faceKicked) || g_friendlyFire.value) &&
 			(!faceKicked->client->ps.duelInProgress || faceKicked->client->ps.duelIndex == ent->s.number) &&
 			(!ent->client->ps.duelInProgress || ent->client->ps.duelIndex == faceKicked->s.number)
 			&& ((!ent->client->didGlitchKick || ent->client->ps.forceHandExtend != HANDEXTEND_CHOKE) || g_glitchKickDamage.integer < 0))

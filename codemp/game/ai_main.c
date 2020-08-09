@@ -1842,7 +1842,7 @@ int PassStandardEnemyChecks(bot_state_t *bs, gentity_t *en)
 		vec3_t vs;
 		float vLen = 0;
 
-		if (!g_friendlyFire.integer)
+		if (!g_friendlyFire.value)
 		{ //can't harm non-JM in JM mode if FF is off
 			return 0;
 		}
@@ -8201,7 +8201,7 @@ int NewBotAI_ScanForEnemies(bot_state_t* bs)
 	{
 		if (G_ThereIsAMaster() && !bs->cur_ps.isJediMaster)
 		{ //if friendly fire is on in jedi master we can attack people that bug us
-			if (!g_friendlyFire.integer)
+			if (!g_friendlyFire.value)
 			{
 				noAttackNonJM = qtrue;
 			}

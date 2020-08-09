@@ -2530,7 +2530,7 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 		(meansOfDeath == MOD_SUICIDE || meansOfDeath == MOD_TEAM_CHANGE) && 
 		self->client->ps.otherKillerTime > level.time)
 	{
-		if (OnSameTeam (self, &g_entities[self->client->ps.otherKiller]) && g_friendlyFire.integer)
+		if (OnSameTeam (self, &g_entities[self->client->ps.otherKiller]) && g_friendlyFire.value)
 			attacker = &g_entities[self->client->ps.otherKiller];
 		else if (level.gametype < GT_TEAM)
 			attacker = &g_entities[self->client->ps.otherKiller];
@@ -4705,7 +4705,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	if (g_godChat.integer && level.gametype == GT_FFA && attacker && attacker->client && (attacker->client->ps.eFlags & EF_TALK))//Japro - dont allow people to chat and still do damage with godchat (should this be after the 3s period instead?)
 		return;
 
-	if ((level.gametype == GT_FFA) && !g_friendlyFire.integer && g_rabbit.integer) {
+	if ((level.gametype == GT_FFA) && !g_friendlyFire.value && g_rabbit.integer) {
 		if (attacker && attacker->client && !attacker->client->ps.duelInProgress && !attacker->client->ps.powerups[PW_NEUTRALFLAG] && targ && targ->client && !targ->client->ps.duelInProgress && !targ->client->sess.raceMode && !targ->client->ps.powerups[PW_NEUTRALFLAG])
 			return;
 	}
@@ -5189,7 +5189,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			if (OnSameTeam (targ, attacker))
 			{
 				/*
-				if ( !g_friendlyFire.integer )
+				if ( !g_friendlyFire.value )
 				{
 					return;
 				}*/
@@ -5204,7 +5204,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			{ //emplaced guns don't hurt teammates of user
 				if (OnSameTeam (targ, attacker->activator))
 				{
-					if ( !g_friendlyFire.integer )
+					if ( !g_friendlyFire.value)
 					{
 						return;
 					}
@@ -5215,13 +5215,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				attacker->s.number >= MAX_CLIENTS &&
 				attacker->alliedTeam &&
 				targ->client->sess.sessionTeam == attacker->alliedTeam &&
-				!g_friendlyFire.integer)
+				!g_friendlyFire.value)
 			{ //things allied with my team should't hurt me.. I guess
 				return;
 			}
 		}
 
-		if (level.gametype == GT_JEDIMASTER && !g_friendlyFire.integer &&
+		if (level.gametype == GT_JEDIMASTER && !g_friendlyFire.value &&
 			targ && targ->client && attacker && attacker->client &&
 			targ != attacker && !targ->client->ps.isJediMaster && !attacker->client->ps.isJediMaster &&
 			G_ThereIsAMaster())
@@ -5237,7 +5237,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 			if (targown && targown->inuse && targown->client && OnSameTeam(targown, attacker))
 			{
-				if (!g_friendlyFire.integer)
+				if (!g_friendlyFire.value)
 				{
 					return;
 				}

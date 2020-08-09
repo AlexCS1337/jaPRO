@@ -3281,7 +3281,7 @@ void proxMineThink(gentity_t *ent)
 			owner != cl && cl->client->sess.sessionTeam != TEAM_SPECTATOR &&
 			cl->client->tempSpectate < level.time && cl->health > 0)
 		{
-			if (!OnSameTeam(owner, cl) || g_friendlyFire.integer)
+			if (!OnSameTeam(owner, cl) || g_friendlyFire.value)
 			{ //not on the same team, or friendly fire is enabled
 				vec3_t v;
 

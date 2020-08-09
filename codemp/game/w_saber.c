@@ -90,7 +90,7 @@ qboolean G_CanBeEnemy( gentity_t *self, gentity_t *enemy )
 	if (level.gametype < GT_TEAM)
 		return qtrue;
 
-	if ( g_friendlyFire.integer )
+	if ( g_friendlyFire.value)
 		return qtrue;
 
 	if ( OnSameTeam( self, enemy ) )

@@ -1496,7 +1496,7 @@ void ForceGrip( gentity_t *self )
 		!g_entities[tr.entityNum].client->ps.fd.forceGripCripple &&
 		g_entities[tr.entityNum].client->ps.fd.forceGripBeingGripped < level.time &&
 		ForcePowerUsableOn(self, &g_entities[tr.entityNum], FP_GRIP) &&
-		(g_friendlyFire.integer || !OnSameTeam(self, &g_entities[tr.entityNum])) ) //don't grip someone who's still crippled
+		(g_friendlyFire.value|| !OnSameTeam(self, &g_entities[tr.entityNum])) ) //don't grip someone who's still crippled
 	{
 		if (g_entities[tr.entityNum].s.number < MAX_CLIENTS && g_entities[tr.entityNum].client->ps.m_iVehicleNum)
 		{ //a player on a vehicle
@@ -1917,7 +1917,7 @@ void ForceShootLightning( gentity_t *self )
 				continue;
 			if ( traceEnt->health <= 0 )//no torturing corpses
 				continue;
-			if ( !g_friendlyFire.integer && OnSameTeam(self, traceEnt))
+			if ( !g_friendlyFire.value && OnSameTeam(self, traceEnt))
 				continue;
 			//this is all to see if we need to start a saber attack, if it's in flight, this doesn't matter
 			// find the distance from the edge of the bounding box
@@ -2030,7 +2030,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 
 	if ( traceEnt && traceEnt->takedamage )
 	{
-		if ( traceEnt->client && (!OnSameTeam(self, traceEnt) || g_friendlyFire.integer) && /*self->client->ps.fd.forceDrainTime < level.time &&*/ (traceEnt->client->ps.fd.forcePower || traceEnt->client->sess.raceMode) )
+		if ( traceEnt->client && (!OnSameTeam(self, traceEnt) || g_friendlyFire.value) && /*self->client->ps.fd.forceDrainTime < level.time &&*/ (traceEnt->client->ps.fd.forcePower || traceEnt->client->sess.raceMode) )
 		{//an enemy or object
 			if (!traceEnt->client && traceEnt->s.eType == ET_NPC)
 			{ //g2animent
@@ -2241,7 +2241,7 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			if ( !traceEnt->client->ps.fd.forcePower )
 				continue;
-			if (OnSameTeam(self, traceEnt) && !g_friendlyFire.integer)
+			if (OnSameTeam(self, traceEnt) && !g_friendlyFire.value)
 				continue;
 			//this is all to see if we need to start a saber attack, if it's in flight, this doesn't matter
 			// find the distance from the edge of the bounding box
@@ -3408,7 +3408,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 			continue;
 		if (ent == self)
 			continue;
-		if (ent->client && OnSameTeam(ent, self) && !g_friendlyFire.integer)//JAPRO - Allow push/pull teammates when friendlyfire is on
+		if (ent->client && OnSameTeam(ent, self) && !g_friendlyFire.value)//JAPRO - Allow push/pull teammates when friendlyfire is on
 		{
 			continue;
 		}

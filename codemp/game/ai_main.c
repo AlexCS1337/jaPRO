@@ -8340,7 +8340,7 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	}
 	else { //we can't see our closest enemy, use last attacker
 		const int attacker = g_entities[bs->client].client->ps.persistant[PERS_ATTACKER];
-		if (attacker >= 0 && attacker < MAX_CLIENTS && &g_entities[attacker] && &g_entities[attacker].client && g_entities[attacker].client->sess.sessionTeam != TEAM_SPECTATOR && !g_entities[attacker].client->sess.raceMode) {
+		if (attacker >= 0 && attacker < MAX_CLIENTS && !OnSameTeam(&g_entities[attacker], &g_entities[bs->client]), &g_entities[attacker] && &g_entities[attacker].client && g_entities[attacker].client->sess.sessionTeam != TEAM_SPECTATOR && !g_entities[attacker].client->sess.raceMode) {
 			bs->currentEnemy = &g_entities[g_entities[bs->client].client->ps.persistant[PERS_ATTACKER]];
 
 			VectorCopy(g_entities[closestID].client->ps.origin, headlevel);

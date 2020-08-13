@@ -7919,6 +7919,11 @@ void NewBotAI_LSvDS(bot_state_t *bs)
 		return;
 	}
 
+	if (bs->cur_ps.fd.forceGripBeingGripped > level.time) {
+		NewBotAI_ReactToBeingGripped(bs);
+		return;
+	}
+
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_SPEED))
 		NewBotAI_Speeding(bs);
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
@@ -7938,11 +7943,6 @@ void NewBotAI_LSvLS(bot_state_t *bs)
 	
 	if (bs->cur_ps.forceHandExtend == HANDEXTEND_KNOCKDOWN) {
 		NewBotAI_Getup(bs);
-		return;
-	}
-
-	if (bs->cur_ps.fd.forceGripBeingGripped > level.time) {
-		NewBotAI_ReactToBeingGripped(bs);
 		return;
 	}
 

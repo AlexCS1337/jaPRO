@@ -6312,7 +6312,11 @@ void NewBotAI_Getup(bot_state_t *bs)
 {
 	trap->EA_Jump(bs->client);
 
-	if ((NewBotAI_GetDist(bs) < 200) || (bs->cur_ps.fd.forceGripBeingGripped > level.time)) {
+	if (NewBotAI_GetProtect(bs)) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
+		trap->EA_ForcePower(bs->client);
+	}
+	else if ((bs->frame_Enemy_Len < 200) || (bs->cur_ps.fd.forceGripBeingGripped > level.time)) {
 		if (!(g_forcePowerDisable.integer & (1 << FP_PUSH)) && bs->cur_ps.fd.forcePowersKnown & (1 << FP_PUSH)) {
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_PUSH;
 			trap->EA_ForcePower(bs->client);
@@ -7654,11 +7658,17 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	const int ourForce = bs->cur_ps.fd.forcePower;
 
+	if (g_forcePowerDisable.integer & (1 << FP_ABSORB))
+		return 0;
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_ABSORB)))
+		return 0;
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB))
 		return 0;
 	if (ourForce < 10)
 		return 0;
 	if (!bs->frame_Enemy_Vis) //Only absorb if LOS
+		return 0;
+	if (bs->frame_Enemy_Len > MAX_DRAIN_DISTANCE)
 		return 0;
 
 	if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))
@@ -7670,7 +7680,7 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	}
 
 	if (bs->currentEnemy->client->ps.fd.forcePower >= 20)
-		return 20;
+		return 10;
 }
 
 int NewBotAI_GetProtect(bot_state_t* bs) {
@@ -7678,6 +7688,10 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
 	//Only toggle protect on if we are about to get damaged..
 
+	if (g_forcePowerDisable.integer & (1 << FP_PROTECT))
+		return 0;
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_PROTECT)))
+		return 0;
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
 		return 0;
 	if (ourForce < 11)
@@ -7688,7 +7702,7 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 	}
 
 	if (bs->frame_Enemy_Len < 120 && bs->currentEnemy->client->ps.saberMove != LS_NONE && bs->currentEnemy->client->ps.weapon == WP_SABER)
-		return 40;
+		return 30;
 
 	//Get nearest gun.. if (bs->currentEnemy->client->ps.weapon != WP_SABER)?  trace nearby projectiles? or is that not quick enough reaction time
 	//Weigh differently if we already have absorb ?
@@ -7700,6 +7714,10 @@ int NewBotAI_GetHeal(bot_state_t* bs) {
 	const int ourHealth = g_entities[bs->client].health;
 	int diff = ((ourForce - ourHealth) + 101) * 0.5f; //Range is 0-100?
 
+	if (g_forcePowerDisable.integer & (1 << FP_HEAL))
+		return 0;
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_HEAL)))
+		return 0;
 	//Higher diff is, higher weight to heal?
 
 	if (ourHealth >= 100)
@@ -7746,7 +7764,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 		//trap->Print("Gripping -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
 	}
 	else if (healWeight > protectWeight && healWeight > pushWeight && healWeight > pullWeight && healWeight > absorbWeight && healWeight > 0) {
-		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_HEAL;
 		useTheForce = qtrue;
 		//trap->Print("Gripping -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
 	}

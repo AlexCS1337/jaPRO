@@ -6308,6 +6308,33 @@ int NewBotAI_GetTimeToInRange(bot_state_t *bs, int range, int maxTime) {
 
 }
 
+int NewBotAI_GetProtect(bot_state_t* bs) {
+	const int ourForce = bs->cur_ps.fd.forcePower;
+	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
+	//Only toggle protect on if we are about to get damaged..
+
+	if (g_forcePowerDisable.integer & (1 << FP_PROTECT))
+		return 0;
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_PROTECT)))
+		return 0;
+	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
+		return 0;
+	if (ourForce < 12)
+		return 0;
+
+	if (bs->hitSpotted && totalhealth > 6) { //About to be saberthrowed and we can survive it
+		return 100;
+	}
+
+	if (bs->frame_Enemy_Len < 120 && bs->currentEnemy->client->ps.saberMove != LS_NONE && bs->currentEnemy->client->ps.weapon == WP_SABER) {
+		return ourForce * 0.5f - 10;
+	}
+
+	//Get nearest gun.. if (bs->currentEnemy->client->ps.weapon != WP_SABER)?  trace nearby projectiles? or is that not quick enough reaction time
+	//Weigh differently if we already have absorb ?
+	return 0;
+}
+
 void NewBotAI_Getup(bot_state_t *bs)
 {
 	trap->EA_Jump(bs->client);
@@ -7432,6 +7459,11 @@ int NewBotAI_GetPull(bot_state_t *bs) {
 	if (bs->cur_ps.weaponstate == WEAPON_CHARGING_ALT)
 		weight *= 0.1f; //Dont cancel a charge unless its important
 
+	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB)) //less weight if we don't regen fp..
+		weight *= 0.5f;
+	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
+		weight *= 0.5f;
+
 	if (bs->frame_Enemy_Len < 200 && ourForce >= 20) { //Pulling their weapon should be top priority always
 		if (bs->currentEnemy->client->ps.weapon >= WP_BLASTER)
 			return 100;
@@ -7664,7 +7696,7 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 		return 0;
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB))
 		return 0;
-	if (ourForce < 10)
+	if (ourForce < 12)
 		return 0;
 	if (!bs->frame_Enemy_Vis) //Only absorb if LOS
 		return 0;
@@ -7680,32 +7712,8 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	}
 
 	if (bs->currentEnemy->client->ps.fd.forcePower >= 20)
-		return 10;
-}
+		return ourForce*0.5f - 10;
 
-int NewBotAI_GetProtect(bot_state_t* bs) {
-	const int ourForce = bs->cur_ps.fd.forcePower;
-	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
-	//Only toggle protect on if we are about to get damaged..
-
-	if (g_forcePowerDisable.integer & (1 << FP_PROTECT))
-		return 0;
-	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_PROTECT)))
-		return 0;
-	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
-		return 0;
-	if (ourForce < 11)
-		return 0;
-
-	if (bs->hitSpotted && totalhealth > 6) { //About to be saberthrowed and we can survive it
-		return 100;
-	}
-
-	if (bs->frame_Enemy_Len < 120 && bs->currentEnemy->client->ps.saberMove != LS_NONE && bs->currentEnemy->client->ps.weapon == WP_SABER)
-		return 30;
-
-	//Get nearest gun.. if (bs->currentEnemy->client->ps.weapon != WP_SABER)?  trace nearby projectiles? or is that not quick enough reaction time
-	//Weigh differently if we already have absorb ?
 	return 0;
 }
 

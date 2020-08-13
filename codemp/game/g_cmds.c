@@ -6897,7 +6897,7 @@ static void Cmd_Ysal_f(gentity_t *ent)
 		ent->client->ps.powerups[PW_YSALAMIRI] = 0;
 	}
 	else {
-		ent->client->ps.powerups[PW_YSALAMIRI] = 2147483648;
+		ent->client->ps.powerups[PW_YSALAMIRI] = Q3_INFINITE;
 	}
 }
 

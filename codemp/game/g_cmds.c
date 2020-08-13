@@ -3612,7 +3612,7 @@ void Cmd_SetViewpos_f( gentity_t *ent ) {
 	trap->Argv( 4, buffer, sizeof( buffer ) );
 	angles[YAW] = atof( buffer );
 
-	TeleportPlayer( ent, origin, angles, qfalse );
+	TeleportPlayer( ent, origin, angles, 0 );
 }
 
 void G_LeaveVehicle( gentity_t* ent, qboolean ConCheck ) {

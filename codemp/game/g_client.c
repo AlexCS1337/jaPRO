@@ -3534,6 +3534,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 	client->ps.stats[STAT_WEAPONS] = 0;
 	client->forcedFireMode = 0;
 	client->ps.fd.forcePowersKnown &= ~(1 << FP_SABERTHROW);
+	//client->ps.fd.forcePowerLevel[FP_SABERTHROW] = FORCE_LEVEL_0;
 
 	//how is it less than 0 on end? should be kills = 0, suicides = 0.  is one not getting reset?
 	if (score <= 0) {
@@ -3640,6 +3641,7 @@ void G_GiveGunGameWeapon(gclient_t* client) {
 	else if (score == 18) {
 		client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER);
 		client->ps.weapon = WP_SABER;
+		client->forcedFireMode = 1;
 	}
 	else if (score >= 19) { //if (meansOfDeath == MOD_SABER || (meansOfDeath == WP_MELEE && attacker->client->pers.stats.kills >= 12)) {
 		finishedGG = qtrue;

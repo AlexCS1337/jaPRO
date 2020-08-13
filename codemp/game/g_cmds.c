@@ -872,9 +872,6 @@ static void Cmd_Blink_f( gentity_t *ent )
 	trap->Trace(&tr, startpoint, ent->r.mins, ent->r.maxs, endpoint, ent->client->ps.clientNum, MASK_PLAYERSOLID, qfalse, 0, 0);
 
 	if (tr.fraction < 1.0f) { //Hit something
-		//G_PlayEffect( EFFECT_LANDING_SAND, tr.endpos, tr.plane.normal );
-		//G_PlayEffect( EFFECT_LANDING_SAND, ent->client->ps.origin, vec3_origin );
-
 		if (ent->client->sess.raceMode)
 			AmTeleportPlayer(ent, tr.endpos, ent->client->ps.viewangles, qtrue, qtrue, qfalse);
 		else

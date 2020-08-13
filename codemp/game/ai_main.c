@@ -6170,11 +6170,12 @@ void NewBotAI_GetAim(bot_state_t *bs)
 	vec3_t saberDiff;
 	gentity_t *saber;
 
+	bs->hitSpotted = qfalse;
+
 	if (bs->runningLikeASissy) {
 		NewBotAI_GetStrafeAim(bs);
 		return;
 	}
-
 
 	/*
 		trType_t	trType;
@@ -6217,6 +6218,7 @@ void NewBotAI_GetAim(bot_state_t *bs)
 		VectorSubtract(saber->s.pos.trBase, bs->eye, a);
 		vectoangles(a, ang);
 		VectorCopy(ang, bs->goalAngles);
+		bs->hitSpotted = qtrue;
 	}
 
 	/*
@@ -6360,7 +6362,13 @@ void NewBotAI_ReactToBeingGripped(bot_state_t *bs) //Test this more, does it pus
 	vectoangles(a_fo, a_fo);
 
 	
-	if (!(g_forcePowerDisable.integer & (1 << FP_PULL)) && !(g_forcePowerDisable.integer & (1 << FP_PUSH)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PULL)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PUSH))) {//Can push or pull
+	if (!(g_forcePowerDisable.integer & (1 << FP_ABSORB)) && bs->cur_ps.fd.forcePowersKnown & (1 << FP_ABSORB)) {//Can pull and not push
+		if (bs->cur_ps.fd.forcePower >= 10) {
+			level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
+			useTheForce = qtrue;
+		}
+	}
+	else if (!(g_forcePowerDisable.integer & (1 << FP_PULL)) && !(g_forcePowerDisable.integer & (1 << FP_PUSH)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PULL)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PUSH))) {//Can push or pull
 		if (bs->cur_ps.fd.forcePower >= 20 && InFieldOfVision(bs->viewangles, 50, a_fo)) {
 			if (g_entities[bs->client].health < 30) {
 				level.clients[bs->client].ps.fd.forcePowerSelected = FP_PUSH;
@@ -7623,14 +7631,101 @@ void NewBotAI_GetDSForcepower(bot_state_t *bs)
 		trap->EA_ForcePower(bs->client);
 }
 
+int NewBotAI_GetAbsorb(bot_state_t* bs) {
+	const int ourForce = bs->cur_ps.fd.forcePower;
+
+	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB))
+		return 0;
+	if (ourForce < 10)
+		return 0;
+
+	if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))
+		return 100;
+
+	if (bs->cur_ps.weapon > WP_BRYAR_PISTOL && (bs->frame_Enemy_Len < 200)) { //Protect our guns
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
+		return 75; //eh?
+	}
+	return 0;
+}
+
+int NewBotAI_GetProtect(bot_state_t* bs) {
+	const int ourForce = bs->cur_ps.fd.forcePower;
+	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
+	//Only toggle protect on if we are about to get damaged..
+
+	if (ourForce < 11)
+		return 0;
+
+	if (bs->hitSpotted && totalhealth > 6) { //About to be saberthrowed and we can survive it
+		return 100;
+	}
+
+	if (bs->frame_Enemy_Len < 120 && bs->currentEnemy->client->ps.saberMove != LS_NONE && bs->currentEnemy->client->ps.weapon == WP_SABER)
+		return 40;
+
+	//Get nearest gun.. if (bs->currentEnemy->client->ps.weapon != WP_SABER)?  trace nearby projectiles? or is that not quick enough reaction time
+	//Weigh differently if we already have absorb ?
+	return 0;
+}
+
+int NewBotAI_GetHeal(bot_state_t* bs) {
+	const int ourForce = bs->cur_ps.fd.forcePower;
+	const int ourHealth = g_entities[bs->client].health;
+	int diff = ((ourForce - ourHealth) + 101) * 0.5f; //Range is 0-100?
+
+	//Higher diff is, higher weight to heal?
+
+	if (ourHealth >= 100)
+		return 0;
+	if (ourForce < 50)
+		return 0;
+	return diff;
+}
+
 void NewBotAI_GetLSForcepower(bot_state_t *bs)
 {
 	vec3_t a_fo;
 	qboolean useTheForce = qfalse;
+	int pullWeight, pushWeight, absorbWeight, protectWeight, healWeight;
 
 	VectorSubtract(bs->currentEnemy->client->ps.origin, bs->eye, a_fo);
 	vectoangles(a_fo, a_fo);
 
+	pullWeight = NewBotAI_GetPull(bs);
+	pushWeight = NewBotAI_GetPush(bs);
+	absorbWeight = NewBotAI_GetAbsorb(bs);
+	protectWeight = NewBotAI_GetProtect(bs);
+	healWeight = NewBotAI_GetHeal(bs);
+	//get weights
+
+	if (pushWeight > pullWeight && pushWeight > absorbWeight && pushWeight > protectWeight && pushWeight > healWeight && pushWeight > 0) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PUSH;
+		useTheForce = qtrue;
+		//trap->Print("Pushing -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
+	}
+	else if (pullWeight > pushWeight && pullWeight > absorbWeight && pullWeight > protectWeight && pullWeight > healWeight && pullWeight > 0) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PULL;
+		useTheForce = qtrue;
+		//trap->Print("Pulling -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
+	}
+	else if (absorbWeight > pushWeight && absorbWeight > pullWeight && absorbWeight > protectWeight && absorbWeight > healWeight && absorbWeight > 0) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
+		useTheForce = qtrue;
+		//trap->Print("Draining -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
+	}
+	else if (protectWeight > pushWeight && protectWeight > pullWeight && protectWeight > absorbWeight && protectWeight > healWeight && protectWeight > 0) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
+		useTheForce = qtrue;
+		//trap->Print("Gripping -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
+	}
+	else if (healWeight > protectWeight && healWeight > pushWeight && healWeight > pullWeight && healWeight > absorbWeight && healWeight > 0) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
+		useTheForce = qtrue;
+		//trap->Print("Gripping -- Pull: %i, Push: %i, Drain: %i, Grip: %i\n", pullWeight, pushWeight, drainWeight, gripWeight);
+	}
+
+#if 0
 	if (!useTheForce && !(g_forcePowerDisable.integer & (1 << FP_PUSH)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PUSH)) && (bs->frame_Enemy_Len < 640) && (bs->cur_ps.fd.forcePower > 20) && bs->frame_Enemy_Vis) {
 		if (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) {
 			if ((g_entities[bs->client].health < 25) && (bs->frame_Enemy_Len < 192) && (bs->cur_ps.groundEntityNum != ENTITYNUM_NONE - 1)) {
@@ -7717,6 +7812,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 			useTheForce = qtrue;
 		}
 	}
+#endif
 
 	if (!useTheForce && !(g_forcePowerDisable.integer & (1 << FP_SPEED)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_SPEED)) && (bs->frame_Enemy_Len > 90)) {
 		if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB)) {
@@ -7726,6 +7822,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 			}
 		}
 	}
+	//Speed, team heal,
 
 	if (!useTheForce && level.gametype >= GT_TEAM && !(g_forcePowerDisable.integer & (1 << FP_TEAM_HEAL)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_TEAM_HEAL))) {
 		if (g_entities[bs->client].health > 75 && (bs->cur_ps.fd.forcePower > 70)) {
@@ -7841,6 +7938,11 @@ void NewBotAI_LSvLS(bot_state_t *bs)
 	
 	if (bs->cur_ps.forceHandExtend == HANDEXTEND_KNOCKDOWN) {
 		NewBotAI_Getup(bs);
+		return;
+	}
+
+	if (bs->cur_ps.fd.forceGripBeingGripped > level.time) {
+		NewBotAI_ReactToBeingGripped(bs);
 		return;
 	}
 
@@ -8142,7 +8244,7 @@ void NewBotAI_DoAloneStuff(bot_state_t *bs, float thinktime) {
 	if (!destination) {
 		//StandardBotAI(bs, thinktime);
 		trap->EA_MoveForward(bs->client);
-		bs->ideal_viewangles[YAW] += Q_irand(-2,2);
+		bs->ideal_viewangles[YAW] += Q_irand(-2,4);
 		return;
 	}
 

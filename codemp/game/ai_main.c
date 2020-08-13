@@ -6503,7 +6503,21 @@ void NewBotAI_Raging(bot_state_t *bs)
 
 void NewBotAI_Protecting(bot_state_t *bs)
 {
-	if ((g_entities[bs->client].health) > 90 || NewBotAI_GetDist(bs) > MAX_DRAIN_DISTANCE) {
+	qboolean stopProtecting = qfalse;
+
+	//Don't protect if they are out of range
+	if (bs->frame_Enemy_Len > 400) {
+		if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB)) {
+			if ((bs->cur_ps.fd.forcePower < 40))
+				stopProtecting = qtrue;
+		}
+		else {
+			if ((bs->cur_ps.fd.forcePower < 70))
+				stopProtecting = qtrue;
+		}
+	}
+
+	if (stopProtecting) {
 		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
 		trap->EA_ForcePower(bs->client);
 	}
@@ -6511,12 +6525,18 @@ void NewBotAI_Protecting(bot_state_t *bs)
 
 void NewBotAI_Absorbing(bot_state_t *bs)
 {
-	if (NewBotAI_GetDist(bs) > MAX_DRAIN_DISTANCE || ((bs->currentEnemy->client->ps.fd.forcePower < 20) && (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))))) {
+	qboolean stopAbsorbing = qfalse;
+	if (!bs->frame_Enemy_Vis)
+		stopAbsorbing = qtrue;
+
+	else if (NewBotAI_GetDist(bs) > MAX_DRAIN_DISTANCE || ((bs->currentEnemy->client->ps.fd.forcePower < 20) && (!(bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))))) {
 		if ((bs->cur_ps.fd.forceGripBeingGripped < level.time)) //Not being gripped
-		{
-			level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
-			trap->EA_ForcePower(bs->client);
-		}
+			stopAbsorbing = qtrue;
+	}
+
+	if (stopAbsorbing) {
+		level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
+		trap->EA_ForcePower(bs->client);
 	}
 }
 
@@ -7638,6 +7658,8 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 		return 0;
 	if (ourForce < 10)
 		return 0;
+	if (!bs->frame_Enemy_Vis) //Only absorb if LOS
+		return 0;
 
 	if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))
 		return 100;
@@ -7646,7 +7668,9 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 		level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
 		return 75; //eh?
 	}
-	return 0;
+
+	if (bs->currentEnemy->client->ps.fd.forcePower >= 20)
+		return 20;
 }
 
 int NewBotAI_GetProtect(bot_state_t* bs) {
@@ -7654,6 +7678,8 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
 	//Only toggle protect on if we are about to get damaged..
 
+	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_PROTECT))
+		return 0;
 	if (ourForce < 11)
 		return 0;
 

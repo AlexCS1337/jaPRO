@@ -6307,7 +6307,7 @@ int NewBotAI_GetTimeToInRange(bot_state_t *bs, int range, int maxTime) {
 	return timeToInRange; //If this is less than maxTime, we will be in range!
 
 }
-
+qboolean BG_SaberInAttack(int move);
 qboolean BG_InKnockDown(int anim);
 int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	const int ourForce = bs->cur_ps.fd.forcePower;
@@ -6364,7 +6364,7 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 		return 100;
 	}
 
-	if (bs->frame_Enemy_Len < 120 && BG_SaberInAttac(bs->currentEnemy->client->ps.saberMove)) {
+	if (bs->frame_Enemy_Len < 120 && BG_SaberInAttack(bs->currentEnemy->client->ps.saberMove)) {
 		return (ourForce * 0.5f) - 10;
 	}
 

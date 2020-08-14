@@ -6308,6 +6308,7 @@ int NewBotAI_GetTimeToInRange(bot_state_t *bs, int range, int maxTime) {
 
 }
 
+qboolean BG_InKnockDown(int anim);
 int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	const int ourForce = bs->cur_ps.fd.forcePower;
 
@@ -6332,13 +6333,16 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 		return 75; //eh?
 	}
 
-	if (bs->currentEnemy->client->ps.fd.forcePower >= 20)
-		return ourForce * 0.5f - 10;
+	if (bs->currentEnemy->client->ps.fd.forcePower >= 20) {//PK range? and he can be pulled?
+		if (bs->frame_Enemy_Len > 50) { //no point in absorbing if we are touching them anyway
+			if (bs->frame_Enemy_Len < 256 && (bs->cur_ps.groundEntityNum == ENTITYNUM_NONE || BG_SaberInAttack(bs->cur_ps.saberMove) || BG_InKnockDown(bs->cur_ps.legsAnim)))//can actually be pulled towards a kick so stop that
+				return ourForce * 0.5f - 10;
+		}
+	}
 
 	return 0;
 }
 
-qboolean BG_InKnockDown(int anim);
 int NewBotAI_GetProtect(bot_state_t* bs) {
 	const int ourForce = bs->cur_ps.fd.forcePower;
 	const int totalhealth = g_entities[bs->client].health + bs->currentEnemy->client->ps.stats[STAT_ARMOR];
@@ -6353,7 +6357,7 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 	if (ourForce < 12)
 		return 0;
 
-	if (bs->hitSpotted && totalhealth > 6 && ((bs->cur_ps.saberMove > LS_A_TL2BR) || (BG_InKnockDown(bs->cur_ps.legsAnim)))) { //About to be saberthrowed and we can survive it and we can't block it
+	if (bs->hitSpotted && totalhealth > 6 && (BG_SaberInAttack(bs->cur_ps.saberMove) || BG_InKnockDown(bs->cur_ps.legsAnim))) { //About to be saberthrowed and we can survive it and we can't block it
 		if (totalhealth > 35) { //we could survive it anyway
 			return (ourForce - 15);
 		}
@@ -7912,6 +7916,26 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 		}
 	}
 
+	//Check if we should saberthrow I guess.
+	if (bs->cur_ps.weapon == WP_SABER && /*(bs->cur_ps.fd.forcePowersKnown & (1 << FP_SABERTHROW)*/ bs->frame_Enemy_Len < 400) {
+		if (BG_InKnockDown(bs->currentEnemy->client->ps.legsAnim)) {
+			g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERTHROW] = 3;
+			g_entities[bs->client].client->ps.fd.forcePowersKnown |= (1 << FP_SABERTHROW);
+
+			if (bs->cur_ps.fd.forcePower > 40 && (bs->currentEnemy->health + bs->currentEnemy->client->ps.stats[STAT_ARMOR]) <= 50) {
+				trap->EA_Alt_Attack(bs->client);
+				return;
+			}
+			/*
+			else if ((((bs->cur_ps.fd.forcePower > bs->currentEnemy->client->ps.fd.forcePower) && bs->cur_ps.fd.forcePower > 40) || (bs->cur_ps.fd.forcePower > 70)) && g_entities[bs->client].health > 75 && bs->currentEnemy->health < 70) {
+				trap->EA_Alt_Attack(bs->client);
+				Com_Printf("Throwing 2\n");
+				return;
+			}
+			*/
+		}
+	}
+
 	//if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT && (level.clients[bs->client].ps.fd.forcePowerSelected == FP_PULL) && random() > 0.5)
 		//useTheForce = qfalse;
 
@@ -8012,6 +8036,10 @@ void NewBotAI_LSvDS(bot_state_t *bs)
 		NewBotAI_Protecting(bs);
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB))
 		NewBotAI_Absorbing(bs);
+
+	if (bs->cur_ps.saberInFlight) {
+		NewBotAI_SaberThrowing(bs);
+	}
 	
 	NewBotAI_GetMovement(bs);
 	if (g_forcePowerDisable.integer != 163837 && g_forcePowerDisable.integer != 163839)

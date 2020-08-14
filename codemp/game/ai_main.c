@@ -6364,7 +6364,7 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 		return 100;
 	}
 
-	if (bs->frame_Enemy_Len < 120 && (bs->currentEnemy->client->ps.saberMove > LS_A_TL2BR) && (bs->currentEnemy->client->ps.saberMove < LS_REFLECT_UP) && bs->currentEnemy->client->ps.weapon == WP_SABER) {
+	if (bs->frame_Enemy_Len < 120 && BG_SaberInAttac(bs->currentEnemy->client->ps.saberMove)) {
 		return (ourForce * 0.5f) - 10;
 	}
 
@@ -6436,7 +6436,7 @@ void NewBotAI_ReactToBeingGripped(bot_state_t *bs) //Test this more, does it pus
 
 	
 	if (!(g_forcePowerDisable.integer & (1 << FP_ABSORB)) && bs->cur_ps.fd.forcePowersKnown & (1 << FP_ABSORB)) {//Can pull and not push
-		if (bs->cur_ps.fd.forcePower >= 10) {
+		if (bs->cur_ps.fd.forcePower >= 11) {
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
 			useTheForce = qtrue;
 		}

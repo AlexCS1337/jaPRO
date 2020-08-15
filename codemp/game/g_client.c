@@ -2962,23 +2962,33 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			int preSess;
 
 			//SetTeam(ent, "");
-			ent->client->sess.sessionTeam = PickTeam(-1);
-			trap->GetUserinfo(clientNum, userinfo, MAX_INFO_STRING);
-
-			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR)
-			{
-				ent->client->sess.sessionTeam = TEAM_RED;
-			}
-
-			if (ent->client->sess.sessionTeam == TEAM_RED)
-			{
-				team = "Red";
-			}
-			else
-			{
+			if (bot_team.integer == 1) {
+				ent->client->sess.sessionTeam = TEAM_BLUE;
 				team = "Blue";
 			}
+			else if (bot_team.integer > 1)
+			{
+				ent->client->sess.sessionTeam = TEAM_RED;
+				team = "Red";
+			}
+			else {
+				ent->client->sess.sessionTeam = PickTeam(-1);
 
+				if (ent->client->sess.sessionTeam == TEAM_SPECTATOR)
+				{
+					ent->client->sess.sessionTeam = TEAM_RED;
+				}
+
+				if (ent->client->sess.sessionTeam == TEAM_RED)
+				{
+					team = "Red";
+				}
+				else
+				{
+					team = "Blue";
+				}
+			}
+			trap->GetUserinfo(clientNum, userinfo, MAX_INFO_STRING);
 			Info_SetValueForKey( userinfo, "team", team );
 
 			trap->SetUserinfo( clientNum, userinfo );

@@ -4176,7 +4176,7 @@ void DoGripAction(gentity_t *self, forcePowers_t forcePower)
 		return;
 	}
 
-	if (!(g_tweakForce.integer & FT_JK2GRIP) && tr.fraction != 1.0f && tr.entityNum != gripEnt->s.number)
+	if (!(g_tweakForce.integer & FT_JK2GRIP) && !gripEnt->client->sess.raceMode && tr.fraction != 1.0f && tr.entityNum != gripEnt->s.number)
 	{
 		WP_ForcePowerStop(self, forcePower);
 		return;

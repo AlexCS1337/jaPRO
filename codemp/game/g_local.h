@@ -286,7 +286,7 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define ST_JK2_DMGSYSTEM		(1<<1)
 #define ST_REDUCE_SABERBLOCK	(1<<2)
 #define	ST_REDUCE_SABERDROP		(1<<3)
-#define ST_ALLOW_ROLLCANCEL		(1<<4) //CLIENT
+#define ST_ALLOW_ROLLCANCEL		(1<<4) //CLIENT - also remove backwards run slowdown like jk2
 #define ST_NO_REDCHAIN			(1<<5)
 #define ST_FIXED_SABERSWITCH	(1<<6)
 #define ST_EASYBACKSLASH		(1<<7)

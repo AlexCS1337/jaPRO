@@ -9998,15 +9998,24 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 
 	if ( cmd->forwardmove < 0 && !(cmd->buttons&BUTTON_WALKING) && pm->ps->groundEntityNum != ENTITYNUM_NONE )
 	{//running backwards is slower than running forwards (like SP)
-		ps->speed *= 0.75f;
+#ifdef _GAME
+		if (!(g_tweakSaber.integer & ST_ALLOW_ROLLCANCEL) || pm->ps->stats[STAT_RACEMODE])
+#else
+		if (!(cgs.jcinfo & JAPRO_CINFO_ROLLCANCEL) || pm->ps->stats[STAT_RACEMODE])
+#endif
+			ps->speed *= 0.75f; //JK2 1.02 doesn't have this? does q3 / wsw?
 	}
 
 //[JAPRO - Serverside + Clientside - Force - Add fast grip option - Start]
 	if (ps->fd.forcePowersActive & (1 << FP_GRIP)) {
+		if (ps->stats[STAT_RACEMODE])
+		{
+			//keep grip at normal runspeed if in racemode like jk2
+		}
 #ifdef _GAME
-		if (g_tweakForce.integer & FT_FASTGRIP)
+		else if (g_tweakForce.integer & FT_FASTGRIP)
 #else
-		if (cgs.isJAPlus || (cgs.isJAPro && cgs.jcinfo & JAPRO_CINFO_FASTGRIP))
+		else if (cgs.isJAPlus || (cgs.isJAPro && cgs.jcinfo & JAPRO_CINFO_FASTGRIP))
 #endif
 			ps->speed *= 0.8f;
 		else

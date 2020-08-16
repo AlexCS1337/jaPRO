@@ -4706,7 +4706,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 	vectoangles(a, ang);
 	VectorCopy(ang, bs->goalAngles);
 
-	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove != LS_NONE &&	bs->cur_ps.saberMove != LS_READY) { //Poke and Wiggle
+	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove != LS_NONE && bs->cur_ps.saberMove != LS_READY) { //Poke and Wiggle
 
 		if (level.time % 100 > 50) {
 			bs->goalAngles[YAW] += 3.0f;
@@ -4730,7 +4730,20 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 				bs->goalAngles[PITCH] -= 45.0f;
 			}
 		}
+		else if (bs->cur_ps.saberMove == LS_S_R2L) {//Start of yellow horizontal
+			bs->goalAngles[YAW] += 45;
+		}
+		else if (bs->cur_ps.saberMove == LS_A_R2L) {//yellow horizontal
+			if (level.time % 200 > 100)
+				bs->goalAngles[YAW] += 20;
+			else
+				bs->goalAngles[YAW] += 20;
 
+		}
+		else if (bs->cur_ps.saberMove == LS_R_R2L) {//end of yellow horizontal
+			//bs->goalAngles[YAW] -= 30;
+		}
+	
 		bs->goalAngles[YAW] = AngleNormalize360(bs->goalAngles[YAW]);
 		bs->goalAngles[PITCH] = AngleNormalize360(bs->goalAngles[PITCH]);
 	}
@@ -7091,7 +7104,42 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 	}
 
 	if (bs->cur_ps.weapon == WP_SABER) {//Fullforce saber attacks
-	/*	if (0) { //Yellow sweep
+		if (bs->cur_ps.fd.forceSide == FORCE_LIGHTSIDE) { //Yellow sweep
+		
+			if (BG_SaberInAttack(bs->cur_ps.saberMove)) {
+				if (g_entities[bs->client].client->ps.fd.saberAnimLevel == SS_MEDIUM)
+					Cmd_SaberAttackCycle_f(&g_entities[bs->client]);
+			}
+			else if (g_entities[bs->client].client->ps.fd.saberAnimLevel == SS_STAFF)
+				Cmd_SaberAttackCycle_f(&g_entities[bs->client]);
+				//g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_MEDIUM; //SS_STAFF
+				//Cmd_SaberAttackCycle_f(&g_entities[bs->client]);
+			//else
+				//g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STAFF; //SS_STAFF
+			//g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_MEDIUM; //SS_STAFF
+
+			if (bs->hitSpotted) //don't start a swing if a saberthrow is near us?
+				return;
+
+			if (g_gunGame.integer && g_entities[bs->client].client->forcedFireMode == 2) {
+				trap->EA_Alt_Attack(bs->client);
+				return;
+			}
+
+			if ((g_entities[bs->client].client->ps.saberMove == LS_NONE || g_entities[bs->client].client->ps.saberMove == LS_READY) && bs->frame_Enemy_Len < 256 && ((NewBotAI_GetTimeToInRange(bs, 75, 800) < 800) || bs->frame_Enemy_Len < 128)) {
+				if (g_entities[bs->client].health > 40) {
+					//See if they can't saberthrow?
+					//Com_Printf("Their torso time is %i\n", bs->currentEnemy->client->ps.torsoTimer);
+					//if ((bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB))) || ((bs->frame_Enemy_Len < 70) && (bs->currentEnemy->client->ps.origin[2] - bs->cur_ps.origin[2]) > 50)) {
+						trap->EA_Attack(bs->client);
+						return;
+					//}
+				}
+			}
+
+		}
+#if 0
+		if (bs->cur_ps.fd.forceSide == FORCE_LIGHTSIDE) { //Yellow sweep
 			g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_MEDIUM;
 			if (bs->cur_ps.torsoTimer) {
 				if (bs->cur_ps.torsoTimer < 200) {
@@ -7120,11 +7168,17 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 			//Get swing anim, if left, do right. if right, do left.
 			//get swing anim point, if less than 50ms left, hold key and attack.  otherwise dont
 		}
-		else */{
+#endif
+		else {
 			g_entities[bs->client].client->ps.fd.saberAnimLevel = SS_STRONG;
 
 			if (bs->hitSpotted) //don't start a swing if a saberthrow is near us?
 				return;
+
+			if (g_gunGame.integer && g_entities[bs->client].client->forcedFireMode == 2) {
+				trap->EA_Alt_Attack(bs->client);
+				return;
+			}
 
 			//todo - skip if we are already during a swing 
 			if ((g_entities[bs->client].client->ps.saberMove == LS_NONE || g_entities[bs->client].client->ps.saberMove == LS_READY) && NewBotAI_GetTimeToInRange(bs, 75, 600) < 600) {
@@ -7135,11 +7189,6 @@ void NewBotAI_GetAttack(bot_state_t *bs)
 						return;
 					}
 				}
-			}
-
-			if (g_gunGame.integer && g_entities[bs->client].client->forcedFireMode == 2) {
-				trap->EA_Alt_Attack(bs->client);
-				return;
 			}
 
 			/*
@@ -7319,7 +7368,7 @@ void NewBotAI_GetMovement(bot_state_t *bs)
 				trap->EA_MoveForward(bs->client);
 			crouch = qtrue;
 		}
-		else if ((g_entities[bs->client].health < 25 || (g_entities[bs->client].health < 50 && bs->cur_ps.fd.forcePower < 30)) && (bs->frame_Enemy_Len < 450)) {
+		else if ((g_entities[bs->client].health < 25 || (g_entities[bs->client].health < 50 && bs->cur_ps.fd.forcePower < 30) && !(bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB))) && (bs->frame_Enemy_Len < 450)) {
 			qboolean wallRun = qfalse;
 			//Running routine, we should add a wallrun search to this.
 
@@ -7669,10 +7718,10 @@ int NewBotAI_GetTeamEnergize(bot_state_t* bs) {
 		return 0;
 	if (g_gametype.integer < GT_TEAM)
 		return 0;
-		return 0;
-		return 0;
 
-	for (i = 0; i < level.numPlayingClients; i++) {
+	g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_TEAM_FORCE] = 3;//hack
+
+	for (i = 0; i < MAX_CLIENTS; i++) {
 		if (i == bs->client)
 			continue;
 		if (!&g_entities[i] || g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
@@ -7818,7 +7867,7 @@ int NewBotAI_GetTeamHeal(bot_state_t *bs) {
 	if (g_gametype.integer < GT_TEAM)
 		return 0;
 
-	for (i = 0; i < level.numPlayingClients; i++) {
+	for (i = 0; i < MAX_CLIENTS; i++) {
 		if (i == bs->client)
 			continue;
 		if (!&g_entities[i] || g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
@@ -7973,7 +8022,7 @@ void NewBotAI_DSvLS(bot_state_t *bs)
 	}
 
 	if (bs->cur_ps.fd.forcePowersActive & (1 << FP_DRAIN)) {
-		NewBotAI_Draining(bs);
+		NewBotAI_Draining(bs);//y return? y not getmovement?
 		return;
 	}
 

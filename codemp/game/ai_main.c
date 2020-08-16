@@ -6345,7 +6345,7 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 		return 75; //eh?
 	}
 
-	if (bs->currentEnemy->client->ps.fd.forcePower >= 20) {//PK range? and he can be pulled?
+	if (bs->currentEnemy->client->ps.fd.forcePower >= 20 && g_entities[bs->client].health < 30) {//PK range? and he can be pulled? and low
 		if (bs->frame_Enemy_Len > 50) { //no point in absorbing if we are touching them anyway
 			if (bs->frame_Enemy_Len < 256 && (bs->cur_ps.groundEntityNum == ENTITYNUM_NONE || BG_SaberInAttack(bs->cur_ps.saberMove) || BG_InKnockDown(bs->cur_ps.legsAnim)))//can actually be pulled towards a kick so stop that
 				return ourForce * 0.5f - 10;
@@ -6376,8 +6376,12 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 		return 100;
 	}
 
-	if (bs->frame_Enemy_Len < 120 && BG_SaberInAttack(bs->currentEnemy->client->ps.saberMove)) {
-		return (ourForce * 0.5f) - 10;
+	if (bs->frame_Enemy_Len < 120 && BG_SaberInAttack(bs->currentEnemy->client->ps.saberMove)) { //better way to check if we are about to take damage?
+		vec3_t diff;
+
+		VectorSubtract(bs->cur_ps.origin, bs->currentEnemy->client->saber[0].blade[0].trail.tip, diff);
+		if (VectorLengthSquared(diff) > (48 * 48)) //out of range
+			return (ourForce * 0.5f) - 10;
 	}
 
 	//Get nearest gun.. if (bs->currentEnemy->client->ps.weapon != WP_SABER)?  trace nearby projectiles? or is that not quick enough reaction time
@@ -6447,7 +6451,7 @@ void NewBotAI_ReactToBeingGripped(bot_state_t *bs) //Test this more, does it pus
 	vectoangles(a_fo, a_fo);
 	
 	if (!(g_forcePowerDisable.integer & (1 << FP_ABSORB)) && bs->cur_ps.fd.forcePowersKnown & (1 << FP_ABSORB)) {//Can pull and not push
-		if (bs->cur_ps.fd.forcePower >= 11) {
+		if (bs->cur_ps.fd.forcePower >= 12) {
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
 			useTheForce = qtrue;
 		}

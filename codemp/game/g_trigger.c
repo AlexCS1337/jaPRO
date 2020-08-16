@@ -1233,6 +1233,18 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 			}
 		}
 	}
+	else if (style == MV_COOP_JKA) {
+		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 2 && !(restrictions & (1 << 1))) {//using jump2 but its not allowed
+			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
+			return qfalse;
+		}
+		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 3 && !(restrictions & (1 << 2))) {//using jump3 but its not allowed
+			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
+			return qfalse;
+		}
+	}
+
+
 	if (player->client->pers.haste && !(restrictions & (1 << 3))) 
 		return qfalse; //IF client has haste, and the course does not allow haste, dont count it.
 	if ((style != MV_JETPACK) && (player->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4))) //kinda deprecated.. maybe just never allow jetpack?

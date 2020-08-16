@@ -2918,7 +2918,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	te->s.eventParm = clientNum;
 
 	if (firstTime)
-		ent->client->sess.movementStyle = 1;//default to JKA style 
+		ent->client->sess.movementStyle = MV_JKA;//default to JKA style 
 
 	// for statistics
 //	client->areabits = areabits;
@@ -4393,6 +4393,8 @@ void ClientSpawn(gentity_t *ent) {
 
 	if (client->sess.raceMode) {
 		ent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] = 100;
+		if (client->sess.movementStyle == MV_COOP_JKA)
+			client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
 	}
 	// health will count down towards max_health
 	else if (level.gametype == GT_SIEGE &&

@@ -3840,7 +3840,7 @@ void ClientThink_real( gentity_t *ent ) {
 				ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 		}
 		else if (movementStyle == MV_COOP_JKA) {
-			ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
+			//ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
 			ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = ent->client->ps.fd.forcePowerLevel[FP_DRAIN] = 2;
 			ent->client->ps.fd.forcePowerLevel[FP_SPEED] = ent->client->ps.fd.forcePowerLevel[FP_GRIP] = ent->client->ps.fd.forcePowerLevel[FP_PUSH] = ent->client->ps.fd.forcePowerLevel[FP_PULL] = 3;
 			ent->client->ps.fd.forcePowersKnown = (1 << FP_PULL) + (1 << FP_PUSH) + (1 << FP_SPEED) + (1 << FP_GRIP) + (1 << FP_DRAIN) + (1 << FP_LIGHTNING);

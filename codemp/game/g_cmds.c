@@ -6727,6 +6727,7 @@ static void Cmd_MovementStyle_f(gentity_t *ent)
 			int i;
 			for (i = AMMO_BLASTER; i < AMMO_MAX; i++)
 				ent->client->ps.ammo[i] = 999;
+			ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
 		}
 
 		if (newStyle == MV_JETPACK) {

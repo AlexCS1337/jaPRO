@@ -6149,7 +6149,7 @@ void NewBotAI_GetStrafeAim(bot_state_t *bs)
 
 	optimalAngle = acos((double) ((baseSpeed - (baseSpeed * frameTime)) / currentSpeed)) * (180.0f/M_PI) - 45.0f; 
 
-	optimalAngle += bot_strafeOffset.value; //Ayy
+	optimalAngle += 1.0f + bot_strafeOffset.value; //Ayy
 
 	if (optimalAngle < 0 || optimalAngle > 360)
 		optimalAngle = 0;
@@ -6338,7 +6338,7 @@ int NewBotAI_GetAbsorb(bot_state_t* bs) {
 	if (bs->frame_Enemy_Len > MAX_DRAIN_DISTANCE)
 		return 0;
 
-	if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN))
+	if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_DRAIN) || bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_LIGHTNING)) //check if they are being hit though. not if enemy is using it?
 		return 100;
 
 	if (bs->cur_ps.weapon > WP_BRYAR_PISTOL && (bs->frame_Enemy_Len < 200)) { //Protect our guns
@@ -6586,7 +6586,9 @@ void NewBotAI_Protecting(bot_state_t *bs)
 	qboolean stopProtecting = qfalse;
 
 	//Don't protect if they are out of range
-	if (bs->frame_Enemy_Len > 512) {
+	if (!bs->frame_Enemy_Vis)
+		stopProtecting = qtrue;
+	else if (bs->frame_Enemy_Len > 512) {
 		if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB)) {
 			if ((bs->cur_ps.fd.forcePower < 30))
 				stopProtecting = qtrue;
@@ -7712,9 +7714,9 @@ int NewBotAI_GetTeamEnergize(bot_state_t* bs) {
 	int i, weight = 0, force;
 	vec3_t diff;
 
-	if (!(g_forcePowerDisable.integer & (1 << FP_TEAM_FORCE)))
+	if (g_forcePowerDisable.integer & (1 << FP_TEAM_FORCE))
 		return 0;
-	if (bs->cur_ps.fd.forcePowersKnown & (1 << FP_TEAM_FORCE))
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_TEAM_FORCE)))
 		return 0;
 	if (g_gametype.integer < GT_TEAM)
 		return 0;
@@ -7860,9 +7862,9 @@ int NewBotAI_GetTeamHeal(bot_state_t *bs) {
 	int i, weight = 0, health;
 	vec3_t diff;
 
-	if (!(g_forcePowerDisable.integer & (1 << FP_TEAM_HEAL)))
+	if (g_forcePowerDisable.integer & (1 << FP_TEAM_HEAL))
 		return 0;
-	if (bs->cur_ps.fd.forcePowersKnown & (1 << FP_TEAM_HEAL))
+	if (!(bs->cur_ps.fd.forcePowersKnown & (1 << FP_TEAM_HEAL)))
 		return 0;
 	if (g_gametype.integer < GT_TEAM)
 		return 0;
@@ -7937,7 +7939,7 @@ void NewBotAI_GetLSForcepower(bot_state_t *bs)
 	if (!useTheForce && !(g_forcePowerDisable.integer & (1 << FP_SPEED)) && (bs->cur_ps.fd.forcePowersKnown & (1 << FP_SPEED)) && (bs->frame_Enemy_Len > 90) && (bs->frame_Enemy_Len < 384) && bs->frame_Enemy_Vis) {
 		//if (bs->currentEnemy->client->ps.fd.forcePowersActive & (1 << FP_ABSORB)) {
 		if (bs->cur_ps.fd.forcePowersActive & (1 << FP_ABSORB)) {
-			if (g_entities[bs->client].health >= 100 && bs->cur_ps.stats[STAT_ARMOR] >= 25 && (bs->cur_ps.fd.forcePower == 100)) {
+			if (g_entities[bs->client].health >= 100 && bs->cur_ps.stats[STAT_ARMOR] >= 25 && (bs->cur_ps.fd.forcePower > 85)) {
 				level.clients[bs->client].ps.fd.forcePowerSelected = FP_SPEED;
 				useTheForce = qtrue;
 			}

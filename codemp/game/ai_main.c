@@ -4695,7 +4695,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 		}
 	}
 
-	if (bs->cur_ps.weapon == WP_SABER && g_entities[bs->client].client->ps.saberMove != LS_NONE && g_entities[bs->client].client->ps.saberMove != LS_READY) { //Poke
+	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove >= 4) { //Poke
 		vec3_t saberDiff;
 		VectorSubtract(bs->currentEnemy->client->ps.origin, g_entities[bs->client].client->saber[0].blade[0].trail.tip, saberDiff);
 		VectorAdd(saberDiff, predictedSpot, predictedSpot);
@@ -4706,8 +4706,7 @@ void G_NewBotAIAimLeading(bot_state_t* bs, vec3_t headlevel) {
 	vectoangles(a, ang);
 	VectorCopy(ang, bs->goalAngles);
 
-	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove != LS_NONE && bs->cur_ps.saberMove != LS_READY) { //Poke and Wiggle
-
+	if (bs->cur_ps.weapon == WP_SABER && bs->cur_ps.saberMove >= 4) { //Poke and Wiggle
 		if (level.time % 100 > 50) {
 			bs->goalAngles[YAW] += 3.0f;
 		}

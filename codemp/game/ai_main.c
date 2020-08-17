@@ -7729,7 +7729,7 @@ int NewBotAI_GetTeamEnergize(bot_state_t* bs) {
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		if (i == bs->client)
 			continue;
-		if (!&g_entities[i] || g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
+		if (!&g_entities[i] || !g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
 			continue;
 		if (g_entities[i].client->ps.fd.forcePower > bs->cur_ps.fd.forcePower)
 			continue;
@@ -7875,7 +7875,7 @@ int NewBotAI_GetTeamHeal(bot_state_t *bs) {
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		if (i == bs->client)
 			continue;
-		if (!&g_entities[i] || g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
+		if (!&g_entities[i] || !g_entities[i].client || !g_entities[i].inuse || g_entities[i].health <= 0)
 			continue;
 		if (g_entities[i].client->sess.sessionTeam != g_entities[bs->client].client->sess.sessionTeam)
 			continue;

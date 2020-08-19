@@ -4652,25 +4652,28 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	if (mod == MOD_DEMP2 && targ && targ->inuse && targ->client)
 	{
-		if ( targ->client->ps.electrifyTime < level.time )
-		{//electrocution effect
-			if (targ->s.eType == ET_NPC && targ->s.NPC_class == CLASS_VEHICLE &&
-				targ->m_pVehicle && (targ->m_pVehicle->m_pVehicleInfo->type == VH_SPEEDER || targ->m_pVehicle->m_pVehicleInfo->type == VH_WALKER))
-			{ //do some extra stuff to speeders/walkers
-				targ->client->ps.electrifyTime = level.time + Q_irand( 3000, 4000 );
-			}
-			else if ( targ->s.NPC_class != CLASS_VEHICLE 
-				|| (targ->m_pVehicle && targ->m_pVehicle->m_pVehicleInfo->type != VH_FIGHTER) )
-			{//don't do this to fighters
-//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - Start]
-				if (targ->client->sess.movementStyle == MV_COOP_JKA) {
-					targ->client->ps.electrifyTime = level.time + 800;//Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
+		if ((!targ->client->ps.duelInProgress || (targ->client->ps.duelInProgress && attacker->s.number == targ->client->ps.duelIndex)) &&
+			!attacker->client || (targ->client->sess.movementStyle != attacker->client->sess.movementStyle)) { //racemode This
+			if (targ->client->ps.electrifyTime < level.time)
+			{//electrocution effect
+				if (targ->s.eType == ET_NPC && targ->s.NPC_class == CLASS_VEHICLE &&
+					targ->m_pVehicle && (targ->m_pVehicle->m_pVehicleInfo->type == VH_SPEEDER || targ->m_pVehicle->m_pVehicleInfo->type == VH_WALKER))
+				{ //do some extra stuff to speeders/walkers
+					targ->client->ps.electrifyTime = level.time + Q_irand(3000, 4000);
 				}
-				else if (g_tweakWeapons.integer & WT_DEMP2_RANDOM)
-					targ->client->ps.electrifyTime = level.time + 550;
-				else
-					targ->client->ps.electrifyTime = level.time + Q_irand( 300, 800 );
-//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
+				else if (targ->s.NPC_class != CLASS_VEHICLE
+					|| (targ->m_pVehicle && targ->m_pVehicle->m_pVehicleInfo->type != VH_FIGHTER))
+				{//don't do this to fighters
+	//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - Start]
+					if (targ->client->sess.movementStyle == MV_COOP_JKA) {
+						targ->client->ps.electrifyTime = level.time + 800;//Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
+					}
+					else if (g_tweakWeapons.integer & WT_DEMP2_RANDOM)
+						targ->client->ps.electrifyTime = level.time + 550;
+					else
+						targ->client->ps.electrifyTime = level.time + Q_irand(300, 800);
+					//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
+				}
 			}
 		}
 	}

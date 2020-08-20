@@ -4652,8 +4652,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	if (mod == MOD_DEMP2 && targ && targ->inuse && targ->client)
 	{
-		if ((!targ->client->ps.duelInProgress || (targ->client->ps.duelInProgress && attacker->s.number == targ->client->ps.duelIndex)) &&
-			!attacker->client || (targ->client->sess.movementStyle != attacker->client->sess.movementStyle)) { //racemode This
+		if (attacker && attacker->client && ((targ->client->sess.movementStyle != attacker->client->sess.movementStyle) || (targ->client->sess.raceMode != attacker->client->sess.raceMode))) {
+		}
+		else if (attacker && targ->client->ps.duelInProgress && (attacker->s.number == targ->client->ps.duelIndex)) {
+		}
+		else {
 			if (targ->client->ps.electrifyTime < level.time)
 			{//electrocution effect
 				if (targ->s.eType == ET_NPC && targ->s.NPC_class == CLASS_VEHICLE &&

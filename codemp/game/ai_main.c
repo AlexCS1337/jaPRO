@@ -8557,7 +8557,8 @@ void NewBotAI(bot_state_t *bs, float thinktime) //BOT START
 	bs->frame_Enemy_Vis = 0;
 	VectorCopy(g_entities[closestID].client->ps.origin, headlevel);
 	headlevel[2] += g_entities[closestID].client->ps.viewheight - 24;
-	if ((bs->cur_ps.weapon == WP_DEMP2 && g_entities[bs->client].client->forcedFireMode != 1) || OrgVisible(bs->eye, g_entities[closestID].client->ps.origin, bs->client)) { //We can see or dmg our closest enemy
+
+	if ((bs->cur_ps.weapon == WP_DEMP2 && g_entities[bs->client].client->forcedFireMode != 1) || (g_newBotAITarget.integer >= 0) || OrgVisible(bs->eye, g_entities[closestID].client->ps.origin, bs->client)) { //We can see or dmg our closest enemy
 		bs->currentEnemy = &g_entities[closestID];
 		bs->frame_Enemy_Vis = 1;
 		bs->lastVisibleEnemyIndex = level.time;

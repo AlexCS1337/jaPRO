@@ -2050,8 +2050,8 @@ void PrintStats(int client) {
 	qboolean	showAccuracy = qtrue, showTeamPowers = qtrue, showDrain = qtrue;
 	gclient_t	*cl;
 
-	if (gametype != GT_CTF && gametype != GT_TEAM && !g_gunGame.integer)
-		return;
+	//if (gametype != GT_CTF && gametype != GT_TEAM && !g_gunGame.integer)
+		//return;
 	if (((g_weaponDisable.integer > (1<<WP_CONCUSSION)) && (g_startingWeapons.integer == 8)) && !g_gunGame.integer)
 		showAccuracy = qfalse;
 	if ((((g_forcePowerDisable.integer & (1<<FP_TEAM_HEAL)) && (g_forcePowerDisable.integer & (1<<FP_TEAM_FORCE)))) || g_gunGame.integer) //TE and TH are disabled
@@ -2261,8 +2261,31 @@ void CheckExitRules( void ) {
 		//int time = (g_singlePlayer.integer) ? SP_INTERMISSION_DELAY_TIME : INTERMISSION_DELAY_TIME;
 		int time = INTERMISSION_DELAY_TIME;
 		if ( level.time - level.intermissionQueued >= time ) {
+			qboolean racer = qfalse;
+
 			level.intermissionQueued = 0;
-			BeginIntermission();
+
+			if (g_raceMode.integer) {
+				for (i = 0; i < level.maxclients; i++) {
+					if (g_entities[i].inuse && g_entities[i].client && g_entities[i].client->sess.raceMode && (g_entities[i].client->sess.sessionTeam != TEAM_SPECTATOR)) {
+						racer = qtrue;
+						break;
+					}
+				}
+			}
+
+			if (racer) { //only do this if someoen is in racemode?
+				PrintStats(-1);//JAPRO STATS
+				for (i = 0; i < level.maxclients; i++) {
+					if (!g_entities[i].inuse || !g_entities[i].client || g_entities[i].client->sess.raceMode || (g_entities[i].client->sess.sessionTeam == TEAM_SPECTATOR))
+						continue;
+					ClientRespawn(&g_entities[i]);	// respawn if dead... respawn if alive too?
+				}
+				Svcmd_ResetScores_f();
+			}
+			else {
+				BeginIntermission();
+			}
 		}
 		return;
 	}

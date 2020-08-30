@@ -6391,21 +6391,39 @@ int NewBotAI_GetProtect(bot_state_t* bs) {
 
 void NewBotAI_Getup(bot_state_t *bs)
 {
+	qboolean useTheForce = qfalse;
+
 	trap->EA_Jump(bs->client);
 
-	if (NewBotAI_GetAbsorb(bs)) {
+	if ((bs->cur_ps.fd.forceGripBeingGripped > level.time) && bs->cur_ps.velocity[2] < -100) { //in grip and going down, a splat?
+		if (bs->cur_ps.fd.forcePowersKnown & (1 << FP_PROTECT)) {
+			level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
+			useTheForce = qtrue;
+		}
+		if (bs->cur_ps.fd.forcePowersKnown & (1 << FP_RAGE)) {
+			level.clients[bs->client].ps.fd.forcePowerSelected = FP_RAGE;
+			useTheForce = qtrue;
+		}
+	}
+
+	if (!useTheForce && NewBotAI_GetAbsorb(bs)) {
 		level.clients[bs->client].ps.fd.forcePowerSelected = FP_ABSORB;
-		trap->EA_ForcePower(bs->client);
+		useTheForce = qtrue;
 	}
-	if (NewBotAI_GetProtect(bs)) {
+	if (!useTheForce && NewBotAI_GetProtect(bs)) {
 		level.clients[bs->client].ps.fd.forcePowerSelected = FP_PROTECT;
-		trap->EA_ForcePower(bs->client);
+		useTheForce = qtrue;
 	}
-	else if ((bs->frame_Enemy_Len < 200) || (bs->cur_ps.fd.forceGripBeingGripped > level.time)) {
+	
+	if (!useTheForce && (bs->frame_Enemy_Len < 200) || (bs->cur_ps.fd.forceGripBeingGripped > level.time)) {
 		if (!(g_forcePowerDisable.integer & (1 << FP_PUSH)) && bs->cur_ps.fd.forcePowersKnown & (1 << FP_PUSH)) {
 			level.clients[bs->client].ps.fd.forcePowerSelected = FP_PUSH;
-			trap->EA_ForcePower(bs->client);
+			useTheForce = qtrue;
 		}
+	}
+
+	if (useTheForce) {
+		trap->EA_ForcePower(bs->client);
 	}
 }
 

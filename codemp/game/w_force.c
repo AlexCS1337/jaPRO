@@ -2174,6 +2174,10 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 					tent->s.eventParm = DirToByte(dir);
 					tent->s.owner = traceEnt->s.number;
 
+					if (OnSameTeam(traceEnt, self)) {
+						tent->s.teamowner = 1; //so client can render friendly fire drains differently?
+					}
+
 					traceEnt->client->forcePowerSoundDebounce = level.time + 400;
 				}
 			}

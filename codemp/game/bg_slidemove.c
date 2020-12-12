@@ -653,7 +653,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	VectorCopy (pm->ps->velocity, endVelocity);
 
 	if ( gravity ) {
-		endVelocity[2] -= pm->ps->gravity * pml.frametime;
+		endVelocity[2] -= pm->ps->gravity * pml.frametime; //This is what gives lowfps extra ramp, we should subtract 1 frames worth of grav elsewhere when we do the ramp speed calc
 		pm->ps->velocity[2] = ( pm->ps->velocity[2] + endVelocity[2] ) * 0.5;
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
@@ -1074,6 +1074,12 @@ void PM_StepSlideMove( qboolean gravity ) {
 			if (pm->stepSlideFix)
 			{
 				if (trace.fraction < 1.0) {
+
+					//I think we want to take away 1 frames worth of gravity at this point.  thats will fix the lowfps having more landing speed. lets just do siege to test. this is apparent with pmove_float or racemode
+					if (pm->ps->stats[STAT_RACEMODE] && moveStyle == MV_SIEGE) {
+						pm->ps->velocity[2] += pm->ps->gravity * pml.frametime * 0.5f; //probably over corrects in most cases
+					}
+
 					if (moveStyle == MV_WSW || moveStyle == MV_SLICK) { //Make Warsow Rampjump not slow down your XY speed
 						vec3_t oldVel, clipped_velocity, newVel;
 						float oldSpeed, newSpeed;

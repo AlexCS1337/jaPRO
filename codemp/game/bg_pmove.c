@@ -4385,19 +4385,14 @@ static void PM_WalkMove( void ) {
 		else
 #endif
 			if (pm->ps->stats[STAT_RACEMODE]) {
-				float adjust = pml.frametime; //this is the stupidest thing ive ever done?
-				if (adjust > 0.064f) //less than 15fps
-					adjust *= 0.5f;
-				else if (adjust > 0.032f) //less than 30fps
-					adjust *= 0.7f;
-				else if (adjust > 0.016f) //less than 62fps
-					adjust *= 0.8f;
-				else if (adjust > 0.008f) //less than 125fps
-					adjust *= 0.9f;
-				pm->ps->velocity[2] -= 800.0f * adjust; //Use 800 as gravity instead of 750 if racemode - fixes sliding down slick slopes like lappen
+				float adjust = pml.frametime;
+				if (adjust > 0.008f) {  //w/e
+					adjust = 0.008f;
+				}
+				pm->ps->velocity[2] -= 800.0f * adjust;
 			}
 			else
-				pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+				pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime; //cap frametime here since its capped elsewhere? or uncap? or?
 	}
 
 

@@ -3696,7 +3696,7 @@ void DetPackBlow(gentity_t *self)
 	self->takedamage = qfalse;
 
 	if (g_raceMode.integer) { //If owner is dead then cancel - sad hack
-		if (&g_entities[self->r.ownerNum].health <= 0) { //Owner is dead
+		if (self->parent&& self->parent->health <= 0) { //Owner is dead
 			self->think = G_FreeEntity;
 			self->nextthink = level.time;
 			return;

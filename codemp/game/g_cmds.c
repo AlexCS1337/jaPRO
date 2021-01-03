@@ -7467,10 +7467,12 @@ void Cmd_Race_f(gentity_t *ent)
 	else {
 		ent->client->sess.raceMode = qtrue;
 		trap->SendServerCommand(ent-g_entities, "print \"^5Race mode toggled on.\n\"");
-		//Delete all their projectiles / saved stuff
-		RemoveLaserTraps(ent);
-		RemoveDetpacks(ent);
 	}
+
+	//Delete all their projectiles / saved stuff
+	RemoveLaserTraps(ent);
+	RemoveDetpacks(ent);
+	DeletePlayerProjectiles(ent);
 
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 		G_Kill( ent ); //stop abuse

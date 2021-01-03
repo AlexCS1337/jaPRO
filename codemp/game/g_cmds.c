@@ -7469,12 +7469,12 @@ void Cmd_Race_f(gentity_t *ent)
 		trap->SendServerCommand(ent-g_entities, "print \"^5Race mode toggled on.\n\"");
 	}
 
-	//Delete all their projectiles / saved stuff
-	RemoveLaserTraps(ent);
-	RemoveDetpacks(ent);
-	DeletePlayerProjectiles(ent);
-
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		//Delete all their projectiles / saved stuff
+		RemoveLaserTraps(ent);
+		RemoveDetpacks(ent);
+		DeletePlayerProjectiles(ent);
+
 		G_Kill( ent ); //stop abuse
 		ent->client->ps.persistant[PERS_SCORE] = 0;
 		ent->client->ps.persistant[PERS_KILLED] = 0;

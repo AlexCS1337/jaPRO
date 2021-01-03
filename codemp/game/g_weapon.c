@@ -3695,6 +3695,14 @@ void DetPackBlow(gentity_t *self)
 	self->die = 0;
 	self->takedamage = qfalse;
 
+	if (g_raceMode.integer) { //If owner is dead then cancel - sad hack
+		if (&g_entities[self->r.ownerNum].health <= 0) { //Owner is dead
+			self->think = G_FreeEntity;
+			self->nextthink = level.time;
+			return;
+		}
+	}
+
 	if ( self->target_ent )
 	{//we were attached to something, do *direct* damage to it!
 		G_Damage( self->target_ent, self, &g_entities[self->r.ownerNum], v, self->r.currentOrigin, self->damage, 0, MOD_DET_PACK_SPLASH );

@@ -4445,7 +4445,12 @@ void ClientSpawn(gentity_t *ent) {
 	}
 	else if ( level.gametype == GT_DUEL || level.gametype == GT_POWERDUEL )
 	{//no armor in duel
-		client->ps.stats[STAT_ARMOR] = 0;
+		int startArmor = 0;
+		if (g_startingItems.integer & (1 << (HI_NUM_HOLDABLE+1))) {
+			if (g_duelStartArmor.integer > 0)
+				startArmor = g_duelStartArmor.integer;
+		}
+		client->ps.stats[STAT_ARMOR] = startArmor;
 	}
 	else
 	{

@@ -4717,14 +4717,15 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	}
 
 	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
-		if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) {
-			if (mod != MOD_BLASTER)
-				return;
+		if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //I think this is a bug
+			//if (mod != MOD_BLASTER || (!targ->client || !targ->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA))
+				//return;
 		}
 		else if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
-			return; //ignore self damage if we are in racemode
-		if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker))
-			return; //ignore other damage if we are in racemode
+			return; //ignore self damage if attacker is in racemode
+		if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker)) {
+			return; //ignore other damage if attacker is in racemode - why is this not returning for detpacking race->outof race
+		}
 	}
 	/*
 	if (attacker && attacker->client && attacker->client->sess.raceMode && !((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)))
@@ -4733,7 +4734,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		return;
 	*/
 	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
-		return; //ignore other damage if they are in racemode
+		return; //ignore other damage if target is in racemode
 
 	if ( targ->client )
 	{//don't take damage when in a walker, or fighter
@@ -4805,9 +4806,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		{
 			if (attacker && attacker->client) {//always kill him if he dies by falling
 				if (attacker->s.number != targ->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
-					if (targ->client->sess.raceMode && mod == MOD_BLASTER) {
-					}
-					else return;
+					//if (targ->client->sess.raceMode && mod == MOD_BLASTER) {
+					//}
+					//else 
+						return;
 				}
 				if (mod != MOD_SABER && dueltypes[attacker->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;
@@ -4819,9 +4821,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		{
 			if (targ && targ->client) {//always kill him if he dies by falling
 				if (targ->s.number != attacker->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
-					if (attacker->client->sess.raceMode && mod == MOD_BLASTER) {
-					}
-					else return;
+					//if (attacker->client->sess.raceMode && mod == MOD_BLASTER) {
+					//}
+					//else 
+						return;
 				}
 				if (mod != MOD_SABER && dueltypes[targ->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;

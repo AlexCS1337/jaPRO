@@ -56,7 +56,7 @@ static vec3_t muzzle;
 
 #define REPEATER_ALT_SIZE				3	// half of bbox size
 #define	REPEATER_ALT_DAMAGE				60 * g_weaponDamageScale.value
-#define REPEATER_ALT_SPLASH_DAMAGE		60 * g_weaponDamageScale.value
+#define REPEATER_ALT_SPLASH_DAMAGE		60 * g_splashDamageScale.value
 #define REPEATER_ALT_SPLASH_RADIUS		128
 #define REPEATER_ALT_SPLASH_RAD_SIEGE	80
 #define	REPEATER_ALT_VELOCITY			1100 * g_projectileVelocityScale.value
@@ -81,14 +81,14 @@ static vec3_t muzzle;
 #define FLECHETTE_SIZE				1
 #define FLECHETTE_MINE_RADIUS_CHECK	256
 #define FLECHETTE_ALT_DAMAGE		60 * g_weaponDamageScale.value
-#define FLECHETTE_ALT_SPLASH_DAM	60 * g_weaponDamageScale.value
+#define FLECHETTE_ALT_SPLASH_DAM	60 * g_splashDamageScale.value
 #define FLECHETTE_ALT_SPLASH_RAD	128
 
 // Personal Rocket Launcher
 //---------
 #define	ROCKET_VELOCITY				900 * g_projectileVelocityScale.value
 #define	ROCKET_DAMAGE				100 * g_weaponDamageScale.value
-#define	ROCKET_SPLASH_DAMAGE		100 * g_weaponDamageScale.value
+#define	ROCKET_SPLASH_DAMAGE		100 * g_splashDamageScale.value
 #define	ROCKET_SPLASH_RADIUS		160
 #define ROCKET_SIZE					3
 #define ROCKET_ALT_THINK_TIME		100
@@ -103,7 +103,7 @@ static vec3_t muzzle;
 #define	CONC_NPC_DAMAGE_EASY		40
 #define	CONC_NPC_DAMAGE_NORMAL		80
 #define	CONC_NPC_DAMAGE_HARD		100
-#define	CONC_SPLASH_DAMAGE			40  * g_weaponDamageScale.value//50
+#define	CONC_SPLASH_DAMAGE			40  * g_splashDamageScale.value//50
 #define	CONC_SPLASH_RADIUS			200 //300
 //alt
 #define CONC_ALT_DAMAGE				25  * g_weaponDamageScale.value//100
@@ -258,7 +258,12 @@ static void WP_FireBryarPistol( gentity_t *ent, qboolean altFire )
 
 		if (count > 1)
 		{
-			damage *= (count*1.7);
+			if (count > 4 && (g_tweakWeapons.integer & WT_NERFED_PISTOL)) {
+				damage *= 7; //70 dmg
+			}
+			else {
+				damage *= (count*1.7);
+			}
 		}
 		else
 		{
@@ -420,7 +425,10 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	{ //animent
 		damage = 10;
 	}
-
+	else if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing plasmagun
+		velocity = 2000;
+		damage = 20;
+	}
 	missile = CreateMissileNew( start, dir, velocity, 10000, ent, altFire, qtrue, qtrue );
 
 	missile->classname = "blaster_proj";
@@ -434,8 +442,14 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	// we don't want it to bounce forever
 	missile->bounceCount = 8;
 
-	if (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
+	if (ent->client && !ent->client->sess.raceMode && (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY)) //JAPRO - Serverside - Give bullets gravity!
 		missile->s.pos.trType = TR_GRAVITY;
+
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {//JAPRO - Serverside - Allow plasmaclimbing plasmagun
+		missile->splashDamage = 15;
+		missile->splashRadius = 20;
+		missile->splashMethodOfDeath = MOD_BLASTER;
+	}
 }
 
 //---------------------------------------------------------
@@ -514,9 +528,9 @@ static void WP_FireBlaster( gentity_t *ent, qboolean altFire, int seed )
 	if ( altFire )
 	{
 		// add some slop to the alt-fire direction
-		if (g_tweakWeapons.integer & WT_NO_SPREAD) {
-			angs[PITCH]	+= crandom() * BLASTER_SPREAD * 0.1;
-			angs[YAW]       += crandom() * BLASTER_SPREAD * 0.1;
+		if ((g_tweakWeapons.integer & WT_NO_SPREAD) || (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA)) {
+			angs[PITCH]	+= crandom() * 0.1;
+			angs[YAW]       += crandom() * 0.1;
 		}
 		else if (g_tweakWeapons.integer & WT_PSEUDORANDOM_FIRE)
 		{
@@ -526,7 +540,7 @@ static void WP_FireBlaster( gentity_t *ent, qboolean altFire, int seed )
 			float theta = M_PI * Q_crandom(&seed); //Lets use circular spread instead of the shitty box spread?
 			float r = Q_random(&seed) * BLASTER_SPREAD;
 
-			angs[PITCH] += r * sin(theta);
+			angs[PITCH] += r * sin(theta); //r should be squared? r*r
 			angs[YAW] += r * cos(theta);
 		}
 		else
@@ -561,7 +575,7 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 	vec3_t		start, end;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = 8192;
+	int			shotRange = 16384;
 	int			ignore, traces;
 	qboolean ghoul2 = qfalse;
 
@@ -718,22 +732,47 @@ qboolean G_CanDisruptify(gentity_t *ent)
 	return qfalse;
 }
 
-void WP_DisruptorProjectileFire( gentity_t *ent, qboolean altFire)
+void WP_DisruptorProjectileFire(gentity_t* ent, qboolean altFire)
 {
-	int	damage	= 35;
-	gentity_t *missile;
+	gentity_t* missile;
+	int	damage = 30 * g_weaponDamageScale.value;
+	float count;
 
-	if (altFire)
-		damage = 70;
+	missile = CreateMissileNew(muzzle, forward, 9000 * g_projectileVelocityScale.value, 10000, ent, altFire, qtrue, qtrue);
 
-	damage *= g_weaponDamageScale.value;
+	if (altFire) {
+		float boxSize = 0;
+		count = (level.time - ent->client->ps.weaponChargeTime) / 50.0f;
+
+		damage = 50;
+
+		if (count < 1)
+			count = 1;
+		else if (count > 30)
+			count = 30;
+
+		damage += count * 2.5f;
+
+		count = ((count - 1.0f) / (30.0f - 1.0f)) * (20.0f - 1.0f) + 1.0f;//scale count back down to the 1-5 range for bullet size
+		if (count < 2)
+			count = 2;
+
+		missile->s.generic1 = (int)(count + 0.5f); // The missile will then render according to the charge level.
+	}
+	else {
+		missile->s.generic1 = 2;//always make the bullet a little bigger
+		missile->s.eFlags |= EF_ALT_FIRING; //have client render it right
+	}
+
+	if (!d_projectileGhoul2Collision.integer) {
+		VectorSet(missile->r.maxs, 2, 2, 2); //constant hitbox
+		VectorSet(missile->r.mins, -2, -2, -2);
+	}
 
 	VectorMA( muzzle, -6, vright, muzzle );
 		
-	missile = CreateMissileNew( muzzle, forward, 10000*g_projectileVelocityScale.value, 10000, ent, altFire, qtrue, qtrue);
-
-	missile->classname = "blaster_proj";
-	missile->s.weapon = WP_BLASTER;
+	missile->classname = "bryar_proj";
+	missile->s.weapon = WP_BRYAR_PISTOL;
 
 	//VectorSet( missile->r.maxs, BOWCASTER_SIZE, BOWCASTER_SIZE, BOWCASTER_SIZE );
 	//VectorScale( missile->r.maxs, -1, missile->r.mins );
@@ -1040,7 +1079,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 
 	if ( altFire )
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER) {
+		if ((g_tweakWeapons.integer & WT_PROJ_SNIPER) && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qtrue);
 		}
 		else {
@@ -1049,7 +1088,7 @@ static void WP_FireDisruptor( gentity_t *ent, qboolean altFire )
 	}
 	else
 	{
-		if (g_tweakWeapons.integer & WT_PROJ_SNIPER) {
+		if ((g_tweakWeapons.integer & WT_PROJ_SNIPER) && !ent->client->sess.raceMode) {
 			WP_DisruptorProjectileFire(ent, qfalse);
 		}
 		else {
@@ -1081,13 +1120,18 @@ static void WP_BowcasterAltFire( gentity_t *ent )
 
 	missile->damage = damage;
 	missile->dflags = DAMAGE_DEATH_KNOCKBACK;
-	missile->methodOfDeath = MOD_BOWCASTER;
+	if (ent->client->sess.raceMode) {
+		missile->damage = 5;
+		missile->methodOfDeath = MOD_TARGET_LASER; //no bowcaster alt so hijackt his :/
+	}
+	else
+		missile->methodOfDeath = MOD_BOWCASTER;
 	missile->clipmask = MASK_SHOT | CONTENTS_LIGHTSABER;
 
 	missile->flags |= FL_BOUNCE;
 	missile->bounceCount = 3;
 
-	if (g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
+	if (!ent->client->sess.raceMode && g_tweakWeapons.integer & WT_PROJECTILE_GRAVITY) //JAPRO - Serverside - Give bullets gravity!
 		missile->s.pos.trType = TR_GRAVITY;
 }
 
@@ -1150,7 +1194,10 @@ static void WP_BowcasterMainFire( gentity_t *ent, int seed )
 	for (i = 0; i < count; i++ )
 	{
 		// create a range of different velocities
-		vel = BOWCASTER_VELOCITY * ( crandom() * BOWCASTER_VEL_RANGE + 1.0f );//velocity does not need to be syncd with client
+		if (g_tweakWeapons.integer & WT_BOWCASTER_SPRD || ent->client->sess.raceMode)
+			vel = BOWCASTER_VELOCITY;// *(crandom() * BOWCASTER_VEL_RANGE + 1.0f);
+		else
+			vel = BOWCASTER_VELOCITY * ( crandom() * BOWCASTER_VEL_RANGE + 1.0f );//velocity does not need to be syncd with client
 
 		vectoangles( forward, angs );
 
@@ -1437,6 +1484,10 @@ void DEMP2_AltRadiusDamage( gentity_t *ent )
 			continue;
 		}
 
+		if (gent->client && gent->client->sess.raceMode != myOwner->client->sess.raceMode) { //racemode isolation for alt demp?
+			continue;
+		}
+
 		// find the distance from the edge of the bounding box
 		for ( i = 0 ; i < 3 ; i++ ) 
 		{
@@ -1564,7 +1615,12 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 
 	VectorCopy( muzzle, start );
 
-	VectorMA( start, DEMP2_ALT_RANGE, forward, end );
+	if (ent->client->sess.movementStyle == MV_COOP_JKA) {
+		damage = 6;
+		VectorMA(start, 16384, forward, end);
+	}
+	else
+		VectorMA(start, DEMP2_ALT_RANGE, forward, end);
 
 	count = ( level.time - ent->client->ps.weaponChargeTime ) / DEMP2_CHARGE_UNIT;
 
@@ -1768,7 +1824,7 @@ void stakeExplode( gentity_t *self )
 		G_RadiusDamage( self->r.currentOrigin, self->activator, self->splashDamage, self->splashRadius, self, self, self->methodOfDeath/*MOD_LT_SPLASH*/ );
 	G_AddEvent( self, EV_MISSILE_MISS, 0);
 
-	G_PlayEffect(EFFECT_EXPLOSION_DETPACK, self->r.currentOrigin, self->s.pos.trDelta);
+	G_PlayEffect(EFFECT_EXPLOSION_FLECHETTE, self->r.currentOrigin, self->s.pos.trDelta);
 
 	self->think = G_FreeEntity;
 	self->nextthink = level.time;
@@ -1831,9 +1887,9 @@ void CreateStake( gentity_t *stake, vec3_t start, gentity_t *owner )
 	stake->clipmask = MASK_SHOT;
 	stake->s.solid = SOLID_BBOX;
 
-	stake->splashDamage = 50;
+	stake->splashDamage = 45;
 	stake->splashRadius = 128;
-	stake->damage = 50;
+	stake->damage = 45;
 	stake->methodOfDeath = MOD_TRIP_MINE_SPLASH;
 
 	stake->takedamage = qtrue;
@@ -1967,6 +2023,21 @@ static void WP_FireHitscanShotgun( gentity_t *ent )
 	
 }
 */
+void RemoveLaserTraps(gentity_t* ent)
+{
+	gentity_t* found = NULL;
+
+	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
+	{//loop through all ents and blow the crap out of them!
+		if (found->parent == ent)
+		{
+			VectorCopy(found->r.currentOrigin, found->s.origin);
+			found->think = G_FreeEntity;
+			found->nextthink = level.time;
+			//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
+		}
+	}
+}
 
 static void WP_FireStakeGun( gentity_t *ent ) 
 {
@@ -1984,38 +2055,43 @@ static void WP_FireStakeGun( gentity_t *ent )
 
 	stake = G_Spawn(qfalse);
 	
-	//limit to 10 placed at any one time
-	//see how many there are now
-	while ( (found = G_Find( found, FOFS(classname), "laserTrap" )) != NULL ) {
-		if ( found->parent != ent )
-			continue;
-		foundLaserTraps[trapcount++] = found->s.number;
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {
+		RemoveLaserTraps(ent); //only 1 at a time
 	}
-	//now remove first ones we find until there are only 9 left
-	found = NULL;
-	trapcount_org = trapcount;
-	lowestTimeStamp = level.time;
-	while ( trapcount > 9 ) {
-		removeMe = -1;
-		for ( i = 0; i < trapcount_org; i++ ) {
-			if ( foundLaserTraps[i] == ENTITYNUM_NONE )
+	else {
+		//limit to 10 placed at any one time
+		//see how many there are now
+		while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL) {
+			if (found->parent != ent)
 				continue;
-			found = &g_entities[foundLaserTraps[i]];
-			if ( stake && found->setTime < lowestTimeStamp ) {
-				removeMe = i;
-				lowestTimeStamp = found->setTime;
+			foundLaserTraps[trapcount++] = found->s.number;
+		}
+		//now remove first ones we find until there are only 9 left
+		found = NULL;
+		trapcount_org = trapcount;
+		lowestTimeStamp = level.time;
+		while (trapcount > 9) {
+			removeMe = -1;
+			for (i = 0; i < trapcount_org; i++) {
+				if (foundLaserTraps[i] == ENTITYNUM_NONE)
+					continue;
+				found = &g_entities[foundLaserTraps[i]];
+				if (stake && found->setTime < lowestTimeStamp) {
+					removeMe = i;
+					lowestTimeStamp = found->setTime;
+				}
 			}
+			if (removeMe != -1) {
+				//remove it... or blow it?
+				if (&g_entities[foundLaserTraps[removeMe]] == NULL)
+					break;
+				else
+					G_FreeEntity(&g_entities[foundLaserTraps[removeMe]]);
+				foundLaserTraps[removeMe] = ENTITYNUM_NONE;
+				trapcount--;
+			}
+			else break;
 		}
-		if ( removeMe != -1 ) {
-			//remove it... or blow it?
-			if ( &g_entities[foundLaserTraps[removeMe]] == NULL )
-				break;
-			else
-				G_FreeEntity( &g_entities[foundLaserTraps[removeMe]] );
-			foundLaserTraps[removeMe] = ENTITYNUM_NONE;
-			trapcount--;
-		}
-		else break;
 	}
 
 	//ent->client->numStakes = trapcount;
@@ -2026,7 +2102,7 @@ static void WP_FireStakeGun( gentity_t *ent )
 	stake->setTime = level.time;//remember when we placed it
 
 	//move it
-	VectorScale( forward, 3072*g_projectileVelocityScale.value, stake->s.pos.trDelta );
+	VectorScale( forward, 3000*g_projectileVelocityScale.value, stake->s.pos.trDelta );
 
 	trap->LinkEntity((sharedEntity_t *)stake);
 }
@@ -2245,14 +2321,14 @@ static void WP_FireFlechette( gentity_t *ent, qboolean altFire, int seed )
 {
 	if ( altFire )
 	{
-		if (g_tweakWeapons.integer & WT_STAKE_GUN)
+		if ((g_tweakWeapons.integer & WT_STAKE_GUN) || ent->client->sess.raceMode)
 			WP_ExplodeStakes( ent );
 		else
 			WP_FlechetteAltFire(ent, seed);
 	}
 	else
 	{
-		if (g_tweakWeapons.integer & WT_STAKE_GUN)
+		if ((g_tweakWeapons.integer & WT_STAKE_GUN) || ent->client->sess.raceMode)
 			WP_FireStakeGun( ent );
 		//else if (0)
 			//WP_FireHitscanShotgun(ent);
@@ -2281,6 +2357,10 @@ void rocketThink( gentity_t *ent )
 	float dot, dot2, dis;
 	int i;
 	float vel = (ent->spawnflags&1)?ent->speed:ROCKET_VELOCITY;
+	qboolean redeemerAllowed = qtrue;
+
+	if (!g_entities[ent->r.ownerNum].client || !g_entities[ent->r.ownerNum].client->sess.raceMode)
+		redeemerAllowed = qfalse;
 
 	if ( ent->genericValue1 && ent->genericValue1 < level.time )
 	{//time's up, we're done, remove us
@@ -2294,7 +2374,7 @@ void rocketThink( gentity_t *ent )
 		}
 		return;
 	}
-	if (!(g_tweakWeapons.integer & WT_ROCKET_REDEEMER) && ( !ent->enemy 
+	if ((!(g_tweakWeapons.integer & WT_ROCKET_REDEEMER) || !redeemerAllowed) && ( !ent->enemy 
 		|| !ent->enemy->client 
 		|| ent->enemy->health <= 0 
 		|| ent->enemy->client->ps.powerups[PW_CLOAKED] ))
@@ -2318,7 +2398,7 @@ void rocketThink( gentity_t *ent )
 		}
 	}
 
-	if ( !(g_tweakWeapons.integer & WT_ROCKET_REDEEMER) && ent->enemy && ent->enemy->inuse )
+	if ((!(g_tweakWeapons.integer & WT_ROCKET_REDEEMER) || !redeemerAllowed) && ent->enemy && ent->enemy->inuse )
 	{	
 		float newDirMult = ent->angle?ent->angle*2.0f:1.0f;
 		float oldDirMult = ent->angle?(1.0f-ent->angle)*2.0f:1.0f;
@@ -2429,7 +2509,7 @@ void rocketThink( gentity_t *ent )
 		VectorCopy( ent->r.currentOrigin, ent->s.pos.trBase );
 		ent->s.pos.trTime = level.time;
 	}
-	else if (g_tweakWeapons.integer & WT_ROCKET_REDEEMER)
+	else if ((g_tweakWeapons.integer & WT_ROCKET_REDEEMER) && redeemerAllowed)
 	{
 		vec3_t fwd, traceFrom, traceTo, dir;
 		trace_t tr;
@@ -2493,6 +2573,7 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 //---------------------------------------------------------
 {
 	int	damage	= ROCKET_DAMAGE;
+	int splashDamage = ROCKET_SPLASH_DAMAGE;
 	int	vel = ROCKET_VELOCITY;
 	int dif = 0;
 	float rTime;
@@ -2502,16 +2583,63 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 	//
 	vec3_t temp;
 
+	if (ent->client && ent->client->sess.movementStyle == MV_COOP_JKA) {
+		//gentity_t* stake;
+		int			trapcount = 0;
+		int			foundStakes[MAX_GENTITIES];
+		int			trapcount_org;
+		int			lowestTimeStamp;
+		int			removeMe;
+		int			i;
+
+		foundStakes[0] = ENTITYNUM_NONE;
+
+		gentity_t* found = NULL;
+		//limit to 10 placed at any one time
+		//see how many there are now
+		while ((found = G_Find(found, FOFS(classname), "rocket_proj")) != NULL) {
+			if (found->parent != ent)
+				continue;
+			foundStakes[trapcount++] = found->s.number;
+		}
+		//now remove first ones we find until there are only 9 left
+		found = NULL;
+		trapcount_org = trapcount;
+		lowestTimeStamp = level.time;
+		while (trapcount > 1) {
+			removeMe = -1;
+			for (i = 0; i < trapcount_org; i++) {
+				if (foundStakes[i] == ENTITYNUM_NONE)
+					continue;
+				found = &g_entities[foundStakes[i]];
+				if (/*stake &&*/ found->setTime < lowestTimeStamp) {
+					removeMe = i;
+					lowestTimeStamp = found->setTime;
+				}
+			}
+			if (removeMe != -1) {
+				//remove it... or blow it?
+				if (&g_entities[foundStakes[removeMe]] == NULL)
+					break;
+				else
+					G_FreeEntity(&g_entities[foundStakes[removeMe]]);
+				foundStakes[removeMe] = ENTITYNUM_NONE;
+				trapcount--;
+			}
+			else break;
+		}
+	}
+
 	if (ent->client && ent->client->sess.raceMode) {
 		q3style = qtrue;
-		damage = 100; //force default dmg/vel for racers
+		damage = splashDamage = 100; //force default dmg/vel for racers
 		vel = 900;
 	}
 
 	if ( altFire )
 		vel *= 0.5f;
 
-	if (altFire && g_tweakWeapons.integer & WT_ROCKET_REDEEMER)
+	if (altFire && g_tweakWeapons.integer & WT_ROCKET_REDEEMER && !ent->client->sess.raceMode)
 		damage *= 2;
 
 	if (q3style && ent->client->pers.backwardsRocket) {
@@ -2557,7 +2685,7 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 		ent->client->ps.rocketLockTime = 0;
 		ent->client->ps.rocketTargetTime = 0;
 	}
-	else if (altFire && g_tweakWeapons.integer & WT_ROCKET_REDEEMER) 
+	else if (altFire && (g_tweakWeapons.integer & WT_ROCKET_REDEEMER) && !ent->client->sess.raceMode)
 	{
 		missile->angle = 0.5f;
 		missile->think = rocketThink;
@@ -2598,11 +2726,13 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 //===testing being able to shoot rockets out of the air==================================
 	
 	missile->clipmask = MASK_SHOT;
-	missile->splashDamage = ROCKET_SPLASH_DAMAGE;
+	missile->splashDamage = splashDamage;
 	missile->splashRadius = ROCKET_SPLASH_RADIUS;
 
 	// we don't want it to ever bounce
 	missile->bounceCount = 0;
+
+	missile->setTime = level.time;//remember when we placed it
 }
 
 
@@ -2612,7 +2742,7 @@ static void WP_CreateMortar( vec3_t start, vec3_t fwd, gentity_t *self)
 {
 	gentity_t	*missile;
 	float velocity = 1400 * g_projectileVelocityScale.value;
-	int lifetime = 3500, damage = 140 * g_weaponDamageScale.value, splashdamage = 140 * g_weaponDamageScale.value, splashradius = 384;
+	int lifetime = 3500, damage = 140 * g_weaponDamageScale.value, splashdamage = 140 * g_splashDamageScale.value, splashradius = 384;
 
 	missile = CreateMissileNew( start, fwd, velocity, lifetime, self, qtrue, qtrue, qtrue );
 
@@ -2629,12 +2759,14 @@ static void WP_CreateMortar( vec3_t start, vec3_t fwd, gentity_t *self)
 	VectorSet( missile->r.mins, -3.0f, -3.0f, -3.0f );
 	VectorSet( missile->r.maxs, 3.0f, 3.0f, 3.0f );
 
+	/*/
 	//===testing being able to shoot rockets out of the air==================================
 	missile->health = 10;
 	missile->takedamage = qtrue;
-	missile->r.contents = MASK_SHOT;
+	missile->r.contents = MASK_SHOT; //solid?
 	missile->die = RocketDie;
 //===testing being able to shoot rockets out of the air==================================
+	*/
 
 	missile->clipmask = MASK_SHOT;
 
@@ -2791,30 +2923,27 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 
 	W_TraceSetStart( ent, start, bolt->r.mins, bolt->r.maxs );//make sure our start point isn't on the other side of a wall
 
-	if ( ent->client )
-	{
-		chargeAmount = level.time - ent->client->ps.weaponChargeTime;
-	}
-
-	// get charge amount
-	chargeAmount = chargeAmount / (float)TD_VELOCITY;
-
-	if ( chargeAmount > 1.0f )
-	{
-		chargeAmount = 1.0f;
-	}
-	else if ( chargeAmount < TD_MIN_CHARGE )
-	{
-		chargeAmount = TD_MIN_CHARGE;
-	}
-
 	if (g_tweakWeapons.integer & WT_IMPACT_NITRON) {
-		chargeAmount = 0.9f;
+		chargeAmount = 1.0f;
 		altFire = qfalse;
+	}
+	else { // get charge amount
+		if ( ent->client ) {
+			chargeAmount = level.time - ent->client->ps.weaponChargeTime;
+		}
+		chargeAmount = chargeAmount / (float)TD_VELOCITY;
+		if ( chargeAmount > 1.0f )
+			chargeAmount = 1.0f;
+		else if ( chargeAmount < TD_MIN_CHARGE )
+			chargeAmount = TD_MIN_CHARGE;
 	}
 
 	// normal ones bounce, alt ones explode on impact
-	bolt->genericValue5 = level.time + TD_TIME; // How long 'til she blows
+	if (g_tweakWeapons.integer & WT_IMPACT_NITRON)
+		bolt->genericValue5 = level.time + 2000; // How long 'til she blows
+	else
+		bolt->genericValue5 = level.time + TD_TIME; // How long 'til she blows
+
 	bolt->s.pos.trType = TR_GRAVITY;
 	bolt->parent = ent;
 	bolt->r.ownerNum = ent->s.number;
@@ -2833,9 +2962,14 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	bolt->s.loopSound = G_SoundIndex( "sound/weapons/thermal/thermloop.wav" );
 	bolt->s.loopIsSoundset = qfalse;
 
-	if (g_tweakWeapons.integer & WT_IMPACT_NITRON) {
-		bolt->damage = 40 * g_weaponDamageScale.integer;
-		bolt->splashDamage = 10 * g_weaponDamageScale.integer;
+	if (ent->client->sess.raceMode) {
+		bolt->damage = 140;
+		bolt->splashDamage = 140;
+		bolt->splashRadius = 192;
+	}
+	else if (g_tweakWeapons.integer & WT_IMPACT_NITRON) {
+		bolt->damage = 60 * g_weaponDamageScale.integer;
+		bolt->splashDamage = 20 * g_weaponDamageScale.integer;
 		bolt->splashRadius = 96;//128
 	}
 	else {
@@ -3147,7 +3281,7 @@ void proxMineThink(gentity_t *ent)
 			owner != cl && cl->client->sess.sessionTeam != TEAM_SPECTATOR &&
 			cl->client->tempSpectate < level.time && cl->health > 0)
 		{
-			if (!OnSameTeam(owner, cl) || g_friendlyFire.integer)
+			if (!OnSameTeam(owner, cl) || g_friendlyFire.value)
 			{ //not on the same team, or friendly fire is enabled
 				vec3_t v;
 
@@ -3561,6 +3695,14 @@ void DetPackBlow(gentity_t *self)
 	self->die = 0;
 	self->takedamage = qfalse;
 
+	if (g_raceMode.integer) { //If owner is dead then cancel - sad hack
+		if (self->parent&& self->parent->health <= 0) { //Owner is dead
+			self->think = G_FreeEntity;
+			self->nextthink = level.time;
+			return;
+		}
+	}
+
 	if ( self->target_ent )
 	{//we were attached to something, do *direct* damage to it!
 		G_Damage( self->target_ent, self, &g_entities[self->r.ownerNum], v, self->r.currentOrigin, self->damage, 0, MOD_DET_PACK_SPLASH );
@@ -3601,6 +3743,8 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	VectorNormalize (dir);
 
+	VectorMA( start, 8, forward, start );  //why is this fucked
+
 	bolt = G_Spawn(qfalse);
 	bolt->classname = "detpack";
 	bolt->nextthink = level.time + FRAMETIME;
@@ -3612,8 +3756,6 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	bolt->parent = self;
 	bolt->r.ownerNum = self->s.number;
-	bolt->damage = 100 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
-	bolt->splashDamage = 200 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
 	bolt->splashRadius = 200;
 	bolt->methodOfDeath = MOD_DET_PACK_SPLASH;
 	bolt->splashMethodOfDeath = MOD_DET_PACK_SPLASH;
@@ -3629,9 +3771,7 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 
 	VectorSet( bolt->r.mins, -2, -2, -2 );
 	VectorSet( bolt->r.maxs, 2, 2, 2 );
-
-	bolt->health = 1;
-	bolt->takedamage = qtrue;
+	
 	bolt->pain = DetPackPain;
 	bolt->die = DetPackDie;
 
@@ -3642,7 +3782,20 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	G_SetOrigin(bolt, start);
 	bolt->s.pos.trType = TR_GRAVITY;
 	VectorCopy( start, bolt->s.pos.trBase );
-	VectorScale(dir, 300, bolt->s.pos.trDelta );
+
+	if (self->client->sess.raceMode) { //put contents=mask_shot here?
+		bolt->damage = 100;
+		bolt->splashDamage = 200;
+		VectorScale(dir, 300, bolt->s.pos.trDelta ); //Launch at +300
+		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta); //Inherit full velocity from player
+	}
+	else {
+		bolt->health = 1;
+		bolt->takedamage = qtrue;
+		bolt->damage = 100 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
+		bolt->splashDamage = 200 * g_weaponDamageScale.value;//JAPRO - Weapons - Scalers
+		VectorScale(dir, 300, bolt->s.pos.trDelta );
+	}
 	bolt->s.pos.trTime = level.time;
 
 	bolt->s.apos.trType = TR_GRAVITY;
@@ -3676,7 +3829,10 @@ void BlowDetpacks(gentity_t *ent)
 			{
 				VectorCopy( found->r.currentOrigin, found->s.origin );
 				found->think = DetPackBlow;
-				found->nextthink = level.time + 100 + random() * 200;
+				if (ent->client->sess.raceMode)
+					found->nextthink = level.time + 100; //No randomness to racemode detpacks?
+				else
+					found->nextthink = level.time + 100 + random() * 200;
 				G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
 			}
 		}
@@ -3721,62 +3877,70 @@ void WP_DropDetPack( gentity_t *ent, qboolean alt_fire )
 	int			lowestTimeStamp;
 	int			removeMe;
 	int			i;
+	int			maxCount = 9;
 
 	if ( !ent || !ent->client )
 	{
 		return;
 	}
 
-	//limit to 10 placed at any one time
-	//see how many there are now
-	while ( (found = G_Find( found, FOFS(classname), "detpack" )) != NULL )
+	if (ent->client->sess.raceMode && ent->client->sess.movementStyle == MV_JETPACK)
 	{
-		if ( found->parent != ent )
-		{
-			continue;
-		}
-		foundDetPacks[trapcount++] = found->s.number;
+		maxCount = 0;
 	}
-	//now remove first ones we find until there are only 9 left
-	found = NULL;
-	trapcount_org = trapcount;
-	lowestTimeStamp = level.time;
-	while ( trapcount > 9 )
-	{
-		removeMe = -1;
-		for ( i = 0; i < trapcount_org; i++ )
+
+	if (!alt_fire) { //Only check to remove our 11th oldest detpack when we are placing one
+		//limit to 10 placed at any one time
+		//see how many there are now
+		while ( (found = G_Find( found, FOFS(classname), "detpack" )) != NULL )
 		{
-			if ( foundDetPacks[i] == ENTITYNUM_NONE )
+			if ( found->parent != ent )
 			{
 				continue;
 			}
-			found = &g_entities[foundDetPacks[i]];
-			if ( found->setTime < lowestTimeStamp )
-			{
-				removeMe = i;
-				lowestTimeStamp = found->setTime;
-			}
+			foundDetPacks[trapcount++] = found->s.number;
 		}
-		if ( removeMe != -1 )
+		//now remove first ones we find until there are only maxCount left
+		found = NULL;
+		trapcount_org = trapcount;
+		lowestTimeStamp = level.time;
+		while ( trapcount > maxCount )
 		{
-			//remove it... or blow it?
-			if ( &g_entities[foundDetPacks[removeMe]] == NULL )
+			removeMe = -1;
+			for ( i = 0; i < trapcount_org; i++ )
 			{
-				break;
+				if ( foundDetPacks[i] == ENTITYNUM_NONE )
+				{
+					continue;
+				}
+				found = &g_entities[foundDetPacks[i]];
+				if ( found->setTime < lowestTimeStamp )
+				{
+					removeMe = i;
+					lowestTimeStamp = found->setTime;
+				}
+			}
+			if ( removeMe != -1 )
+			{
+				//remove it... or blow it?
+				if ( &g_entities[foundDetPacks[removeMe]] == NULL )
+				{
+					break;
+				}
+				else
+				{
+					if (!CheatsOn())
+					{ //Let them have unlimited if cheats are enabled
+						G_FreeEntity( &g_entities[foundDetPacks[removeMe]] );
+					}
+				}
+				foundDetPacks[removeMe] = ENTITYNUM_NONE;
+				trapcount--;
 			}
 			else
 			{
-				if (!CheatsOn())
-				{ //Let them have unlimited if cheats are enabled
-					G_FreeEntity( &g_entities[foundDetPacks[removeMe]] );
-				}
+				break;
 			}
-			foundDetPacks[removeMe] = ENTITYNUM_NONE;
-			trapcount--;
-		}
-		else
-		{
-			break;
 		}
 	}
 
@@ -3806,11 +3970,11 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 	vec3_t		muzzle2, dir;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = 8192.0f;
+	int			shotRange = 16384;
 	qboolean	hitDodged = qfalse;
 	vec3_t shot_mins, shot_maxs;
 	int			i;
-	const int   shove = -400 * g_selfDamageScale.integer;
+	int   shove = -200; //this seems like a dumb idea though?
 	qboolean	ghoul2 = qfalse;
 
 //[JAPRO - Serverside - Weapons - Tweak weapons Buff Conc alt - Start]
@@ -3823,6 +3987,9 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 
 	//Shove us backwards for half a second
 	//VectorMA( ent->client->ps.velocity, -200, forward, ent->client->ps.velocity );
+	if (!ent->client->sess.raceMode)
+		shove = -400 * g_selfDamageScale.value;
+
 	if (shove) {
 		VectorMA( ent->client->ps.velocity, shove, forward, ent->client->ps.velocity );
 		ent->client->ps.groundEntityNum = ENTITYNUM_NONE;
@@ -4003,8 +4170,14 @@ static void WP_FireConcussionAlt( gentity_t *ent )
 //JAPRO - Serverside - fixkillcredit - End
 								traceEnt->client->ps.otherKillerDebounceTime = level.time + 100;
 
-								traceEnt->client->ps.velocity[0] += pushDir[0]*pStr;
-								traceEnt->client->ps.velocity[1] += pushDir[1]*pStr;
+								if (traceEnt->client->sess.raceMode) { //_coop tractor beam
+									traceEnt->client->ps.velocity[0] -= pushDir[0] * pStr;
+									traceEnt->client->ps.velocity[1] -= pushDir[1] * pStr;
+								}
+								else {
+									traceEnt->client->ps.velocity[0] += pushDir[0] * pStr;
+									traceEnt->client->ps.velocity[1] += pushDir[1] * pStr;
+								}
 								traceEnt->client->ps.velocity[2] = pStr;
 							}
 						}
@@ -4256,7 +4429,10 @@ void WP_FireMelee( gentity_t *ent, qboolean alt_fire )
 	VectorMA(muzzlePunch, 20.0f, forward, muzzlePunch);
 	VectorMA(muzzlePunch, 4.0f, vright, muzzlePunch);
 
-	VectorMA( muzzlePunch, MELEE_RANGE, forward, end );
+	if (g_tweakForce.integer & FT_BUFFMELEE)
+		VectorMA(muzzlePunch, MELEE_RANGE+6, forward, end);
+	else
+		VectorMA( muzzlePunch, MELEE_RANGE, forward, end );
 
 	VectorSet( maxs, 6, 6, 6 );
 	VectorScale( maxs, -1, mins );
@@ -4288,10 +4464,15 @@ void WP_FireMelee( gentity_t *ent, qboolean alt_fire )
 		if ( tr_ent->takedamage )
 		{ //damage them, do more damage if we're in the second right hook
 			int dmg = MELEE_SWING1_DAMAGE;
+			if (g_tweakForce.integer & FT_BUFFMELEE)
+				dmg = 18 * g_weaponDamageScale.integer;
 
 			if (ent->client && ent->client->ps.torsoAnim == BOTH_MELEE2)
 			{ //do a tad bit more damage on the second swing
-				dmg = MELEE_SWING2_DAMAGE;
+				if (g_tweakForce.integer & FT_BUFFMELEE)
+					dmg = 20 * g_weaponDamageScale.integer;
+				else
+					dmg = MELEE_SWING2_DAMAGE;
 			}
 
 			if ( G_HeavyMelee( ent ) )
@@ -4313,7 +4494,7 @@ static void WP_FireLightningGun( gentity_t *ent )
 	vec3_t		start, end;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = LIGHTNING_RANGE;
+	int		shotRange = LIGHTNING_RANGE;
 	int			ignore;
 	qboolean	ghoul2 = qfalse;
 
@@ -4420,12 +4601,12 @@ static void WP_FireLightningGun( gentity_t *ent )
 static void WP_FireShockLance( gentity_t *ent )
 //---------------------------------------------------------
 {
-	int			damage = 60 * g_weaponDamageScale.value;
+	int			damage = 55 * g_weaponDamageScale.value;
 	qboolean	render_impact = qtrue;
 	vec3_t		start, end;
 	trace_t		tr;
 	gentity_t	*traceEnt, *tent;
-	float		shotRange = 256;
+	float		shotRange = 240;
 	int			ignore;
 
 	memset(&tr, 0, sizeof(tr)); //to shut the compiler up
@@ -4536,9 +4717,6 @@ void Weapon_HookFree (gentity_t *ent)
 
 void Weapon_HookThink (gentity_t *ent)
 {
-	//vec3_t		chainvec, velpart;
-	//float		force, chainlen;
-
 	if ( ent->enemy ) {
 		if ( ent->enemy->client ) {
 			vec3_t v;
@@ -4558,7 +4736,8 @@ void Weapon_HookThink (gentity_t *ent)
 		}
 	}
 
-	VectorCopy( ent->r.currentOrigin, ent->parent->client->ps.hyperSpaceAngles );
+	//VectorCopy( ent->r.currentOrigin, ent->parent->client->ps.hyperSpaceAngles ); //wtf- not used. should be for hook angles?
+	VectorCopy( ent->r.currentOrigin, ent->parent->client->ps.lastHitLoc ); //snapvector this?
 	ent->nextthink = level.time + FRAMETIME;
 }
 #endif
@@ -5532,10 +5711,12 @@ int BG_EmplacedView(vec3_t baseAngles, vec3_t angles, float *newYaw, float const
 void FireWeapon( gentity_t *ent, qboolean altFire ) {
 	int seed = ent->client->pers.cmd.serverTime % 10000;// % 256; //JAPRO seed
 
-	if (ent->client && ent->client->pers.amfreeze)
-		return;
-	if (ent->client && ent->client->sess.raceMode && !((ent->client->sess.movementStyle == 7) || (ent->client->sess.movementStyle == 8)))
-		return;	
+	if (ent->client) {
+		if (ent->client->pers.amfreeze)
+			return;
+		if (ent->client->sess.raceMode && !((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_JETPACK) || (ent->client->sess.movementStyle == MV_COOP_JKA)))
+			return;
+	}
 
 	// track shots taken for accuracy tracking.  Grapple is not a weapon and gauntet is just not tracked
 	if( ent->s.weapon != WP_SABER && (ent->s.weapon != WP_STUN_BATON || ((g_tweakWeapons.integer && WT_STUN_LG) || (g_tweakWeapons.integer && WT_STUN_SHOCKLANCE))) && ent->s.weapon != WP_MELEE ) 

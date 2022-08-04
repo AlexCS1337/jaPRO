@@ -140,42 +140,41 @@ AddTeamScore
  for gametype GT_TEAM the level.teamScores is updated in AddScore in g_combat.c
 ==============
 */
-void AddTeamScore(vec3_t origin, int team, int score) {
-	gentity_t	*te;
-
-	te = G_TempEntity(origin, EV_GLOBAL_TEAM_SOUND );
-	te->r.svFlags |= SVF_BROADCAST;
+void AddTeamScore(vec3_t origin, int team, int score, qboolean announceScore) {
+	int eventParm;
 
 	if ( team == TEAM_RED ) {
 		if ( level.teamScores[ TEAM_RED ] + score == level.teamScores[ TEAM_BLUE ] ) {
-			//teams are tied sound
-			te->s.eventParm = GTS_TEAMS_ARE_TIED;
+			eventParm = GTS_TEAMS_ARE_TIED;//teams are tied sound
 		}
-		else if ( level.teamScores[ TEAM_RED ] <= level.teamScores[ TEAM_BLUE ] &&
-					level.teamScores[ TEAM_RED ] + score > level.teamScores[ TEAM_BLUE ]) {
-			// red took the lead sound
-			te->s.eventParm = GTS_REDTEAM_TOOK_LEAD;
+		else if ( level.teamScores[ TEAM_RED ] <= level.teamScores[ TEAM_BLUE ] && level.teamScores[ TEAM_RED ] + score > level.teamScores[ TEAM_BLUE ]) {
+			eventParm = GTS_REDTEAM_TOOK_LEAD;// red took the lead sound
 		}
 		else {
-			// red scored sound
-			te->s.eventParm = GTS_REDTEAM_SCORED;
+			eventParm = GTS_REDTEAM_SCORED;// red scored sound
 		}
 	}
 	else {
 		if ( level.teamScores[ TEAM_BLUE ] + score == level.teamScores[ TEAM_RED ] ) {
-			//teams are tied sound
-			te->s.eventParm = GTS_TEAMS_ARE_TIED;
+			eventParm = GTS_TEAMS_ARE_TIED;//teams are tied sound
 		}
-		else if ( level.teamScores[ TEAM_BLUE ] <= level.teamScores[ TEAM_RED ] &&
-					level.teamScores[ TEAM_BLUE ] + score > level.teamScores[ TEAM_RED ]) {
-			// blue took the lead sound
-			te->s.eventParm = GTS_BLUETEAM_TOOK_LEAD;
+		else if ( level.teamScores[ TEAM_BLUE ] <= level.teamScores[ TEAM_RED ] && level.teamScores[ TEAM_BLUE ] + score > level.teamScores[ TEAM_RED ]) {
+			eventParm = GTS_BLUETEAM_TOOK_LEAD;// blue took the lead sound
 		}
 		else {
-			// blue scored sound
-			te->s.eventParm = GTS_BLUETEAM_SCORED;
+			eventParm = GTS_BLUETEAM_SCORED;// blue scored sound
 		}
 	}
+
+	if (announceScore || (eventParm != GTS_BLUETEAM_SCORED && eventParm != GTS_REDTEAM_SCORED)) { //Only announce score change if desired or important
+		gentity_t	*te;
+
+		te = G_TempEntity(origin, EV_GLOBAL_TEAM_SOUND );
+		te->r.svFlags |= SVF_BROADCAST;
+
+		te->s.eventParm = eventParm;
+	}
+
 	level.teamScores[ team ] += score;
 }
 
@@ -608,7 +607,7 @@ void Team_ReturnFlagSound( gentity_t *ent, int team ) {
 	gentity_t	*te;
 
 	if (ent == NULL) {
-		trap->Print ("Warning:  NULL passed to Team_ReturnFlagSound\n");
+		//trap->Print ("Warning:  NULL passed to Team_ReturnFlagSound\n");
 		return;
 	}
 
@@ -744,7 +743,7 @@ static vec3_t	maxFlagRange = { 44, 36, 36 };
 int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team );
 void G_AddSimpleStat(char *username, int type);
 
-#define _DEBUGCTFCRASH 1
+#define _DEBUGCTFCRASH 0//Its been years so give up on trying to debug this if it even happens anymore
 int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	int			i, num, j, enemyTeam;
 	gentity_t	*player;
@@ -794,7 +793,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 		return 0;
 	}
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function reached point a, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -813,7 +812,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	else 
 		enemyTeam = TEAM_FREE; //racemode ctf crashfix?
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function reached point b, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -850,7 +849,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 		}
 	}
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function reached point c, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -862,7 +861,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	teamgame.last_capture_team = team;
 
 	// Increase the team's score
-	AddTeamScore(ent->s.pos.trBase, other->client->sess.sessionTeam, 1);
+	AddTeamScore(ent->s.pos.trBase, other->client->sess.sessionTeam, 1, qtrue);
 //	Team_ForceGesture(other->client->sess.sessionTeam);
 	//rww - don't really want to do this now. Mainly because performing a gesture disables your upper torso animations until it's done and you can't fire
 
@@ -896,7 +895,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	else
 		PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_CAPTURED_FLAG); 
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function reached point d, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -935,7 +934,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 		}
 	}
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function reached point e, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -943,7 +942,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 
 	CalculateRanks();
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchOurFlag function exited at end, Enemy Flag is %i\n", enemy_flag);
 #endif
 
@@ -958,7 +957,7 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	gentity_t*	enemy;
 	float		enemyDist, dist;
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchEnemyFlag called \n");
 #endif
 
@@ -1001,7 +1000,7 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 			// possible recursion is hidden in this, but 
 			// infinite recursion wont happen, because we cant 
 			// have a < b and b < a at the same time
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchEnemyFlag returned at point 1, team %i, ourflag %i\n", team, ourFlag);
 #endif
 			return Team_TouchOurFlag( ent, enemy, team );
@@ -1053,7 +1052,7 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	cl->pers.teamState.flagsince = level.time;
 	Team_TakeFlagSound( ent, team );
 
-#ifdef _DEBUGCTFCRASH
+#if _DEBUGCTFCRASH
 	G_SecurityLogPrintf("Team_TouchEnemyFlag returned at emd, team %i, ourflag %i\n", team, ourFlag);
 #endif
 
@@ -1474,5 +1473,6 @@ Targets will be fired when someone spawns in on them.
 */
 void SP_team_CTF_bluespawn(gentity_t *ent) {
 }
+
 
 

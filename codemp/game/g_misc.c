@@ -176,7 +176,7 @@ void DeletePlayerProjectiles(gentity_t *ent);
 #if _GRAPPLE
 void Weapon_HookFree (gentity_t *ent);
 #endif
-void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean keepVel ) {
+void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, int speed) {
 	gentity_t	*tent;
 	qboolean	isNPC = qfalse;
 	qboolean	noAngles;
@@ -212,8 +212,8 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean k
 	// spit the player out
 	if ( !noAngles ) {
 		AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
-		if (keepVel)
-			VectorScale( player->client->ps.velocity, pm->xyspeed, player->client->ps.velocity );
+		if (speed)
+			VectorScale( player->client->ps.velocity, speed, player->client->ps.velocity );
 		else
 			VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
 		player->client->ps.pm_time = 160;		// hold time
@@ -228,7 +228,7 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean k
 	G_ResetTrail( player );//unlagged
 
 	// kill anything at the destination
-	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {
 		G_KillBox (player);
 	}
 
@@ -248,22 +248,25 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean k
 
 	if (player->client->sess.raceMode) {
 		//player->client->ps.powerups[PW_YSALAMIRI] = 0; //Fuck
-		if (player->client->sess.movementStyle == 7 || player->client->sess.movementStyle == 8) //Get rid of their rockets when they tele/noclip..?
+		player->client->ps.powerups[PW_FORCE_BOON] = 0;
+		if (player->client->sess.movementStyle == MV_RJQ3 || player->client->sess.movementStyle == MV_RJCPM) //Get rid of their rockets when they tele/noclip..?
 			DeletePlayerProjectiles(player);
 	}
 }
 
 void ResetPlayerTimers(gentity_t *ent, qboolean print);//extern?
 //JAPRO - Serverside - New teleport Function - Start
-void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean droptofloor, qboolean race ) {
+void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean droptofloor, qboolean race, qboolean toMark ) {
 	gentity_t	*tent;
 	qboolean wasNoClip = qfalse;
 	vec3_t neworigin;
 
 	if (!player || !player->client)
 		return;
-	if (BG_InRoll(&player->client->ps, player->s.legsAnim))//is this crashing? if ps is null or something?
-		return;
+	if (BG_InRoll(&player->client->ps, player->s.legsAnim)) {//is this crashing? if ps is null or something?
+		G_SetAnim(player, &player->client->pers.cmd, SETANIM_BOTH, BOTH_UNCROUCH1, SETANIM_FLAG_RESTART|SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 0);		
+		//return;
+	}
 
 #if _GRAPPLE
 	if (player->client && player->client->hook)
@@ -278,7 +281,8 @@ void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean
 		wasNoClip = qtrue;
 
 	player->client->noclip = qtrue;
-	ResetPlayerTimers(player, qtrue);
+	if (!toMark || !(player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES))
+		ResetPlayerTimers(player, qtrue);
 	player->client->ps.fd.forceJumpZStart = -65536; //maybe this will fix that annoying overbounce tele shit
 
 	if (droptofloor) {
@@ -286,11 +290,14 @@ void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean
 		vec3_t down, mins, maxs;
 		VectorSet(mins, -15, -15, DEFAULT_MINS_2);
 		VectorSet(maxs, 15, 15, DEFAULT_MAXS_2);
+		player->client->ps.pm_flags |= PMF_DUCKED;
 
 		VectorCopy(origin, down);//Drop them to floor so they cant abuse?
 		down[2] -= 32768;
 		JP_Trace(&tr, origin, mins, maxs, down, player->client->ps.clientNum, MASK_PLAYERSOLID, qfalse, 0, 0);
 		neworigin[2] = (int)tr.endpos[2];//Why does it crash without casting to int? wtf
+
+		player->client->lastInStartTrigger = level.time;
 	}
 
 	// use temp events at source and destination to prevent the effect
@@ -329,7 +336,7 @@ void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean
 	G_ResetTrail( player );//unlagged
 
 	// kill anything at the destination
-	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {
 		G_KillBox (player);
 	}
 
@@ -457,9 +464,12 @@ void misc_model_breakable_init( gentity_t *ent );
 
 void SP_misc_model_breakable( gentity_t *ent ) 
 {
-	float grav;
+	float grav, modelscale;
 	G_SpawnInt( "material", "8", (int*)&ent->material );
 	G_SpawnFloat( "radius", "1", &ent->radius ); // used to scale chunk code if desired by a designer
+	G_SpawnFloat( "modelscale", "1", &modelscale );
+	ent->modelScale[0] = ent->modelScale[1] = ent->modelScale[2] = modelscale;
+	ent->s.iModelScale = modelscale * 100;
 
 	misc_model_breakable_init( ent );
 
@@ -2788,6 +2798,71 @@ void SP_fx_runner( gentity_t *ent )
 	trap->LinkEntity( (sharedEntity_t *)ent );
 }
 
+/*QUAKED fx_wind (0 .5 .8) (-16 -16 -16) (16 16 16) NORMAL CONSTANT GUSTING SWIRLING x  FOG LIGHT_FOG
+Generates global wind forces
+
+NORMAL    creates a random light global wind
+CONSTANT  forces all wind to go in a specified direction
+GUSTING   causes random gusts of wind
+SWIRLING  causes random swirls of wind
+
+"angles" the direction for constant wind
+"speed"  the speed for constant wind
+*/
+void SP_CreateWind( gentity_t *ent )
+{
+	char	temp[256];
+
+	// Normal Wind
+	//-------------
+	if ( ent->spawnflags & 1 )
+	{
+		G_EffectIndex( "*wind" );
+	}
+
+	// Constant Wind
+	//---------------
+	if ( ent->spawnflags & 2 )
+	{
+		vec3_t	windDir;
+		AngleVectors( ent->s.angles, windDir, 0, 0 );
+		G_SpawnFloat( "speed", "500", &ent->speed );
+		VectorScale( windDir, ent->speed, windDir );
+
+		Com_sprintf( temp, sizeof(temp), "*constantwind ( %f %f %f )", windDir[0], windDir[1], windDir[2] );
+		G_EffectIndex( temp );
+	}
+
+	// Gusting Wind
+	//--------------
+	if ( ent->spawnflags & 4 )
+	{
+		G_EffectIndex( "*gustingwind" );
+	}
+
+	// Swirling Wind
+	//---------------
+	/*if ( ent->spawnflags & 8 )
+	{
+		G_EffectIndex( "*swirlingwind" );
+	}*/
+
+
+	// MISTY FOG
+	//===========
+	if ( ent->spawnflags & 32 )
+	{
+		G_EffectIndex( "*fog" );
+	}
+
+	// MISTY FOG
+	//===========
+	if ( ent->spawnflags & 64 )
+	{
+		G_EffectIndex( "*light_fog" );
+	}
+}
+
 /*QUAKED fx_spacedust (1 0 0) (-16 -16 -16) (16 16 16)
 This world effect will spawn space dust globally into the level.
 
@@ -3775,4 +3850,9 @@ Determines a region to check for weather contents - will significantly reduce lo
 void SP_misc_weather_zone( gentity_t *ent )
 {
 	G_FreeEntity(ent);
+}
+
+void SP_misc_cubemap( gentity_t *ent )
+{
+	G_FreeEntity( ent );
 }

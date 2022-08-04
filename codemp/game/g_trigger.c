@@ -9,7 +9,15 @@ void InitTrigger( gentity_t *self ) {
 	if (!VectorCompare (self->s.angles, vec3_origin))
 		G_SetMovedir (self->s.angles, self->movedir);
 
-	trap->SetBrushModel( (sharedEntity_t *)self, self->model );
+	if (self->model && self->model[0] == '*') { //Feature from Lugormod - Logical triggers without model key using mins/maxs instead
+		trap->SetBrushModel( (sharedEntity_t *)self, self->model );
+	}
+	//Check for .md3 or .glm model ?
+	else {
+		G_SpawnVector("mins", "-8 -8 -8", self->r.mins);
+		G_SpawnVector("maxs", "8 8 8", self->r.maxs);
+	}
+
 	self->r.contents = CONTENTS_TRIGGER;		// replaces the -1 from trap->SetBrushModel
 	self->r.svFlags = SVF_NOCLIENT; //whats this? triggers are not networked to clients then?
 
@@ -59,7 +67,7 @@ void multi_trigger_run( gentity_t *ent )
 	G_UseTargets (ent, ent->activator);
 	if ( ent->noise_index )
 	{
-		if (ent->classname && !Q_stricmp( "df_trigger_finish", ent->classname))//JAPRO FIXME, we dont want to do this if its a df_trigger_finish, since it spams ?
+		if (ent->classname && (!Q_stricmp( "df_trigger_start", ent->classname) || !Q_stricmp( "df_trigger_finish", ent->classname)))//JAPRO FIXME, we dont want to do this if its a df_trigger_finish, since it spams ?
 		{
 		}
 		else
@@ -390,9 +398,9 @@ void Touch_Multi( gentity_t *self, gentity_t *other, trace_t *trace )
 //	}
 
 //JAPRO - Serverside - Allow/disallow use button/trigger for duelers - Start
-	if (other->client->ps.duelInProgress && (g_allowUseInDuel.integer >= 2))//Loda fixme, make this spawnflags 5 for button? or should it block all triggers?
+	if (other->client->ps.duelInProgress && !other->client->sess.raceMode && (g_allowUseInDuel.integer >= 2))//Loda fixme, make this spawnflags 5 for button? or should it block all triggers?
 		return;
-	if ((self->spawnflags & 4) && other->client->ps.duelInProgress && !g_allowUseInDuel.integer)
+	if ((self->spawnflags & 4) && other->client->ps.duelInProgress && !other->client->sess.raceMode && !g_allowUseInDuel.integer)
 		return;
 //JAPRO - Serverside - Allow/disallow use button/trigger for duelers - End
 
@@ -1197,31 +1205,49 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 
 	style = player->client->sess.movementStyle;
 
-	if (((style == MV_RJQ3) || (style == MV_RJCPM)) && g_knockback.value != 1000.0f)
+	//if (style == MV_COOP_JKA)
+		//return qfalse;//temp
+
+	if (player->client->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
 		return qfalse;
-	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP) { //Ignore forcejump restrictions if in onlybhop movement modes
+	if ((style == MV_RJQ3 || style == MV_RJCPM) && g_knockback.value != 1000.0f)
+		return qfalse;
+
+	if (style != MV_CPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA) { //Ignore forcejump restrictions if in onlybhop movement modes
 		if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
-			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1) {
+			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: this course requires force jump level 1!\n\n\n\n\n\n\n\n\n\n\"");
 				return qfalse;
 			}
 		}
 		else if (restrictions & (1 << 1)) {//flags 2 = restrict to jump2
-			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 2) {
+			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 2 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: this course requires force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
 				return qfalse;
 			}
 		}
 		else if (restrictions & (1 << 2)) {//flags 4 = only jump3
-			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 3) {
+			if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 3 || player->client->ps.powerups[PW_YSALAMIRI] > 0) { //Also dont allow ysal in FJ specified courses..?
 				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: this course requires force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
 				return qfalse;
 			}
 		}
 	}
+	else if (style == MV_COOP_JKA) {
+		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 2 && !(restrictions & (1 << 1))) {//using jump2 but its not allowed
+			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
+			return qfalse;
+		}
+		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 3 && !(restrictions & (1 << 2))) {//using jump3 but its not allowed
+			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
+			return qfalse;
+		}
+	}
+
+
 	if (player->client->pers.haste && !(restrictions & (1 << 3))) 
 		return qfalse; //IF client has haste, and the course does not allow haste, dont count it.
-	if ((style != MV_JETPACK) && (player->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4)))
+	if ((style != MV_JETPACK) && (player->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4))) //kinda deprecated.. maybe just never allow jetpack?
 		return qfalse; //IF client has jetpack, and the course does not allow jetpack, dont count it.
 	if (style == MV_SWOOP && !player->client->ps.m_iVehicleNum)
 		return qfalse;
@@ -1243,11 +1269,13 @@ qboolean ValidRaceSettings(int restrictions, gentity_t *player)
 			return qfalse;
 		}
 	}
-	if (player->client->pers.noFollow)
+	if (player->client->pers.noFollow && player->client->sess.movementStyle != MV_SIEGE)
 		return qfalse;
 	if (player->client->pers.practice)
 		return qfalse;
 	if ((restrictions & (1 << 5)) && (level.gametype == GT_CTF || level.gametype == GT_CTY))//spawnflags 32 is FFA_ONLY
+		return qfalse;
+	if ((player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) && !(restrictions & (1 << 6))) //spawnflags 64 is allow_teles 
 		return qfalse;
 
 	return qtrue;
@@ -1270,17 +1298,26 @@ qboolean InTrigger(vec3_t interpOrigin, gentity_t *trigger)
 int InterpolateTouchTime(gentity_t *activator, gentity_t *trigger)
 { //We know that last client frame, they were not touching the flag, but now they are.  Last client frame was pmoveMsec ms ago, so we only want to interp inbetween that range.
 	vec3_t	interpOrigin, delta;
-	int lessTime = 0;
+	int lessTime = -1;
+
+	qboolean touched = qfalse;
+	qboolean inTrigger;
 
 	VectorCopy(activator->client->ps.origin, interpOrigin);
 	VectorScale(activator->s.pos.trDelta, 0.001f, delta);//Delta is how much they travel in 1 ms.
 
-	VectorSubtract(interpOrigin, delta, interpOrigin);//Do it once before we loop
+	//VectorSubtract(interpOrigin, delta, interpOrigin);//Do it once before we loop
 
-	while (InTrigger(interpOrigin, trigger)) {//This will be done a max of pml.msec times, in theory, before we are guarenteed to not be in the trigger anymore.
+	//We know that..we should start in the trigger.  If not, we probably are on the other side of the trigger and 'warped' past it.  
+	//So if we start outside of trigger, we should keep going until we hit trigger then keep going until we exit it again.
+	while ((inTrigger = InTrigger(interpOrigin, trigger)) || !touched) {//This will be done a max of pml.msec times, in theory, before we are guarenteed to not be in the trigger anymore.
+		if (inTrigger)
+			touched = qtrue;
+
 		lessTime++; //Add one more ms to be subtracted
 		VectorSubtract(interpOrigin, delta, interpOrigin); //Keep Rewinding position by a tiny bit, that corresponds with 1ms precision (delta*0.001), since delta is per second.
-		if (lessTime >= activator->client->pmoveMsec || lessTime >= 8) { //activator->client->pmoveMsec
+		//if (lessTime >= activator->client->pmoveMsec || lessTime >= 8) { //activator->client->pmoveMsec
+		if (lessTime >= 250) {
 			break; //In theory, this should never happen, but just incase stop it here.
 		}
 	}
@@ -1308,51 +1345,77 @@ static QINLINE int GetTimeMS() {
 }
 
 //void G_SoundPrivate( gentity_t *ent, int channel, int soundIndex );
+void G_UpdatePlaytime(int null, char *username, int seconds );
 void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO Timers
 	int lessTime;
 
 	if (!player->client)
 		return;
+
+	if (level.time - player->client->lastInStartTrigger <= 300) { //We were last in the trigger within 300ms ago.., //goal, make this negative edge ?
+		player->client->lastInStartTrigger = level.time;
+		return;
+	}
+	player->client->lastInStartTrigger = level.time;
+
 	if (player->client->sess.sessionTeam != TEAM_FREE)
 		return;
 	if (player->r.svFlags & SVF_BOT)
 		return;
-	if (GetTimeMS() - player->client->pers.stats.startTime < 500)//Some built in floodprotect per player?
-		return;
-	if (player->client->pers.stats.lastResetTime == level.time) //Dont allow a starttimer to start in the same frame as a resettimer (called from noclip or amtele)
-		return;
 	if (player->s.eType == ET_NPC)
 		return;
-	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE && player->client->ps.pm_type != PM_JETPACK)
+	if (player->client->ps.duelInProgress && !player->client->sess.raceMode)
+		return;
+	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE && player->client->ps.pm_type != PM_JETPACK) //Allow racemode emotes?
+		return;
+	if (player->client->ps.legsAnim == BOTH_JUMPATTACK6) //heh
 		return;
 	if (player->client->sess.raceMode && player->client->sess.movementStyle == MV_SWOOP && !player->client->ps.m_iVehicleNum) //Dont start the timer for swoop racers if they dont have a swoop
 		return;
+	if (player->client->pers.stats.lastResetTime == level.time) //Dont allow a starttimer to start in the same frame as a resettimer (called from noclip or amtele)
+		return;
+	if (player->client->sess.raceMode && g_fixTimerOOB.integer && !trap->InPVS(player->client->ps.origin, player->client->ps.origin)) { //Check if they are OOB (not in a PVS?)
+		return;
+	}
+
+	//if (GetTimeMS() - player->client->pers.stats.startTime < 500)//Some built in floodprotect per player?
+		//return;
+	//if (player->client->pers.stats.startTime) //Instead of floodprotect, dont let player start a timer if they already have one.  Mapmakers should then put reset timers over the start area.
+		//return;
 
 	//trap->Print("Actual trigger touch! time: %i\n", GetTimeMS());
 
 	if (player->client->pers.recordingDemo && player->client->pers.keepDemo) {
-		//We are still recording a demo that we want to keep?
+		//We are still recording a demo that we want to keep? -shouldn't ever happen?
 		//Stop and rename it
 		//trap->SendServerCommand( player-g_entities, "chat \"RECORDING STOPPED (at startline), HIGHSCORE\"");
-		trap->SendConsoleCommand( EXEC_APPEND, va("svstoprecord %i;wait 20;svrenamedemo demos/temp/%s.dm_26 demos/races/%s.dm_26\n", player->client->ps.clientNum, player->client->pers.oldDemoName, player->client->pers.demoName));
+		trap->SendConsoleCommand( EXEC_APPEND, va("svstoprecord %i;wait 10;svrenamedemo temp/%s races/%s\n", player->client->ps.clientNum, player->client->pers.oldDemoName, player->client->pers.demoName));
 		player->client->pers.recordingDemo = qfalse;
+		player->client->pers.demoStoppedTime = level.time;
 	}
 
-	if ((sv_autoRaceDemo.integer) && !(player->client->pers.noFollow) && !(player->client->pers.practice) && player->client->sess.raceMode && !sv_cheats.integer && player->client->pers.userName[0]) {
+	//in rename demo, also make sure demo is stopped before renaming? that way we dont have to have the ;wait 20; here
+
+	if ((sv_autoRaceDemo.integer) && (!player->client->pers.noFollow || player->client->sess.movementStyle == MV_SIEGE) && !(player->client->pers.practice) && player->client->sess.raceMode && !sv_cheats.integer && player->client->pers.userName[0]) {
 		if (!player->client->pers.recordingDemo) { //Start the new demo
 			player->client->pers.recordingDemo = qtrue;
 			//trap->SendServerCommand( player-g_entities, "chat \"RECORDING STARTED\"");
 			trap->SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", player->client->pers.userName, player->client->ps.clientNum));
 		}
 		else { //Check if we should "restart" the demo
-			if (!player->client->lastStartTime || (level.time - player->client->lastStartTime > 5000)) {
+			//if (!player->client->lastStartTime || (level.time - player->client->lastStartTime > 5000)) {
+			if (!player->client->pers.stats.startTime || (GetTimeMS() - player->client->pers.stats.startTime > 5000)) { //we can just use starttime ?
+
 				player->client->pers.recordingDemo = qtrue;
+				player->client->pers.demoStoppedTime = level.time;
 				//trap->SendServerCommand( player-g_entities, "chat \"RECORDING RESTARTED\"");
-				trap->SendConsoleCommand( EXEC_APPEND, va("svstoprecord %i;wait 20;svrecord temp/%s %i\n", player->client->ps.clientNum, player->client->pers.userName, player->client->ps.clientNum));
+				trap->SendConsoleCommand( EXEC_APPEND, va("svstoprecord %i;wait 5;svrecord temp/%s %i\n", player->client->ps.clientNum, player->client->pers.userName, player->client->ps.clientNum));
+				//trap->SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", player->client->pers.userName, player->client->ps.clientNum));
 			}
 		}
 	}
-	player->client->lastStartTime = level.time;
+
+	//player->client->lastStartTime = level.time;
 	player->client->pers.keepDemo = qfalse;
 
 	if (player->client->ps.m_iVehicleNum) { //We are in a vehicle, so use the trigger on that instead maybe? or both..
@@ -1363,8 +1426,16 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 
 	multi_trigger(trigger, player); //Let it have a target, so it can point to restricts.  Move this up here, so swoops can activate it for proper swoop teleporting?
 
-	if (trigger->noise_index) 
-		G_Sound( player, CHAN_AUTO, trigger->noise_index );//could just use player instead of trigger->activator ?   How do we make this so only the activator hears it?
+	if (trigger->noise_index) //Only play on leaving trigger..?
+		G_RaceSound( player, CHAN_AUTO, trigger->noise_index, RS_TIMER_START );//could just use player instead of trigger->activator ?   How do we make this so only the activator hears it?
+
+	if (trigger->spawnflags & 1) {//set speed to speed value, keep our direction the same
+		vec3_t hVel;
+		hVel[0] = player->client->ps.velocity[0];
+		hVel[1] = player->client->ps.velocity[1];
+		hVel[2] = 0;
+		VectorScale(player->client->ps.velocity, (trigger->speed * (player->client->ps.basespeed / 250.0f)) / VectorLength(hVel), player->client->ps.velocity);
+	}
 
 	player->client->pers.startLag = GetTimeMS() - level.frameStartTime + level.time - player->client->pers.cmd.serverTime; //use level.previousTime?
 	//trap->SendServerCommand( player-g_entities, va("chat \"startlag: %i\"", player->client->pers.startLag));
@@ -1377,35 +1448,116 @@ void TimerStart(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO 
 	how often is pers.cmd.serverTime updated? every client frame? maybe it should use trap->milliseconds then.. :/
 	*/
 
-	player->client->pers.stats.startLevelTime = level.time; //Should this use trap milliseconds instead.. 
-	player->client->pers.stats.startTime = GetTimeMS();
+	//Update playtime if needed
+	if (player->client->sess.raceMode && !player->client->pers.practice && player->client->pers.userName[0] && player->client->pers.stats.startTime) {
+		player->client->pers.stats.racetime += (GetTimeMS() - player->client->pers.stats.startTime)*0.001f - player->client->afkDuration*0.001f;
+		player->client->afkDuration = 0;
+		if (player->client->pers.stats.racetime > 120.0f) { //Avoid spamming the db
+			G_UpdatePlaytime(0, player->client->pers.userName, (int)(player->client->pers.stats.racetime+0.5f));
+			player->client->pers.stats.racetime = 0.0f;
+		}
+	}
+
 	lessTime = InterpolateTouchTime(player, trigger);
-	player->client->pers.stats.startTime -= lessTime;
+
+	player->client->pers.stats.startLevelTime = level.time; //Should this use trap milliseconds instead.. 
+	player->client->pers.stats.startTime = GetTimeMS() - lessTime;
 	player->client->pers.stats.topSpeed = 0;
 	player->client->pers.stats.displacement = 0;
 	player->client->pers.stats.displacementSamples = 0;
 
-	//if (player->r.svFlags & SVF_JUNIORADMIN)
-		//trap->SendServerCommand(player-g_entities, va("cp \"Starting lag: %i\n 2: %i\n 3: %i\n\"", player->client->pers.startLag, level.time - player->client->pers.cmd.serverTime, GetTimeMS() - player->client->pers.cmd.serverTime));
+	if (player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) { //Reset their telemark on map start if this is the case
+		player->client->pers.telemarkOrigin[0] = 0;
+		player->client->pers.telemarkOrigin[1] = 0;
+		player->client->pers.telemarkOrigin[2] = 0;
+		player->client->pers.telemarkAngle = 0;
+	}
 
-	if (player->client->ps.stats[STAT_RACEMODE]) {
-		player->client->ps.duelTime = level.time - lessTime;//player->client->pers.stats.startTime;//level.time;
-
+	if (player->client->sess.raceMode) {
+		player->client->ps.duelTime = level.time - lessTime;
 		player->client->ps.stats[STAT_HEALTH] = player->health = player->client->ps.stats[STAT_MAX_HEALTH];
 		player->client->ps.stats[STAT_ARMOR] = 25;
 
-		if (!player->client->pers.userName[0]) //In racemode but not logged in
-			trap->SendServerCommand(player-g_entities, "cp \"^3Warning: You are not logged in!\n\n\n\n\n\n\n\n\n\n\"");
-		else if (player->client->pers.noFollow)
-			trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid while hidden!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
-		else if (player->client->pers.practice)
-			trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid in practice mode!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
+		if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK) {
+			player->client->ps.ammo[AMMO_DETPACK] = 4;
+			player->client->ps.jetpackFuel = 100;
+		}
+		else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //Set their forcepoints back to prevent coop pre fp drain/tele boost tactic
+			player->client->ps.fd.forcePower = 100; //whatever
+			//if (player->client->ps.fd.forcePowersActive & (1 << FP_RAGE))
+				//player->client->ps.fd.forcePower -= 50;
+			if (player->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
+				player->client->ps.fd.forcePower -= 75;
+		}
+
+		//If racemode and _coop, adjust timer for their partner if needed
+		//If partner already has a dueltime, set our dueltime and (starttime? to that)
+		player->client->pers.stats.coopStarted = qtrue;
+		if (player->client->ps.duelInProgress) {
+			if (player->client->ps.duelIndex != ENTITYNUM_NONE) {
+				gentity_t* duelAgainst = &g_entities[player->client->ps.duelIndex];
+
+				//If we have no timer and our partner does, take his timer
+				//If we have a timer and our partner does, reset both?
+
+				if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
+					duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+					duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
+					duelAgainst->client->pers.keepDemo = qfalse;
+					duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+
+
+#if 0
+					if (duelAgainst->client->pers.stats.startTime) {  //Partner has a timer
+						duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+						duelAgainst->client->pers.stats.coopStarted = qfalse; //turn off their coop so they cant end the race?
+						duelAgainst->client->pers.keepDemo = qfalse;
+						/*
+						if (player->client->pers.stats.startTime) { //We do too, reset both
+							duelAgainst->client->pers.stats.startTime = player->client->pers.stats.startTime;
+							duelAgainst->client->pers.keepDemo = qfalse;
+							//player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime = 0;
+						}
+						else //copy his
+							player->client->pers.stats.startTime = duelAgainst->client->pers.stats.startTime; // ??
+						*/
+					}
+					if (duelAgainst->client->ps.duelTime) { //Partner has a timer
+						duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+						/*
+						if (player->client->ps.duelTime) {//we do too, reset both
+							duelAgainst->client->ps.duelTime = player->client->ps.duelTime;
+							//player->client->ps.duelTime = duelAgainst->client->ps.duelTime = 0;
+						}
+						else //copy his
+							player->client->ps.duelTime = duelAgainst->client->ps.duelTime; // ??
+						*/
+					}
+#endif
+				}
+			}
+		}
+
+		if ((GetTimeMS() - player->client->pers.stats.startTime > 2000)) {
+			//Floodprotect the prints
+			if (!player->client->pers.userName[0]) //In racemode but not logged in
+				trap->SendServerCommand(player-g_entities, "cp \"^3Warning: You are not logged in!\n\n\n\n\n\n\n\n\n\n\"");
+			else if (player->client->pers.noFollow && player->client->sess.movementStyle != MV_SIEGE)
+				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid while hidden!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
+			else if (player->client->pers.practice)
+				trap->SendServerCommand( player-g_entities, "cp \"^3Warning: times are not valid in practice mode!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
+		}
 	}
+
+	//if (player->r.svFlags & SVF_JUNIORADMIN)
+		//trap->SendServerCommand(player-g_entities, va("cp \"Starting lag: %i\n 2: %i\n 3: %i\n\"", player->client->pers.startLag, level.time - player->client->pers.cmd.serverTime, GetTimeMS() - player->client->pers.cmd.serverTime));
+
 }
 
+void PrintRaceTime(char *username, char *playername, char *message, char *style, int topspeed, int average, char *timeStr, int clientNum, int season_newRank, qboolean spb, int global_newRank, qboolean loggedin, qboolean valid, int season_oldRank, int global_oldRank, float addedScore, int awesomenoise);
 void IntegerToRaceName(int style, char *styleString, size_t styleStringSize);
 void TimeToString(int duration_ms, char *timeStr, size_t strSize, qboolean noMS);
-void G_AddRaceTime(char *account, char *courseName, int duration_ms, int style, int topspeed, int average, int clientNum); //should this be extern?
+void G_AddRaceTime(char *account, char *courseName, int duration_ms, int style, int topspeed, int average, int clientNum, int awesomenoise); //should this be extern?
 void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO Timers
 	if (!player->client)
 		return;
@@ -1417,17 +1569,46 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 		return;
 	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE && player->client->ps.pm_type != PM_JETPACK) 
 		return;
+	if (player->client->sess.raceMode && g_fixTimerOOB.integer > 1 && !trap->InPVS(player->client->ps.origin, player->client->ps.origin)) { //Check if they are OOB (not in a PVS?)
+			player->client->pers.stats.startLevelTime = 0;
+			player->client->pers.stats.startTime = 0;
+			player->client->pers.stats.topSpeed = 0;
+			player->client->pers.stats.displacement = 0;
+			if (player->client->ps.stats[STAT_RACEMODE])
+				player->client->ps.duelTime = 0;
+			return;
+	}
 
 	multi_trigger(trigger, player);
 
-	if (player->client->pers.stats.startTime) {
-		char style[32] = {0}, timeStr[32] = {0}, playerName[MAX_NETNAME] = {0};
+	if (!player->client->pers.stats.startTime)
+		return;
+	if (!player->client->pers.stats.coopStarted)
+		return;
+
+	if (1) {
+		char styleStr[32] = { 0 }, timeStr[32] = { 0 }, playerName[MAX_NETNAME] = { 0 };
 		char c[4] = S_COLOR_RED;
 		float time = GetTimeMS() - player->client->pers.stats.startTime;
-		int average, restrictions = 0, nameColor = 7;
+		int average, restrictions = 0;
 		qboolean valid = qfalse;
 		const int endLag = GetTimeMS() - level.frameStartTime + level.time - player->client->pers.cmd.serverTime;
 		const int diffLag = player->client->pers.startLag - endLag;
+		const int lessTime = InterpolateTouchTime(player, trigger);
+		qboolean coopFinished = qfalse;
+		gentity_t* duelAgainst;
+
+		if (trigger->noise_index) //Still play this always? Or handle this later..
+			G_Sound(player, CHAN_AUTO, trigger->noise_index);
+		if (trigger->spawnflags)//Get the restrictions for the specific course (only allow jump1, or jump2, etc..)
+			restrictions = trigger->spawnflags;
+		if (ValidRaceSettings(restrictions, player)) {
+			valid = qtrue;
+			if (player->client->pers.userName && player->client->pers.userName[0])
+				Q_strncpyz(c, S_COLOR_CYAN, sizeof(c));
+			else
+				Q_strncpyz(c, S_COLOR_GREEN, sizeof(c));
+		}
 
 		if (diffLag > 0) {//Should this be more trusting..?.. -20? -30?
 			time += diffLag;
@@ -1437,142 +1618,120 @@ void TimerStop(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO T
 
 		//if (player->client->sess.fullAdmin) //think we can finally remove this debug print
 			//trap->SendServerCommand( player-g_entities, va("chat \"Msec diff due to warp (added if > 0): %i\"", diffLag));
-		
+
 		//trap->SendServerCommand( player-g_entities, va("chat \"diffLag: %i\"", diffLag));
 
-		time -= InterpolateTouchTime(player, trigger);//Other is the trigger_multiple that set this off
+		if (lessTime < 16) //Don't really trust this yet, max possible is 250.
+			time -= lessTime;
+#if _COOP
+		if (player->client->sess.raceMode && player->client->ps.duelInProgress && player->client->ps.duelIndex != ENTITYNUM_NONE) {
+			//player->client->pers.stats.coopFinished = qtrue;
+			duelAgainst = &g_entities[player->client->ps.duelIndex];
+			if (duelAgainst && duelAgainst->client && duelAgainst->client->sess.raceMode) {
+				coopFinished = qtrue;
+				if (duelAgainst->client->pers.practice)
+					valid = qfalse;
+				/*
+				if (!duelAgainst->client->pers.stats.startTime || !duelAgainst->client->pers.stats.coopFinished) { //we are 1st across?
+					//print partial coop.. msg.. idk.. dont add time to db
+					//Com_Printf("%s is first, %s hasn't completed or started %i\n", player->client->pers.netname, duelAgainst->client->pers.netname, player->client->pers.stats.startTime);
+					return;
+				}
+				else { //we are 2nd across, add both - this triggers when it SHOULD NOT. oh fuck, cuz starttime is the same for both always???????
+					coopFinished = qtrue;
+					//Com_Printf("%s is second, %s already completed %i\n", player->client->pers.netname, duelAgainst->client->pers.netname, player->client->pers.stats.startTime);
+				}
+				*/
+			}
+		}
+#endif
+
 		time /= 1000.0f;
 		if (time < 0.001f)
 			time = 0.001f;
 		//average = floorf(player->client->pers.stats.displacement / ((level.time - player->client->pers.stats.startLevelTime) * 0.001f)) + 0.5f;//Should use level time for this 
 		if (player->client->pers.stats.displacementSamples)
 			average = floorf(((player->client->pers.stats.displacement * sv_fps.value) / player->client->pers.stats.displacementSamples) + 0.5f);
-		else 
+		else
 			average = player->client->pers.stats.topSpeed;
 
-		if (trigger->spawnflags)//Get the restrictions for the specific course (only allow jump1, or jump2, etc..)
-			restrictions = trigger->spawnflags;
-
-		if (ValidRaceSettings(restrictions, player)) {
-			valid = qtrue;
-			if (player->client->pers.userName && player->client->pers.userName[0])
-				Q_strncpyz( c, S_COLOR_CYAN, sizeof(c) );
-			else
-				Q_strncpyz( c, S_COLOR_GREEN, sizeof(c) );
-		}
-
-		if (valid && (player->client->ps.stats[STAT_MOVEMENTSTYLE] == 1) && trigger->awesomenoise_index && (time <= trigger->speed)) //Play the awesome noise if they were fast enough
+		/*
+		if (valid && (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JKA) && trigger->awesomenoise_index && (time <= trigger->speed)) //Play the awesome noise if they were fast enough
 			G_Sound(player, CHAN_AUTO, trigger->awesomenoise_index);//Just play it in jka physics for now...
-		else if (trigger->noise_index) 
-			G_Sound(player, CHAN_AUTO, trigger->noise_index);
+		else*/
+
+		//Pass awesomenoise_index through to play it if its a PB
+
+		//If _coop, see which time we want (if this is the first person cross line, don't add the time or the message yet ?
+			//If this is the 2nd person, get the other person and add the time for them, also print the combined print
+			//If racemode and duel in progress, we are in coop.  If our duel partner has a timer (if its bigger than ours) use his starttime..? //starttimes should be same right
+			//Use whoevers start time is older?
+
+			//If our partner still has a starttime equal to ours.... at this point.. don't count our run yet AHHH?
 
 
-		//
-
-		IntegerToRaceName(player->client->ps.stats[STAT_MOVEMENTSTYLE], style, sizeof(style));
-		//
-
-		/*
-		if (player->client->ps.stats[STAT_RACEMODE]) {
-			if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_SIEGE)
-				Q_strncpyz(style, "siege", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JKA)
-				Q_strncpyz(style, "jka", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_QW)
-				Q_strncpyz(style, "qw", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_CPM)
-				Q_strncpyz(style, "cpm", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_Q3)
-				Q_strncpyz(style, "q3", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_PJK)
-				Q_strncpyz(style, "pjk", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_WSW)
-				Q_strncpyz(style, "wsw", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3)
-				Q_strncpyz(style, "rjq3", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM)
-				Q_strncpyz(style, "rjcpm", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_SWOOP)
-				Q_strncpyz(style, "swoop", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)
-				Q_strncpyz(style, "jetpack", sizeof(style));
-			else if (player->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_SPEED)
-				Q_strncpyz(style, "speed", sizeof(style));
-		}
-		else if (g_movementStyle.integer == MV_SIEGE)
-			Q_strncpyz(style, "siege", sizeof(style));
-		else if (g_movementStyle.integer == MV_JKA)
-			Q_strncpyz(style, "jka", sizeof(style));
-		else if (g_movementStyle.integer == MV_QW)
-			Q_strncpyz(style, "qw", sizeof(style));
-		else if (g_movementStyle.integer == MV_CPM)
-			Q_strncpyz(style, "cpm", sizeof(style));
-		else if (g_movementStyle.integer == MV_Q3)
-			Q_strncpyz(style, "q3", sizeof(style));
-		else if (g_movementStyle.integer == MV_PJK)
-			Q_strncpyz(style, "pjk", sizeof(style));
-		else if (g_movementStyle.integer == MV_WSW)
-			Q_strncpyz(style, "wsw", sizeof(style));
-		else if (g_movementStyle.integer == MV_RJQ3)
-			Q_strncpyz(style, "rjq3", sizeof(style));
-		else if (g_movementStyle.integer == MV_RJCPM)
-			Q_strncpyz(style, "rjcpm", sizeof(style));
-		else if (g_movementStyle.integer == MV_SPEED)
-			Q_strncpyz(style, "speed", sizeof(style));
-
-			*/
-
-		/*
-		if (time >= 60.0f) { //LODA FIXME, make this use the 
-			int minutes, seconds, milliseconds;
-
-			minutes = (int)time / 60;
-			seconds = (int)time % 60;
-			milliseconds = ((int)(time*1000)%1000); //milliseconds = fmodf(time, milliseconds);
-			Com_sprintf(timeStr, sizeof(timeStr), "%i:%02i.%03i", minutes, seconds, milliseconds);
-		}
-		else
-			Q_strncpyz(timeStr, va("%.3f", time), sizeof(timeStr));
-			*/
-
-		TimeToString((int)(time*1000), timeStr, sizeof(timeStr), qfalse);
-
+		IntegerToRaceName(player->client->ps.stats[STAT_MOVEMENTSTYLE], styleStr, sizeof(styleStr));
+		TimeToString((int)(time * 1000), timeStr, sizeof(timeStr), qfalse);
 		Q_strncpyz(playerName, player->client->pers.netname, sizeof(playerName));
 		Q_StripColor(playerName);
-		nameColor = 7 - (player->client->ps.clientNum % 8);//sad hack
-		if (nameColor < 2)
-			nameColor = 2;
-		else if (nameColor > 7 || nameColor == 5)
-			nameColor = 7;
 
-		if (trigger->message) {
-			trap->SendServerCommand( -1, va("print \"^3%-16s%s completed in ^3%-12s%s max:^3%-10i%s average:^3%-10i%s style:^3%-10s%s by ^%i%s\n\"",
-				trigger->message, c, timeStr, c, (int)floorf(player->client->pers.stats.topSpeed + 0.5f), c, average, c, style, c, nameColor, playerName));
+		if (!valid) {
+			PrintRaceTime(NULL, playerName, trigger->message, styleStr, (int)(player->client->pers.stats.topSpeed + 0.5f), average, timeStr, player->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qfalse, 0, 0, 0, 0);
+			//How do we tell if we are the 2nd one..unless end timer does not reset for duelers
+			//
+			if (coopFinished) {
+				Q_strncpyz(playerName, duelAgainst->client->pers.netname, sizeof(playerName));
+				Q_StripColor(playerName);
+				PrintRaceTime(NULL, playerName, trigger->message, styleStr, 0, 0, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qfalse, 0, 0, 0, 0);
+			}
 		}
 		else {
-			//Q_strcat(courseName, sizeof(courseName), " ()");
-			trap->SendServerCommand( -1, va("print \"%sCompleted in ^3%-12s%s max:^3%-10i%s average:^3%-10i%s style:^3%-10s%s by ^%i%s\n\"",
-				c, timeStr, c, (int)floorf(player->client->pers.stats.topSpeed + 0.5f), c, average, c, style, c, nameColor, playerName));
-		}
-		if (valid) {
-			char strIP[NET_ADDRSTRMAXLEN] = {0};
-			char *p = NULL;
+			char strIP[NET_ADDRSTRMAXLEN] = { 0 };
+			char* p = NULL;
 			Q_strncpyz(strIP, player->client->sess.IP, sizeof(strIP));
 			p = strchr(strIP, ':');
 			if (p)
 				*p = 0;
-			if (player->client->pers.userName[0]) { //omg
-				G_AddRaceTime(player->client->pers.userName, trigger->message, (int)(time*1000), player->client->ps.stats[STAT_MOVEMENTSTYLE], (int)floorf(player->client->pers.stats.topSpeed + 0.5f), average, player->client->ps.clientNum);
+			if (player->client->pers.userName[0] && (!coopFinished || (coopFinished && duelAgainst->client->pers.userName[0]))) { //omg
+				G_AddRaceTime(player->client->pers.userName, trigger->message, (int)(time * 1000), player->client->ps.stats[STAT_MOVEMENTSTYLE], (int)(player->client->pers.stats.topSpeed + 0.5f), average, player->client->ps.clientNum, trigger->awesomenoise_index);
+				if (coopFinished) {
+					G_AddRaceTime(duelAgainst->client->pers.userName, trigger->message, (int)(time * 1000), duelAgainst->client->ps.stats[STAT_MOVEMENTSTYLE], 0, 0, duelAgainst->client->ps.clientNum, trigger->awesomenoise_index);
+				}
+			}
+			else {
+				PrintRaceTime(NULL, playerName, trigger->message, styleStr, (int)(player->client->pers.stats.topSpeed + 0.5f), average, timeStr, player->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qtrue, 0, 0, 0, 0);
+				if (coopFinished) {
+					Q_strncpyz(playerName, duelAgainst->client->pers.netname, sizeof(playerName));
+					Q_StripColor(playerName);
+					PrintRaceTime(NULL, playerName, trigger->message, styleStr, 0, 0, timeStr, duelAgainst->client->ps.clientNum, qfalse, qfalse, qfalse, qfalse, qtrue, 0, 0, 0, 0);
+				}
 			}
 		}
 
-		player->client->pers.stats.startLevelTime = 0;
-		player->client->pers.stats.startTime = 0;
-		player->client->pers.stats.topSpeed = 0;
-		player->client->pers.stats.displacement = 0;
-		if (player->client->ps.stats[STAT_RACEMODE])
+		if (player->client->sess.raceMode && player->client->ps.duelInProgress && !coopFinished) { //coop
+		}
+		else {
+			player->client->pers.stats.startLevelTime = 0;
+			player->client->pers.stats.startTime = 0;
+			player->client->pers.stats.topSpeed = 0;
+			player->client->pers.stats.displacement = 0;
+			if (coopFinished) {
+				duelAgainst->client->pers.stats.startLevelTime = 0;
+				duelAgainst->client->pers.stats.startTime = 0;
+				duelAgainst->client->pers.stats.topSpeed = 0;
+				duelAgainst->client->pers.stats.displacement = 0;
+				//player->client->pers.stats.coopFinished = qfalse;
+				//duelAgainst->client->pers.stats.coopFinished = qfalse;
+			}
+		}
+
+		if (player->client->sess.raceMode && (!player->client->ps.duelInProgress || coopFinished)) {
 			player->client->ps.duelTime = 0;
+			if (coopFinished)
+				duelAgainst->client->ps.duelTime = 0;
+		}
 	}
+	//Set coopstarted to false?
 }
 
 void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO Timers
@@ -1590,7 +1749,7 @@ void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//J
 		player->client->pers.stats.startTime = 0;
 		if (player->client->sess.raceMode)
 			player->client->ps.duelTime = 0;
-		trap->SendServerCommand( player-g_entities, "cp \"Timer reset\n\n\n\n\n\n\n\n\n\n\""); //Send message?
+		trap->SendServerCommand( player-g_entities, "cp \"Timer reset\n\n\n\n\n\n\n\n\n\n\""); //Send message?`
 		return;
 	}
 
@@ -1623,9 +1782,25 @@ void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//J
 			*/
 
 		if (player->client->pers.showCenterCP)
-			trap->SendServerCommand( player-g_entities, va("cp \"^3%.3fs^5, avg ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average));
-		if (player->client->pers.showChatCP)
-			trap->SendServerCommand( player-g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, max ^3%i^5, average ^3%i^5 ups\"", (float)time * 0.001f, (int)floorf(player->client->pers.stats.topSpeed + 0.5f), average));
+			trap->SendServerCommand( player-g_entities, va("cp \"^3%.3fs^5, avg ^3%i^5u, max ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+		if (player->client->pers.showConsoleCP)
+			trap->SendServerCommand(player - g_entities, va("print \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+		else if (player->client->pers.showChatCP)
+			trap->SendServerCommand( player-g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+
+		if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress && player->client->pers.stats.coopStarted)
+		{ //send checkpoint to coop partner
+			gentity_t *partner = &g_entities[player->client->ps.duelIndex];
+			if (partner && partner->inuse && partner->client && (level.time - partner->client->pers.stats.lastCheckpointTime > 1000))
+			{
+				if (partner->client->pers.showCenterCP)
+					trap->SendServerCommand( partner - g_entities, va("cp \"^3%.3fs^5, avg ^3%i^5u, max ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+				if (partner->client->pers.showConsoleCP)
+					trap->SendServerCommand(partner - g_entities, va("print \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+				else if (partner->client->pers.showChatCP)
+					trap->SendServerCommand( partner - g_entities, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
+			}
+		}
 		
 		for (i=0; i<MAX_CLIENTS; i++) {//Also print to anyone spectating them..
 			if (!g_entities[i].inuse)
@@ -1634,9 +1809,9 @@ void TimerCheckpoint(gentity_t *trigger, gentity_t *player, trace_t *trace) {//J
 			{
 				//if (trigger && trigger->spawnflags & 1)//Minimalist print loda fixme get rid of target shit 
 				if (level.clients[i].pers.showCenterCP)
-					trap->SendServerCommand( i, va("cp \"^3%.3fs^5, avg ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average));
+					trap->SendServerCommand( i, va("cp \"^3%.3fs^5, avg ^3%i^5u, max ^3%i^5u\n\n\n\n\n\n\n\n\n\n\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
 				if (level.clients[i].pers.showChatCP)
-					trap->SendServerCommand( i, va("chat \"^5Checkpoint: ^3%.3f^5, max ^3%i^5, average ^3%i^5 ups\"", (float)time * 0.001f, (int)floorf(player->client->pers.stats.topSpeed + 0.5f), average));
+					trap->SendServerCommand( i, va("chat \"^5Checkpoint: ^3%.3f^5, avg ^3%i^5, max ^3%i^5 ups\"", (float)time * 0.001f, average, (int)(player->client->pers.stats.topSpeed + 0.5f)));
 			}
 		}
 
@@ -1650,13 +1825,13 @@ void Use_target_restrict_on(gentity_t *trigger, gentity_t *other, gentity_t *pla
 	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE)
 		return;
 
-	if (trigger->spawnflags & 2) {
+	if (trigger->spawnflags & RESTRICT_FLAG_HASTE) {
 		if (!player->client->pers.haste)
 			G_Sound( player, CHAN_AUTO, G_SoundIndex("sound/player/boon.mp3") );
 			//G_AddEvent( player, EV_ITEM_PICKUP, 98 ); //100 shield sound i guess, Now why wont the boon sound work?
 		player->client->pers.haste = qtrue;
 	}
-	else if (trigger->spawnflags & 4) { //Reset flags
+	if (trigger->spawnflags & RESTRICT_FLAG_FLAGS) { //Reset flags
 		if (player->client->ps.powerups[PW_NEUTRALFLAG]) {		// only happens in One Flag CTF
 			Team_ReturnFlag( TEAM_FREE );
 			player->client->ps.powerups[PW_NEUTRALFLAG] = 0;
@@ -1670,8 +1845,54 @@ void Use_target_restrict_on(gentity_t *trigger, gentity_t *other, gentity_t *pla
 			player->client->ps.powerups[PW_BLUEFLAG] = 0;
 		}
 	}
-	else 
-		player->client->ps.stats[STAT_ONLYBHOP] = 1;
+	if (trigger->spawnflags & RESTRICT_FLAG_JUMP) { //Change Jump Level with "count" val
+		if (trigger->count) { //Set client jump without resetting timer because someone suggested a course that uses different movementstyles for each room.
+			const int jumplevel = trigger->count;
+			if (jumplevel >= 1 && jumplevel <= 3) {
+				if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != jumplevel) {
+					player->client->ps.fd.forcePowerLevel[FP_LEVITATION] = jumplevel;
+					trap->SendServerCommand(player - g_entities, va("print \"Jumplevel updated (%i).\n\"", jumplevel));
+				}
+			}
+		}
+	}
+	else if (trigger->spawnflags & RESTRICT_FLAG_MOVESTYLE) { //Change Movementstyle with "count" val
+		if (trigger->count) { //Set client movementstyle without resetting timer because someone suggested a course that uses different movementstyles for each room.
+			const int style = trigger->count;
+			if (style > 0 && style < MV_NUMSTYLES && style != MV_SWOOP) {//idk how deal with swoop here rly, just spawn it ..?
+				if (style == MV_JETPACK) {
+					player->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_JETPACK);
+				}
+				else {
+					player->client->ps.stats[STAT_HOLDABLE_ITEMS] &= ~(1 << HI_JETPACK);
+				}
+
+				if (style == MV_SPEED) {
+					player->client->ps.fd.forcePower = 50;
+				}
+				else {
+					player->client->ps.fd.forcePower = 100; //ok
+				}
+
+				player->client->sess.movementStyle = style;
+				trap->SendServerCommand(player - g_entities, "print \"Movement style updated.\n\"");//eh?
+			}
+		}
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_YSAL) {//Give Ysal
+		if (player->client->ps.powerups[PW_YSALAMIRI] <= 0)
+			G_Sound(player, CHAN_AUTO, G_SoundIndex("sound/player/boon.mp3"));
+		player->client->ps.powerups[PW_YSALAMIRI] = 2147483648 - 1;// Q3_INFINITE;
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_CROUCHJUMP) {//hl style crouch jump
+		player->client->ps.stats[STAT_RESTRICTIONS] |= JAPRO_RESTRICT_CROUCHJUMP;
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_ALLOWTELES) {
+		player->client->ps.stats[STAT_RESTRICTIONS] |= JAPRO_RESTRICT_ALLOWTELES;
+	}
+	if (!trigger->spawnflags) {
+		player->client->ps.stats[STAT_RESTRICTIONS] |= JAPRO_RESTRICT_BHOP;
+	}
 }
 
 void Use_target_restrict_off( gentity_t *trigger, gentity_t *other, gentity_t *player ) {//JAPRO OnlyBhop
@@ -1680,9 +1901,21 @@ void Use_target_restrict_off( gentity_t *trigger, gentity_t *other, gentity_t *p
 	if (player->client->ps.pm_type != PM_NORMAL && player->client->ps.pm_type != PM_FLOAT && player->client->ps.pm_type != PM_FREEZE)
 		return;
 
-	player->client->ps.stats[STAT_ONLYBHOP] = 0;
-	if (trigger->spawnflags & 2)
+	if (trigger->spawnflags & RESTRICT_FLAG_YSAL) {//Give Ysal
+		player->client->ps.powerups[PW_YSALAMIRI] = 0;
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_HASTE) {
 		player->client->pers.haste = qfalse;
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_CROUCHJUMP) {//hl style crouch jump
+		player->client->ps.stats[STAT_RESTRICTIONS] &= ~JAPRO_RESTRICT_CROUCHJUMP;
+	}
+	if (trigger->spawnflags & RESTRICT_FLAG_ALLOWTELES) {
+		player->client->ps.stats[STAT_RESTRICTIONS] &= ~JAPRO_RESTRICT_ALLOWTELES;
+	}
+	if (trigger->spawnflags == RESTRICT_FLAG_DISABLE) {
+		player->client->ps.stats[STAT_RESTRICTIONS] &= ~JAPRO_RESTRICT_BHOP;
+	}
 }
 
 void NewPush(gentity_t *trigger, gentity_t *player, trace_t *trace) {//JAPRO Timers
@@ -1818,13 +2051,13 @@ void SP_trigger_timer_stop( gentity_t *self )
 
 void SP_target_restrict(gentity_t *self)//JAPRO Onlybhop
 {
-	if (self->spawnflags & 1)
+	if (self->spawnflags & RESTRICT_FLAG_DISABLE)
 		self->use = Use_target_restrict_off;
 	else
 		self->use = Use_target_restrict_on;
 }
 
-void SP_trigger_newpush(gentity_t *self)//JAPRO Onlybhop
+void SP_trigger_newpush(gentity_t *self)//JAPRO Newpush
 {
 	char	*s;
 	InitTrigger(self);
@@ -1840,6 +2073,279 @@ void SP_trigger_newpush(gentity_t *self)//JAPRO Onlybhop
 	trap->LinkEntity ((sharedEntity_t *)self);
 }
 
+void Touch_KOTH( gentity_t *self, gentity_t *other, trace_t *trace ) 
+{
+	const int nowTime = GetTimeMS();
+	int addTime;
+
+	if( !other->client )
+		return;
+	if (other->s.eType == ET_NPC)
+		return;
+	if (self->flags & FL_INACTIVE) //set by target_deactivate
+		return;
+	if (!g_KOTH.integer)
+		return;
+	if (level.gametype != GT_TEAM)
+		return;
+	if (other->client->ps.duelInProgress)
+		return;
+	if (other->client->sess.raceMode)
+		return;
+	//if (level.startTime > (level.time - 1000*20)) //Dont enable for first 20 seconds of map
+		//return;
+	if (nowTime - other->client->kothDebounce < 100) {//Some built in floodprotect per player?
+		return;
+	}
+	if (self->radius && ((self->r.currentOrigin[0]-other->client->ps.origin[0]) * (self->r.currentOrigin[0]-other->client->ps.origin[0]) +
+		(self->r.currentOrigin[1]-other->client->ps.origin[1]) * (self->r.currentOrigin[1]-other->client->ps.origin[1])) > self->radius*self->radius) {
+			return;
+	}
+	other->client->kothDebounce = nowTime;
+
+	addTime = nowTime - other->client->pers.stats.kothTime;
+	if (addTime > 200) {
+		//Com_Printf("Add time is %i\n", addTime);
+		addTime = 200;
+	}
+
+	if (other->client->sess.sessionTeam == TEAM_RED)
+		level.kothTime += addTime;
+	else if (other->client->sess.sessionTeam == TEAM_BLUE)
+		level.kothTime -= addTime;
+
+	other->client->pers.stats.kothTime = nowTime;
+
+	if (level.kothTime > 3000) {
+		AddTeamScore(other->s.pos.trBase, TEAM_RED, 1, qfalse);
+		//trap->SendServerCommand( -1, "chat \"Red Scored\"");
+		CalculateRanks();
+		level.kothTime = 0;
+	}
+	else if (level.kothTime < -3000) {
+		AddTeamScore(other->s.pos.trBase, TEAM_BLUE, 1, qfalse);
+		//trap->SendServerCommand( -1, "chat \"Blue Scored\"");
+		CalculateRanks();
+		level.kothTime = 0;
+	}
+
+#if 0
+
+// moved to just above multi_trigger because up here it just checks if the trigger is not being touched
+// we want it to check any conditions set on the trigger, if one of those isn't met, the trigger is considered to be "cleared"
+//	if ( self->e_ThinkFunc == thinkF_trigger_cleared_fire )
+//	{//We're waiting to fire our target2 first
+//		self->nextthink = level.time + self->speed;
+//		return;
+//	}
+
+//JAPRO - Serverside - Allow/disallow use button/trigger for duelers - Start
+	if (other->client->ps.duelInProgress && (g_allowUseInDuel.integer >= 2))//Loda fixme, make this spawnflags 5 for button? or should it block all triggers?
+		return;
+	if ((self->spawnflags & 4) && other->client->ps.duelInProgress && !g_allowUseInDuel.integer)
+		return;
+//JAPRO - Serverside - Allow/disallow use button/trigger for duelers - End
+
+	if ((self->spawnflags & 4) && (other->client->ps.powerups[PW_NEUTRALFLAG] && g_rabbit.integer))
+		return;
+
+	if ( self->spawnflags & 1 )
+	{
+		if ( other->s.eType == ET_NPC )
+		{
+			return;
+		}
+	}
+	else
+	{
+		if ( self->spawnflags & 16 )
+		{//NPCONLY
+			if ( other->NPC == NULL )
+			{
+				return;
+			}
+		}
+
+		if ( self->NPC_targetname && self->NPC_targetname[0] )
+		{
+			if ( other->script_targetname && other->script_targetname[0] )
+			{
+				if ( Q_stricmp( self->NPC_targetname, other->script_targetname ) != 0 )
+				{//not the right guy to fire me off
+					return;
+				}
+			}
+			else
+			{
+				return;
+			}
+		}
+	}
+
+	if ( self->spawnflags & 2 )
+	{//FACING
+		vec3_t	forward;
+
+		AngleVectors( other->client->ps.viewangles, forward, NULL, NULL );
+
+		if ( DotProduct( self->movedir, forward ) < 0.5 )
+		{//Not Within 45 degrees
+			return;
+		}
+	}
+
+	if ( self->spawnflags & 4 )
+	{//USE_BUTTON
+		if( !( other->client->pers.cmd.buttons & BUTTON_USE ) )
+		{//not pressing use button
+			return;
+		}
+
+		if ((other->client->ps.weaponTime > 0 && other->client->ps.torsoAnim != BOTH_BUTTON_HOLD && other->client->ps.torsoAnim != BOTH_CONSOLE1) || other->health < 1 ||
+			(other->client->ps.pm_flags & PMF_FOLLOW) || other->client->sess.sessionTeam == TEAM_SPECTATOR ||
+			other->client->ps.forceHandExtend != HANDEXTEND_NONE)
+		{ //player has to be free of other things to use.
+			return;
+		}
+
+		if (self->genericValue7)
+		{ //we have to be holding the use key in this trigger for x milliseconds before firing
+			if (level.gametype == GT_SIEGE &&
+				self->idealclass && self->idealclass[0])
+			{ //only certain classes can activate it
+				if (!other ||
+					!other->client ||
+					other->client->siegeClass < 0)
+				{ //no class
+					return;
+				}
+
+				if (!G_NameInTriggerClassList(bgSiegeClasses[other->client->siegeClass].name, self->idealclass))
+				{ //wasn't in the list
+					return;
+				}
+			}
+
+			if (!G_PointInBounds( other->client->ps.origin, self->r.absmin, self->r.absmax ))
+			{
+				return;
+			}
+			else if (other->client->isHacking != self->s.number && other->s.number < MAX_CLIENTS )
+			{ //start the hack
+				other->client->isHacking = self->s.number;
+				VectorCopy(other->client->ps.viewangles, other->client->hackingAngles);
+				other->client->ps.hackingTime = level.time + self->genericValue7;
+				other->client->ps.hackingBaseTime = self->genericValue7;
+				if (other->client->ps.hackingBaseTime > 60000)
+				{ //don't allow a bit overflow
+					other->client->ps.hackingTime = level.time + 60000;
+					other->client->ps.hackingBaseTime = 60000;
+				}
+				return;
+			}
+			else if (other->client->ps.hackingTime < level.time)
+			{ //finished with the hack, reset the hacking values and let it fall through
+				other->client->isHacking = 0; //can't hack a client
+				other->client->ps.hackingTime = 0;
+			}
+			else
+			{ //hack in progress
+				return;
+			}
+		}
+	}
+
+	if ( self->spawnflags & 8 )
+	{//FIRE_BUTTON
+		if( !( other->client->pers.cmd.buttons & BUTTON_ATTACK ) &&
+			!( other->client->pers.cmd.buttons & BUTTON_ALT_ATTACK ) )
+		{//not pressing fire button or altfire button
+			return;
+		}
+	}
+
+	if ( self->radius )
+	{
+		vec3_t	eyeSpot;
+
+		//Only works if your head is in it, but we allow leaning out
+		//NOTE: We don't use CalcEntitySpot SPOT_HEAD because we don't want this
+		//to be reliant on the physical model the player uses.
+		VectorCopy(other->client->ps.origin, eyeSpot);
+		eyeSpot[2] += other->client->ps.viewheight;
+
+		if ( G_PointInBounds( eyeSpot, self->r.absmin, self->r.absmax ) )
+		{
+			if( !( other->client->pers.cmd.buttons & BUTTON_ATTACK ) &&
+				!( other->client->pers.cmd.buttons & BUTTON_ALT_ATTACK ) )
+			{//not attacking, so hiding bonus
+				/*
+				//FIXME:  should really have sound events clear the hiddenDist
+				other->client->hiddenDist = self->radius;
+				//NOTE: movedir HAS to be normalized!
+				if ( VectorLength( self->movedir ) )
+				{//They can only be hidden from enemies looking in this direction
+					VectorCopy( self->movedir, other->client->hiddenDir );
+				}
+				else
+				{
+					VectorClear( other->client->hiddenDir );
+				}
+				*/
+				//Not using this, at least not yet.
+			}
+		}
+	}
+
+	if ( self->spawnflags & 4 )
+	{//USE_BUTTON
+		if (other->client->sess.raceMode && other->client->sess.movementStyle == MV_JETPACK && VectorLengthSquared(other->client->ps.velocity))
+			return;
+		if (other->client->sess.raceMode && other->client->sess.movementStyle == MV_SWOOP && other->client->ps.m_iVehicleNum)
+			return;
+		if (other->client->ps.torsoAnim != BOTH_BUTTON_HOLD &&
+			other->client->ps.torsoAnim != BOTH_CONSOLE1)
+		{
+			G_SetAnim( other, NULL, SETANIM_TORSO, BOTH_BUTTON_HOLD, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 0 );
+		}
+		else
+		{
+			other->client->ps.torsoTimer = 500;
+		}
+		other->client->ps.weaponTime = other->client->ps.torsoTimer;
+	}
+	
+	if ( self->think == trigger_cleared_fire )
+	{//We're waiting to fire our target2 first
+		self->nextthink = level.time + self->speed;
+		return;
+	}
+
+#endif
+
+	multi_trigger( self, other );
+}
+
+void SP_trigger_KOTH(gentity_t *self)//JAPRO Newpush
+{
+	//char	*s;
+	InitTrigger(self);
+
+	/*
+	if ( G_SpawnString( "noise", "", &s ) ) {
+		if (s && s[0])
+			self->noise_index = G_SoundIndex(s);
+		else
+			self->noise_index = 0;
+	}
+	*/
+
+	Com_Printf("Spawned koth\n");
+
+	self->touch = Touch_KOTH;
+	trap->LinkEntity ((sharedEntity_t *)self);
+}
+
 /*
 ==============================================================================
 
@@ -1850,7 +2356,7 @@ trigger_teleport
 
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	gentity_t	*dest;
-	qboolean keepVel = qfalse;
+	int speed = 0;
 
 	if ( self->flags & FL_INACTIVE )
 	{//set by target_deactivate
@@ -1869,6 +2375,10 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 		return;
 	}
 
+	// Racemode only?
+	if ((self->spawnflags & 4) && !other->client->sess.raceMode) {
+		return;
+	}
 
 	dest = 	G_PickTarget( self->target );
 	if (!dest) {
@@ -1877,14 +2387,15 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	}
 
 	if (self->spawnflags & 2)
-		keepVel = qtrue;
+		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
+	else if (self->speed)
+		speed = self->speed;
 
 	//Look at dest->speed, and.. dest->spawnflags?   if spawnflags & quake style, multiply their current speed
 	//if not spawnflags & quake style, set their speed to specified speed
 	//if neither, set their speed to 450 or whatever?
 
-
-	TeleportPlayer( other, dest->s.origin, dest->s.angles, keepVel );
+	TeleportPlayer( other, dest->s.origin, dest->s.angles, speed );
 }
 
 
@@ -2110,8 +2621,7 @@ void SP_trigger_hurt( gentity_t *self ) {
 	if ( ! (self->spawnflags & 1) ) {
 		trap->LinkEntity ((sharedEntity_t *)self);
 	}
-	else if (self->r.linked)
-	{
+	else if (self->r.linked) {
 		trap->UnlinkEntity((sharedEntity_t *)self);
 	}
 }
@@ -2321,10 +2831,10 @@ void hyperspace_touch( gentity_t *self, gentity_t *other, trace_t *trace )
 				VectorMA( newOrg, uDiff, up, newOrg );
 				//trap->Print("hyperspace from %s to %s\n", vtos(other->client->ps.origin), vtos(newOrg) );
 				//now put them in the offset position, facing the angles that position wants them to be facing
-				TeleportPlayer( other, newOrg, ent->s.angles, qfalse );
+				TeleportPlayer( other, newOrg, ent->s.angles, 0 );
 				if ( other->m_pVehicle && other->m_pVehicle->m_pPilot )
 				{//teleport the pilot, too
-					TeleportPlayer( (gentity_t*)other->m_pVehicle->m_pPilot, newOrg, ent->s.angles, qfalse );
+					TeleportPlayer( (gentity_t*)other->m_pVehicle->m_pPilot, newOrg, ent->s.angles, 0 );
 					//FIXME: and the passengers?
 				}
 				//make them face the new angle

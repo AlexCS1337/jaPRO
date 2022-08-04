@@ -16,7 +16,8 @@ qboolean BG_CanJetpack(playerState_t *ps);
 
 int killPlayerTimer = 0;
 
-gentity_t		g_entities[MAX_GENTITIES];
+gentity_t		g_entities[MAX_ENTITIESTOTAL];
+gentity_t		*g_logicalents = &g_entities[MAX_GENTITIES]; // Quicker access xD
 gclient_t		g_clients[MAX_CLIENTS];
 
 int	dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels
@@ -172,6 +173,7 @@ G_InitGame
 */
 void InitGameAccountStuff(void);
 void G_SpawnWarpLocationsFromCfg(void);
+void G_SpawnCosmeticUnlocks(void);
 extern void RemoveAllWP(void);
 extern void BG_ClearVehicleParseParms(void);
 gentity_t *SelectRandomDeathmatchSpawnPoint( void );
@@ -377,6 +379,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	//setup the warp functionality, and database stuff - japro
 	G_SpawnWarpLocationsFromCfg();
 	G_SpawnHoleFixes();
+	G_SpawnCosmeticUnlocks();
 	InitGameAccountStuff();
 	SetGametypeFuncSolids();
 
@@ -487,6 +490,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 		}
 	}
 	*/
+	
 
 	if ( level.gametype == GT_JEDIMASTER ) { 
 		gentity_t *ent = NULL;
@@ -2042,17 +2046,17 @@ const char *int_to_string(int i, char *buf, size_t bufSize) {
 void PrintStats(int client) {
 	int			i, j = 0, gametype = level.gametype;
 	char		msg[1024-128] = {0}, numbuf[16] = {0};
-	char		lKills[32], lDeaths[32], lNet[32], lDmgGiven[32], lDmgTaken[32], lDmgNet[32], lDmgPerDeath[32], lTK[32], lCaptures[32], lReturns[32], lFragCarrier[32], lAccuracy[32], lTE[32], lTH[32], lDrain[32], lName[32], whitespace[32];
+	char		lKills[32], lDeaths[32], lNet[32], lDmgGiven[32], lDmgTaken[32], lDmgNet[32], lDmgPerDeath[32], lTK[32], lCaptures[32], lReturns[32], lFragCarrier[32], lAccuracy[32], lTE[32], lTH[32], lDrain[32], lName[MAX_NETNAME], whitespace[32];
 	qboolean	showAccuracy = qtrue, showTeamPowers = qtrue, showDrain = qtrue;
 	gclient_t	*cl;
 
-	if (gametype != GT_CTF && gametype != GT_TEAM)
-		return;
-	if ((g_weaponDisable.integer > (1<<WP_CONCUSSION)) && (g_startingWeapons.integer == 8))
+	//if (gametype != GT_CTF && gametype != GT_TEAM && !g_gunGame.integer)
+		//return;
+	if (((g_weaponDisable.integer > (1<<WP_CONCUSSION)) && (g_startingWeapons.integer == 8)) && !g_gunGame.integer)
 		showAccuracy = qfalse;
-	if ((g_forcePowerDisable.integer & (1<<FP_TEAM_HEAL)) && (g_forcePowerDisable.integer & (1<<FP_TEAM_FORCE))) //TE and TH are disabled
+	if ((((g_forcePowerDisable.integer & (1<<FP_TEAM_HEAL)) && (g_forcePowerDisable.integer & (1<<FP_TEAM_FORCE)))) || g_gunGame.integer) //TE and TH are disabled
 		showTeamPowers = qfalse;
-	if ((g_forcePowerDisable.integer & (1<<FP_DRAIN)) || !g_friendlyFire.integer) //Team Drain is disabled
+	if ((((g_forcePowerDisable.integer & (1<<FP_DRAIN)) || !g_friendlyFire.value)) || g_gunGame.integer) //Team Drain is disabled
 		showDrain = qfalse;
 
 	Q_strncpyz(msg, "\n"S_COLOR_CYAN, sizeof(msg));
@@ -2065,8 +2069,8 @@ void PrintStats(int client) {
 	Q_strncpyz(lDmgTaken, va("Dmg Taken%s", whitespace), sizeof(lDmgTaken));
 	Q_strncpyz(lDmgNet, va("Net Dmg%s", whitespace), sizeof(lDmgNet));
 	Q_strncpyz(lDmgPerDeath, va("Dmg/Death%s", whitespace), sizeof(lDmgPerDeath));
-	if (level.gametype == GT_TEAM && g_friendlyFire.integer)
-		Q_strncpyz(lTK, va("Team Dmgs%s", whitespace), sizeof(lTK));
+	if (level.gametype == GT_TEAM && g_friendlyFire.value)
+		Q_strncpyz(lTK, va("Team Dmg%s", whitespace), sizeof(lTK)); //Should be just "Team Dmg"
 	if (level.gametype == GT_CTF || level.gametype == GT_CTY) {
 		Q_strncpyz(lCaptures, va("Caps%s", whitespace), sizeof(lCaptures));
 		Q_strncpyz(lReturns, va("Rets%s", whitespace), sizeof(lReturns));
@@ -2154,7 +2158,7 @@ void PrintStats(int client) {
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*s", strlen(lDmgPerDeath), int_to_string(dmgPerDeath, numbuf, sizeof(numbuf)));
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);	
-			if (level.gametype == GT_TEAM && g_friendlyFire.integer) {
+			if (level.gametype == GT_TEAM && g_friendlyFire.value) {
 				Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*s", strlen(lTK), int_to_string(cl->pers.stats.teamDamageGiven, numbuf, sizeof(numbuf)));
 				Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			}
@@ -2181,7 +2185,7 @@ void PrintStats(int client) {
 				Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*s", strlen(lDrain), int_to_string(drainRatio, numbuf, sizeof(numbuf)));
 				Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			}	
-			Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "%-*s", strlen(lName), cl->pers.netname);
+			Com_sprintf (partialTmpMsg2, sizeof(partialTmpMsg2), "^7%-*s", strlen(lName), cl->pers.netname);
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), partialTmpMsg2);
 			Q_strcat(partialTmpMsg, sizeof(partialTmpMsg), "\n");
 
@@ -2257,8 +2261,31 @@ void CheckExitRules( void ) {
 		//int time = (g_singlePlayer.integer) ? SP_INTERMISSION_DELAY_TIME : INTERMISSION_DELAY_TIME;
 		int time = INTERMISSION_DELAY_TIME;
 		if ( level.time - level.intermissionQueued >= time ) {
+			qboolean racer = qfalse;
+
 			level.intermissionQueued = 0;
-			BeginIntermission();
+
+			if (g_raceMode.integer) {
+				for (i = 0; i < level.maxclients; i++) {
+					if (g_entities[i].inuse && g_entities[i].client && g_entities[i].client->sess.raceMode && (g_entities[i].client->sess.sessionTeam != TEAM_SPECTATOR)) {
+						racer = qtrue;
+						break;
+					}
+				}
+			}
+
+			if (racer) { //only do this if someoen is in racemode?
+				PrintStats(-1);//JAPRO STATS
+				for (i = 0; i < level.maxclients; i++) {
+					if (!g_entities[i].inuse || !g_entities[i].client || g_entities[i].client->sess.raceMode || (g_entities[i].client->sess.sessionTeam == TEAM_SPECTATOR))
+						continue;
+					ClientRespawn(&g_entities[i]);	// respawn if dead... respawn if alive too?
+				}
+				Svcmd_ResetScores_f();
+			}
+			else {
+				BeginIntermission();
+			}
 		}
 		return;
 	}
@@ -2889,6 +2916,7 @@ void G_KickAllBots(void)
 
 void SetFailedCallVoteIP(char *ClientIP) {
 	int i;
+	const int time = trap->Milliseconds();
 
 	if (!ClientIP[0]) {
 		//trap->Print("Empty client ip bug!\n");
@@ -2903,8 +2931,8 @@ void SetFailedCallVoteIP(char *ClientIP) {
 		if (!Q_stricmp(voteFloodProtect[i].ip, ClientIP)) { //Found us in the array, so update our votetime
 			//voteFloodProtect[i].lastVoteTime = level.time;
 			voteFloodProtect[i].failCount++;
-			voteFloodProtect[i].voteTimeoutUntil = trap->Milliseconds() + (voteFloodProtect[i].failCount * 1000*g_voteTimeout.integer);
-			voteFloodProtect[i].nextDropTime = trap->Milliseconds() + 1000*g_voteTimeout.integer*5;
+			voteFloodProtect[i].voteTimeoutUntil = time + (voteFloodProtect[i].failCount * 1000*g_voteTimeout.integer);
+			voteFloodProtect[i].nextDropTime = time + 1000*g_voteTimeout.integer*5;
 			//trap->Print("Found client in the array, updating his vote fail time\n");
 			break;
 		}
@@ -2912,8 +2940,8 @@ void SetFailedCallVoteIP(char *ClientIP) {
 			Q_strncpyz(voteFloodProtect[i].ip, ClientIP, sizeof(voteFloodProtect[i].ip));
 			//voteFloodProtect[i].lastVoteTime = level.time;
 			voteFloodProtect[i].failCount++;
-			voteFloodProtect[i].voteTimeoutUntil = trap->Milliseconds() + (voteFloodProtect[i].failCount * 1000*g_voteTimeout.integer);
-			voteFloodProtect[i].nextDropTime = trap->Milliseconds() + 1000*g_voteTimeout.integer*5;
+			voteFloodProtect[i].voteTimeoutUntil = time + (voteFloodProtect[i].failCount * 1000*g_voteTimeout.integer);
+			voteFloodProtect[i].nextDropTime = time + 1000*g_voteTimeout.integer*5;
 			//trap->Print("Client not in array, adding him and his IP( %s, %i)\n", voteFloodProtect[i].ip, voteFloodProtect[i].voteTimeoutUntil);
 			break;
 		}
@@ -3217,11 +3245,12 @@ void CheckCvars( void ) {
 
 static void DropVoteTimeouts(void) { //doesnt need to be checked every frame but w/e..
 	int i;
+	const int time = trap->Milliseconds();
 	for (i=0; i<voteFloodProtectSize; i++) { //Set
 		if (voteFloodProtect[i].ip[0]) { //Found an slot
-			if ((voteFloodProtect[i].failCount > 0) && (voteFloodProtect[i].nextDropTime < trap->Milliseconds())) {
+			if ((voteFloodProtect[i].failCount > 0) && (voteFloodProtect[i].nextDropTime < time)) {
 				voteFloodProtect[i].failCount--;
-				voteFloodProtect[i].nextDropTime = trap->Milliseconds() + 1000*g_voteTimeout.integer*5;
+				voteFloodProtect[i].nextDropTime = time + 1000*g_voteTimeout.integer*5;
 			}
 		}
 		else break;
@@ -3267,7 +3296,7 @@ void G_RunThink (gentity_t *ent) {
 	ent->think (ent);
 
 runicarus:
-	if ( ent->inuse )
+	if (ent->inuse && !ent->isLogical)
 	{
 		SaveNPCGlobals();
 		if(NPCS.NPCInfo == NULL && ent->NPC != NULL)
@@ -3363,9 +3392,12 @@ void G_RunFrame( int levelTime ) {
 
 	static int lastMsgTime = 0;//OSP: pause
 
-	if ((unsigned int)levelTime > (1<<31)) {
-		trap->Print ("Auto quitting server %i\n", levelTime);
-		trap->SendConsoleCommand( EXEC_APPEND, "quit\n");
+	if (!level.numVotingClients && g_autoQuit.integer) {
+		if (levelTime > g_autoQuit.integer * 24 * 60 * 60 * 1000) {//X days
+			//Where to do this other than runframe.. something thats called like every 1 second?
+			trap->Print("Auto quitting server (up %i days)\n", levelTime / 1000 / 60 / 60 / 24);
+			trap->SendConsoleCommand(EXEC_APPEND, "quit\n");
+		}
 	}
 
 	if (level.gametype == GT_SIEGE &&
@@ -3797,7 +3829,7 @@ void G_RunFrame( int levelTime ) {
 					ent->client->jetPackDebReduce = level.time + JETPACK_DEFUEL_RATE;
 				}
 			}
-			else if ((!g_tweakJetpack.integer || ent->client->sess.raceMode) && ent->client->ps.jetpackFuel < 100)
+			else if (!g_tweakJetpack.integer && !ent->client->sess.raceMode && ent->client->ps.jetpackFuel < 100)
 			{ //recharge jetpack
 				if (ent->client->jetPackDebRecharge < level.time)
 				{
@@ -3805,7 +3837,7 @@ void G_RunFrame( int levelTime ) {
 					ent->client->jetPackDebRecharge = level.time + JETPACK_REFUEL_RATE;
 				}
 			}
-			else if (g_tweakJetpack.integer && !ent->client->sess.raceMode && ent->client->pers.cmd.buttons & BUTTON_JETPACK && BG_CanJetpack(&ent->client->ps))
+			else if ((g_tweakJetpack.integer || ent->client->sess.raceMode) && ent->client->ps.eFlags & EF_JETPACK_ACTIVE)
 			{ //using jetpack, drain fuel
 				if (ent->client->jetPackDebReduce < level.time)
 				{
@@ -3819,11 +3851,11 @@ void G_RunFrame( int levelTime ) {
 					ent->client->jetPackDebReduce = level.time + JETPACK_DEFUEL_RATE;//Defuel rate
 				}
 			}
-			else if (ent->client->ps.jetpackFuel < 100)
+			else if (ent->client->ps.jetpackFuel < 100 && ent->client->jetPackDebReduce < level.time - 500) //Add delay until it starts regen
 			{ //recharge jetpack
 				if (ent->client->jetPackDebRecharge < level.time)
 				{
-					ent->client->ps.jetpackFuel += 4;
+					ent->client->ps.jetpackFuel += 3;
 					ent->client->jetPackDebRecharge = level.time + JETPACK_REFUEL_RATE;//Refuel rate
 				}
 			}
@@ -3923,6 +3955,8 @@ void G_RunFrame( int levelTime ) {
 
 						if (currentVeh->client)
 							xyspeed = sqrt(currentVeh->client->ps.velocity[0] * currentVeh->client->ps.velocity[0] + currentVeh->client->ps.velocity[1] * currentVeh->client->ps.velocity[1]);
+						else
+							xyspeed = 0;//ok
 					}
 					else
 						xyspeed = sqrt(ent->client->ps.velocity[0] * ent->client->ps.velocity[0] + ent->client->ps.velocity[1] * ent->client->ps.velocity[1]);
@@ -3931,6 +3965,13 @@ void G_RunFrame( int levelTime ) {
 					if (xyspeed > ent->client->pers.stats.topSpeed)
 						ent->client->pers.stats.topSpeed = xyspeed; //uhh, round?           
 				}	
+				if (ent->client->ps.duelInProgress) {
+					if (!ent->client->pers.stats.lowestHP || ent->client->ps.stats[STAT_HEALTH] < ent->client->pers.stats.lowestHP)
+						ent->client->pers.stats.lowestHP = ent->client->ps.stats[STAT_HEALTH];
+				}
+				else {
+					ent->client->pers.stats.lowestHP = 0;
+				}
 			}
 
 			if (g_allowNPC.integer)
@@ -3998,6 +4039,17 @@ void G_RunFrame( int levelTime ) {
 			ClearNPCGlobals();
 		}
 	}
+
+	// Process logical entities
+	ent = &g_entities[MAX_GENTITIES];
+	for (i = 0; i<level.num_logicalents; i++, ent++) {
+		if (!ent->inuse) {
+			continue;
+		}
+		// Logical entities only think, nothing else
+		G_RunThink(ent);
+	}
+
 #ifdef _G_FRAME_PERFANAL
 	iTimer_ItemRun = trap->PrecisionTimer_End(timer_ItemRun);
 #endif
@@ -4520,6 +4572,8 @@ static void G_SpawnHoleFixes( void ) {
 	Com_sprintf( mapname, sizeof(mapname), "%s", Info_ValueForKey(info, "mapname") );
 	// note: only / is replaced with _
 	Q_strstrip( mapname, "/\n\r;:.?*<>|\\\"", "_" );
+	Q_strlwr(mapname);
+	Q_CleanStr(mapname);
 	Com_sprintf( filename, sizeof(filename), "%s_holes.cfg", mapname );
 	len = trap->FS_Open( filename, &f, FS_READ );
 	if ( len != -1 ) {
@@ -4568,6 +4622,6 @@ static void G_SpawnHoleFixes( void ) {
 		free( text );
 		trap->FS_Close( f );
 	} else {
-		Com_Printf( "Failed to open file %s\n", filename );
+		//Com_Printf( "Failed to open file %s\n", filename );
 	}
 }

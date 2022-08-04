@@ -189,7 +189,7 @@ const char *bg_customVGSSoundNames[MAX_CUSTOM_VGS_SOUNDS] = {
 	"*global_ooops",
 	"*global_quiet",
 	"*global_shazbot",
-	"*global_whoohoo",
+	"*global_woohoo",
 	"*global_yes",
 	"*need_cover",
 	"*need_driver",
@@ -226,13 +226,13 @@ const char *bg_customVGSSoundNames[MAX_CUSTOM_VGS_SOUNDS] = {
 	"*selftask_defenses",
 	"*selftask_deploysensors",
 	"*selftask_deployturrets",
-	"*selftask_forcefield",
+	"*selftask_forcefields",
 	"*selftask_onit",
 	"*selftask_vehicle",
 	"*upgradeself_generator",
 	"*upgradeself_sensor",
 	"*upgradeself_turret",
-	"*target_acquiered",
+	"*target_acquired",
 	"*target_base",
 	"*target_destroyed",
 	"*target_fireonmy",
@@ -1876,17 +1876,28 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 	if (ps->duelInProgress) // consider duel types.
 		{
 			switch (dueltypes[ps->clientNum]) {
+			case 20:
+				if (ps->stats[STAT_RACEMODE])
+					break;
+				if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				{
+					if (!ps->saberLockFrame || power != FP_PUSH)
+					{
+						return qfalse;
+					}
+				}
+				break;
 			case 1: //force duel
 				break;
 			case 0: //normal duel
 			default:
-					if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				if (power != FP_SABER_OFFENSE && power != FP_SABER_DEFENSE && power != FP_LEVITATION)
+				{
+					if (!ps->saberLockFrame || power != FP_PUSH)
 					{
-						if (!ps->saberLockFrame || power != FP_PUSH)
-						{
-							return qfalse;
-						}
+						return qfalse;
 					}
+				}
 				break;
 			}
 		}
@@ -1997,7 +2008,14 @@ gitem_t	*BG_FindItemForWeapon( weapon_t weapon ) {
 		}
 	}
 
-	Com_Error( ERR_DROP, "Couldn't find item for weapon %i", weapon);
+	//Debug this crash
+	Com_Printf("BG_FindItemForWeapon crash\n"); 
+	Svcmd_GameMem_f();
+	if (it->classname)
+		Com_Printf("Last classname %s type %i, tag %i, end: %i\n", it->classname, it->giType, it->giTag, it);
+
+	//Com_Error( ERR_DROP, "Couldn't find item for weapon %i", weapon); //This caused a crash once (wp_blaster)
+	Com_Error( ERR_FATAL, "Couldn't find item for weapon %i", weapon);
 	return NULL;
 }
 
@@ -2284,7 +2302,7 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 			return qfalse;
 		}
 		if (ps->stats[STAT_RACEMODE] && item && (item->giTag != PW_YSALAMIRI) && (item->giTag != PW_FORCE_BOON)) // no picking up shit in racemode?
-			return qfalse;
+			return qfalse; //Maybe allow spawnflags 2 to be racemode_only ?
 	}
 	else
 	{//safety return since below code assumes a non-null ps
@@ -3011,7 +3029,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	s->saberInFlight = ps->saberInFlight;
 	s->saberEntityNum = ps->saberEntityNum;
 	s->saberMove = ps->saberMove;
-	s->forcePowersActive = ps->fd.forcePowersActive;
+	s->forcePowersActive = ps->fd.forcePowersActive; //TODO: serverside anti absorb ESP. remove absorb from forcepowersactive here if it should not be visible to others. logic is if last absorbed something within 1 second ago?
 
 	if (ps->duelInProgress)
 		s->bolt1 = 1;
@@ -3165,7 +3183,7 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	s->saberInFlight = ps->saberInFlight;
 	s->saberEntityNum = ps->saberEntityNum;
 	s->saberMove = ps->saberMove;
-	s->forcePowersActive = ps->fd.forcePowersActive;
+	s->forcePowersActive = ps->fd.forcePowersActive; //todo
 
 	if (ps->duelInProgress)
 	{

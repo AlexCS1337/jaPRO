@@ -1492,6 +1492,14 @@ void PM_SaberLocked( void )
 
 qboolean PM_SaberInBrokenParry( int move )
 {
+#ifdef _GAME
+	if (g_tweakSaber.integer & ST_NO_REDCHAIN)
+		return qfalse;
+#elif _CGAME
+	if (cgs.jcinfo & JAPRO_CINFO_NOREDCHAIN)
+		return qfalse;
+#endif
+
 	if ( move >= LS_V1_BR && move <= LS_V1_B_ )
 	{
 		return qtrue;
@@ -1574,11 +1582,6 @@ qboolean PM_CanBackstab(void)
 		}
 	}
 #else
-	if (cgs.isJAPro && (cgs.jcinfo & JAPRO_CINFO_EASIERBACKSLASH))
-	{
-		return qtrue;
-	}
-
 	if (cgs.isJAPro && (cgs.jcinfo & JAPRO_CINFO_EASYBACKSLASH))
 	{
 		int i;
@@ -2005,6 +2008,7 @@ saberMoveName_t PM_SaberJumpAttackMove( void )
 	vec3_t fwdAngles, jumpFwd;
 	saberInfo_t *saber1 = BG_MySaber( pm->ps->clientNum, 0 );
 	saberInfo_t *saber2 = BG_MySaber( pm->ps->clientNum, 1 );
+	int speed = 300;
 	//see if we have an overridden (or cancelled) lunge move
 
 	//trap->Print("Dfa check 3\n");
@@ -2040,7 +2044,27 @@ saberMoveName_t PM_SaberJumpAttackMove( void )
 	VectorCopy( pm->ps->viewangles, fwdAngles );
 	fwdAngles[PITCH] = fwdAngles[ROLL] = 0;
 	AngleVectors( fwdAngles, jumpFwd, NULL, NULL );
-	VectorScale( jumpFwd, 300, pm->ps->velocity );
+
+#ifdef _CGAME
+	if (cgs.isJAPro) {
+#endif
+		if (pm->ps->stats[STAT_RACEMODE] && (pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_JKA || pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_QW || pm->ps->stats[STAT_MOVEMENTSTYLE] == MV_PJK)) {//Check for single saber?
+			trace_t tr;
+			vec3_t down;
+
+			VectorCopy(pm->ps->origin, down);
+			down[2] -= 256;
+			pm->trace(&tr, pm->ps->origin, pm->mins, pm->maxs, down, pm->ps->clientNum, MASK_SOLID); //Change this to mask_playersolid to allow dfa glitch on more maps (annh slide man etc).
+
+			if ((tr.plane.normal[2] >= MIN_WALK_NORMAL) && !(tr.surfaceFlags & SURF_SLICK) && !(tr.surfaceFlags & SURF_FORCEFIELD)) { //Check if on slope, dunno why slick is sometimes forcefield
+				speed = 250;
+			}
+		}
+#if _CGAME
+	}
+#endif
+
+	VectorScale( jumpFwd, speed, pm->ps->velocity ); //In racemode (non siege, non slope, non slick), make this 250?
 	pm->ps->velocity[2] = 280;
 	PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
 
@@ -2310,6 +2334,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	{
 		saberInfo_t *saber1 = BG_MySaber( pm->ps->clientNum, 0 );
 		saberInfo_t *saber2 = BG_MySaber( pm->ps->clientNum, 1 );
+		const int moveStyle = PM_GetMovePhysics();
 
 		if ( saber1
 			&& saber1->jumpAtkRightMove != LS_INVALID )
@@ -2361,11 +2386,11 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			allowCartwheels = qfalse;
 		else if (saber2 && (saber2->saberFlags&SFL_NO_CARTWHEELS))//no reason not to use else if, no point in setting it twice
 			allowCartwheels = qfalse;
-		else if (PM_GetMovePhysics() == 3 || PM_GetMovePhysics() == 4 || PM_GetMovePhysics() == 7 || PM_GetMovePhysics() == 8) {
+		else if (moveStyle == MV_CPM || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_RJCPM || moveStyle == MV_SLICK || moveStyle == MV_BOTCPM) {
 			allowCartwheels = qfalse;
 			noSpecials = qtrue;
 		}
-		else if (pm->ps->stats[STAT_ONLYBHOP]) {
+		else if (pm->ps->stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_BHOP) {
 			allowCartwheels = qfalse;
 			noSpecials = qtrue;
 		}
@@ -3838,27 +3863,7 @@ weapChecks:
 #ifdef _GAME
 						if ((newmove != LS_A_JUMP_T__B_) || !(g_tweakSaber.integer & ST_REDDFAFIX))
 #endif
-						{
-							if (pm->ps->stats[STAT_RACEMODE] && (pm->ps->stats[STAT_MOVEMENTSTYLE] == 1 || pm->ps->stats[STAT_MOVEMENTSTYLE] == 2 || pm->ps->stats[STAT_MOVEMENTSTYLE] == 5) && (pm->ps->velocity[2] == 280.0f))
-							{
-								trace_t tr;
-								vec3_t down;
-
-								VectorCopy(pm->ps->origin, down);
-								down[2] -= 256;
-								pm->trace(&tr, pm->ps->origin, pm->mins, pm->maxs, down, pm->ps->clientNum, MASK_SOLID); //Change this to mask_playersolid to allow dfa glitch on more maps (annh slide man etc).
-
-								//trap->Print("surfFlags: %i, Planenormal: %f\n", tr.surfaceFlags, pml.groundTrace.plane.normal[2]);
-
-								if ( (tr.plane.normal[2] < MIN_WALK_NORMAL) || (tr.surfaceFlags & SURF_SLICK) || (tr.surfaceFlags & SURF_FORCEFIELD)) { //Dunno why slick is sometimes forcefield
-									newmove = saberMoveData[curmove].chain_idle;
-								}
-								//else 
-									//trap->Print("Move canceled!\n");
-							}
-							else
-								newmove = saberMoveData[curmove].chain_idle;
-						}
+							newmove = saberMoveData[curmove].chain_idle;
 					}
 				}
 
@@ -4047,11 +4052,36 @@ void PM_SetSaberMove(short newMove)
 		anim = BOTH_SABERSTAFF_STANCE;
 	}
 	*/
+
+
+
+#ifdef _GAME
+	else if ( (pm->ps->stats[STAT_RACEMODE] || !(g_tweakSaber.integer & ST_NO_REDCHAIN)) &&
+#else
+	else if ( (!cgs.isJAPro || cg.predictedPlayerState.stats[STAT_RACEMODE] || !(cgs.jcinfo & JAPRO_CINFO_NOREDCHAIN)) &&
+#endif
+		pm->ps->fd.saberAnimLevel > FORCE_LEVEL_1 && !BG_SaberInIdle( newMove ) && !PM_SaberInParry( newMove ) && !PM_SaberInKnockaway( newMove ) && !PM_SaberInBrokenParry( newMove ) && !PM_SaberInReflect( newMove ) && !BG_SaberInSpecial(newMove))
+ 	{//readies, parries and reflections have only 1 level
+ 		anim += (pm->ps->fd.saberAnimLevel-FORCE_LEVEL_1) * SABER_ANIM_GROUP_SIZE;
+ 	}
+
+#ifdef _GAME
+	else if (!pm->ps->stats[STAT_RACEMODE] && (g_tweakSaber.integer & ST_NO_REDCHAIN) && 
+#else
+	else if ((cgs.isJAPro && !cg.predictedPlayerState.stats[STAT_RACEMODE] && (cgs.jcinfo & JAPRO_CINFO_NOREDCHAIN)) &&
+#endif
+		pm->ps->fd.saberAnimLevel > FORCE_LEVEL_1 && !BG_SaberInIdle(newMove) && !PM_SaberInParry(newMove) && !PM_SaberInReflect(newMove) && !BG_SaberInSpecial(newMove) && !PM_SaberInTransition(newMove))
+	{//FIXME: only have level 1 transitions for now
+		anim += (pm->ps->fd.saberAnimLevel - FORCE_LEVEL_1) * SABER_ANIM_GROUP_SIZE;
+	}
+
+/*
 	else if ( pm->ps->fd.saberAnimLevel > FORCE_LEVEL_1 &&
 		 !BG_SaberInIdle( newMove ) && !PM_SaberInParry( newMove ) && !PM_SaberInKnockaway( newMove ) && !PM_SaberInBrokenParry( newMove ) && !PM_SaberInReflect( newMove ) && !BG_SaberInSpecial(newMove))
 	{//readies, parries and reflections have only 1 level 
 		anim += (pm->ps->fd.saberAnimLevel-FORCE_LEVEL_1) * SABER_ANIM_GROUP_SIZE;
 	}
+*/
 
 	// If the move does the same animation as the last one, we need to force a restart...
 	if ( saberMoveData[pm->ps->saberMove].animToUse == anim && newMove > LS_PUTAWAY)
@@ -4151,7 +4181,7 @@ void PM_SetSaberMove(short newMove)
 		{//spins must be played on entire body
 			parts = SETANIM_BOTH;
 		}
-		else if ( (!pm->cmd.forwardmove&&!pm->cmd.rightmove&&!pm->cmd.upmove))
+		else if ( (!pm->cmd.forwardmove && !pm->cmd.rightmove && !pm->cmd.upmove) )
 		{//not trying to run, duck or jump
 			if ( !BG_FlippingAnim( pm->ps->legsAnim ) && 
 				!BG_InRoll( pm->ps, pm->ps->legsAnim ) && 

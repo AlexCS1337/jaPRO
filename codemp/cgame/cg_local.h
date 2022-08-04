@@ -123,7 +123,11 @@
 #define JAPRO_CINFO_NOREDCHAIN		(1<<28) //no red chains 1.02
 #define JAPRO_CINFO_PROJSNIPER		(1<<29)
 #define	JAPRO_CINFO_JAPLUSGRAPPLE	(1<<30)
-#define	JAPRO_CINFO_EASIERBACKSLASH	(1<<31)
+
+#define JAPRO_CINFO2_RACEMODE		(1<<0) //UI
+#define JAPRO_CINFO2_REGISTRATION	(1<<1) //UI
+#define JAPRO_CINFO2_SABERSWITCH	(1<<2) //UI
+#define	JAPRO_CINFO2_FIXPLAYERCOLLISION	(1<<3)
 
 //ja+ stuff
 #define JAPRO_PLUGIN_NEWDRAINEFX		(1<<0)
@@ -1665,6 +1669,7 @@ typedef struct cgs_s {
 
 	int				cinfo;
 	int				jcinfo;
+	int				jcinfo2;
 	int				restricts;
 	qboolean		isJAPro;
 	qboolean		isJAPlus;

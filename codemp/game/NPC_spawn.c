@@ -2917,6 +2917,55 @@ void SP_NPC_Rebel( gentity_t *self)
 //=============================================================================================
 //ENEMIES
 //=============================================================================================
+/*QUAKED NPC_Human_Merc(1 0 0) (-16 -16 -24) (16 16 40) BOWCASTER REPEATER FLECHETTE CONCUSSION DROPTOFLOOR CINEMATIC NOTSOLID STARTINSOLID SHY
+100 health, blaster rifle
+
+BOWCASTER - Starts with a Bowcaster
+REPEATER - Starts with a Repeater
+FLECHETTE - Starts with a Flechette gun
+CONCUSSION - Starts with a Concussion Rifle
+
+If you want them to start with any other kind of weapon, make a spawnscript for them that sets their weapon.
+
+"message" - turns on his key surface.  This is the name of the key you get when you walk over his body.  This must match the "message" field of the func_security_panel you want this key to open.  Set to "goodie" to have him carrying a goodie key that player can use to operate doors with "GOODIE" spawnflag.  NOTE: this overrides all the weapon spawnflags
+
+DROPTOFLOOR - NPC can be in air, but will spawn on the closest floor surface below it
+CINEMATIC - Will spawn with no default AI (BS_CINEMATIC)
+NOTSOLID - Starts not solid
+STARTINSOLID - Don't try to fix if spawn in solid
+SHY - Spawner is shy
+*/
+void SP_NPC_Human_Merc( gentity_t *self )
+{
+	if ( !self->NPC_type )
+	{
+		/*if ( self->message )
+		{
+			self->NPC_type = "human_merc_key";
+		}
+		else */if ( (self->spawnflags & 1) )
+		{
+			self->NPC_type = "human_merc_bow";
+		}
+		else if ( (self->spawnflags & 2) )
+		{
+			self->NPC_type = "human_merc_rep";
+		}
+		else if ( (self->spawnflags & 4) )
+		{
+			self->NPC_type = "human_merc_flc";
+		}
+		else if ( (self->spawnflags & 8) )
+		{
+			self->NPC_type = "human_merc_cnc";
+		}
+		else
+		{
+			self->NPC_type = "human_merc";
+		}
+	}
+	SP_NPC_spawner( self );
+}
 
 /*QUAKED NPC_Stormtrooper(1 0 0) (-16 -16 -24) (16 16 40) OFFICER COMMANDER ALTOFFICER ROCKET DROPTOFLOOR CINEMATIC NOTSOLID STARTINSOLID SHY
 30 health, blaster
@@ -3851,7 +3900,7 @@ NPC_Spawn_f
 
 gentity_t *NPC_SpawnType( gentity_t *ent, char *npc_type, char *targetname, qboolean isVehicle ) 
 {
-	gentity_t		*NPCspawner = G_Spawn(qtrue);
+	gentity_t		*NPCspawner = G_SpawnLogical();
 	vec3_t			forward, end;
 	trace_t			trace;
 	gentity_t		*ourVehicle;
@@ -3898,7 +3947,10 @@ gentity_t *NPC_SpawnType( gentity_t *ent, char *npc_type, char *targetname, qboo
 	//set the yaw so that they face away from player
 	NPCspawner->s.angles[1] = ent->client->ps.viewangles[1];
 
-	trap->LinkEntity((sharedEntity_t *)NPCspawner);
+	//LOOK AT THIS! JKG does not have this LinkEntity line.  Should it just be commented out, or conditional, or?
+	//If the spawner has script_targetname it wont be logical and we might want this?
+	if (!NPCspawner->isLogical)
+		trap->LinkEntity((sharedEntity_t *)NPCspawner);
 
 	NPCspawner->NPC_type = G_NewString( npc_type );
 
@@ -4176,6 +4228,7 @@ Svcmd_NPC_f
 parse and dispatch bot commands
 */
 qboolean	showBBoxes = qfalse;
+int G_AdminAllowed(gentity_t *ent, unsigned int adminCmd, qboolean cheatAllowed, qboolean raceAllowed, char *cmdName);
 void Cmd_NPC_f( gentity_t *ent ) 
 {
 	char	cmd[1024];
@@ -4183,27 +4236,8 @@ void Cmd_NPC_f( gentity_t *ent )
 	if (!ent->client)
 		return;
 
-	if (ent->client->sess.fullAdmin)//Logged in as full admin
-	{
-		if (!(g_fullAdminLevel.integer & (1 << A_NPC)))
-		{
-			trap->SendServerCommand( ent-g_entities, "print \"You are not authorized to use this command (npc).\n\"" );
-			return;
-		}
-	}
-	else if (ent->client->sess.juniorAdmin)//Logged in as junior admin
-	{
-		if (!(g_juniorAdminLevel.integer & (1 << A_NPC)))
-		{
-			trap->SendServerCommand( ent-g_entities, "print \"You are not authorized to use this command (npc).\n\"" );
-			return;
-		}
-	}
-	else if (!sv_cheats.integer)
-	{
-		trap->SendServerCommand( ent-g_entities, "print \"Cheats are not enabled. You must be logged in to use this command (npc).\n\"" );//replaces "Cheats are not enabled on this server." msg
+	if (!G_AdminAllowed(ent, JAPRO_ACCOUNTFLAG_A_NPC, qtrue, qfalse, "npc"))
 		return;
-	}
 
 	trap->Argv( 1, cmd, 1024 );
 

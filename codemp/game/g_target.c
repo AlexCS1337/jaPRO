@@ -451,7 +451,7 @@ void SP_target_laser (gentity_t *self)
 
 void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	gentity_t	*dest;
-	qboolean keepVel = qfalse;
+	int speed = 0;
 
 	if (!activator->client)
 		return;
@@ -465,9 +465,11 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 	}
 
 	if (self->spawnflags & 1)
-		keepVel = qtrue;
+		speed = sqrt(other->client->ps.velocity[0] * other->client->ps.velocity[0] + other->client->ps.velocity[1] * other->client->ps.velocity[1]);
+	else if (self->speed)
+		speed = self->speed;
 
-	TeleportPlayer( activator, dest->s.origin, dest->s.angles, keepVel );
+	TeleportPlayer( activator, dest->s.origin, dest->s.angles, speed );
 }
 
 /*QUAKED target_teleporter (1 0 0) (-8 -8 -8) (8 8 8)
@@ -726,8 +728,14 @@ void target_random_use(gentity_t *self, gentity_t *other, gentity_t *activator)
 		return;
 	}
 
-	//FIXME: need a seed
-	pick = Q_irand(1, t_count);
+	//FIXME: need a seed - Okay?
+	if(self->spawnflags & 2) {
+		int seed = trap->Milliseconds() % 256;
+		pick = (int)((Q_random(&seed)*t_count)+1);
+	}
+	else
+		pick = Q_irand(1, t_count);
+
 	t_count = 0;
 	while ( (t = G_Find (t, FOFS(targetname), self->target)) != NULL )
 	{
@@ -962,7 +970,7 @@ void target_level_change_use(gentity_t *self, gentity_t *other, gentity_t *activ
 {
 	G_ActivateBehavior(self,BSET_USE);
 
-	trap->SendConsoleCommand(EXEC_NOW, va("map %s", self->message));
+	trap->SendConsoleCommand(EXEC_APPEND, va("map %s\n", self->message));
 }
 
 /*QUAKED target_level_change (1 0 0) (-4 -4 -4) (4 4 4)

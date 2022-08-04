@@ -1370,6 +1370,10 @@ typedef enum {
 #define MAX_TERRAINS		1//32 //rwwRMG: inserted
 #define MAX_LOCATIONS		64
 
+//Logical entities
+#define	MAX_LOGICENTITIES	3072
+#define	MAX_ENTITIESTOTAL	(MAX_GENTITIES+MAX_LOGICENTITIES)
+
 #define	GENTITYNUM_BITS	10		// don't need to send any more
 #define	MAX_GENTITIES	(1<<GENTITYNUM_BITS)
 
@@ -1846,9 +1850,10 @@ typedef struct siegePers_s
 #define BUTTON_FORCE_LIGHTNING	1024
 
 #define BUTTON_FORCE_DRAIN		2048
-#define BUTTON_JETPACK			4096
+
+#define BUTTON_GRAPPLE			4096
 #define BUTTON_DASH				8192
-#define BUTTON_GRAPPLE			16384
+#define BUTTON_STRAFEBOT		16384
 #define BUTTON_TARGET			32768
 
 // Here's an interesting bit.  The bots in TA used buttons to do additional gestures.

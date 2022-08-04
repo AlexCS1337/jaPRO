@@ -197,7 +197,13 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define JAPRO_CINFO_ROLLCANCEL		(1<<27)	//option for only bhop mode
 #define JAPRO_CINFO_NOREDCHAIN		(1<<28)	//option for only bhop mode
 #define JAPRO_CINFO_PROJSNIPER		(1<<29)	//option for only bhop mode
-#define	JAPRO_CINFO_JAPLUSGRAPPLE	(1<<30)
+#define	JAPRO_CINFO_JAPLUSGRAPPLE	(1<<30) //Oh f only 30 cuz its signed?
+
+//jcinfo2 stuff
+#define JAPRO_CINFO2_RACEMODE		(1<<0)
+#define JAPRO_CINFO2_REGISTRATION	(1<<1)
+#define JAPRO_CINFO2_SABERSWITCH	(1<<2)
+#define	JAPRO_CINFO2_FIXPLAYERCOLLISION	(1<<3)
 
 #define JAPRO_CINFO_CROUCH_OLD		(1<<9) //old crouch clipping method
 
@@ -232,6 +238,14 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define	WT_NO_SPREAD			(1<<27)
 #define WT_SLOW_SNIPER			(1<<28)
 #define WT_SOLID_ROCKET			(1<<29)
+#define WT_NERFED_PISTOL		(1<<30)
+
+//wt_halt 
+//wt_hook
+//wt proj barrier
+//wt discord/tag
+
+
 /*
 //#define REDUCE_SABERBLOCK	(1<<20) //s
 #define ALLOW_GUNROLL		(1<<21)      //CLIENT
@@ -262,13 +276,19 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define FT_JK2PULLROLL		  (1<<12)
 #define FT_NODRAINABSORB	  (1<<13)
 #define FT_GRIPDURINGROLL	  (1<<14)
+#define FT_WEAKPULL			  (1<<15)
+#define FT_NERFED_WEAPPULL	  (1<<16)
+#define FT_WEAPON_PULLRESIST  (1<<17)
+#define FT_NORAGEFIRERATE	  (1<<18)
+#define FT_BUFFMINDTRICK	  (1<<19)
+#define FT_BUFFMELEE		  (1<<20) //not really a forcetweak but no room in weapon tweaks!
 
 //Saber tweaks
 #define	ST_NO_MP_SABERLERP		(1<<0)
 #define ST_JK2_DMGSYSTEM		(1<<1)
 #define ST_REDUCE_SABERBLOCK	(1<<2)
 #define	ST_REDUCE_SABERDROP		(1<<3)
-#define ST_ALLOW_ROLLCANCEL		(1<<4) //CLIENT
+#define ST_ALLOW_ROLLCANCEL		(1<<4) //CLIENT - also remove backwards run slowdown like jk2
 #define ST_NO_REDCHAIN			(1<<5)
 #define ST_FIXED_SABERSWITCH	(1<<6)
 #define ST_EASYBACKSLASH		(1<<7)
@@ -279,8 +299,9 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define ST_JK2LUNGE				(1<<12)
 #define ST_REDDFAFIX			(1<<13)
 #define ST_REDDFANOFORCE		(1<<14)
-#define ST_EASIERBACKSLASH		(1<<15)
+#define ST_EASIERBACKSLASH		(1<<15) //no prediction yet
 #define ST_SABERGUN				(1<<16)
+#define ST_FASTCYCLE			(1<<17)
 
 //Saberstyles
 #define SABERSTYLE_BLUE (1<<0)//no blue
@@ -290,6 +311,25 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define SABERSTYLE_STAFF (1<<4)//no staff
 #define SABERSTYLE_DESANN (1<<5)// desann only
 #define SABERSTYLE_TAVION (1<<6)//tavion only
+
+
+//JAPRO - Serverside + clientside , restrictions 
+#define JAPRO_RESTRICT_BHOP (1<<0)
+#define JAPRO_RESTRICT_CROUCHJUMP (1<<1)
+#define JAPRO_RESTRICT_DOUBLEJUMP (1<<2)
+#define JAPRO_RESTRICT_ALLOWTELES (1<<3)
+
+//japro target_restrict restrictions
+
+#define RESTRICT_FLAG_DISABLE (1<<0)
+#define RESTRICT_FLAG_HASTE (1<<1)
+#define RESTRICT_FLAG_FLAGS (1<<2)
+#define RESTRICT_FLAG_JUMP (1<<3)
+#define RESTRICT_FLAG_MOVESTYLE (1<<4)
+#define RESTRICT_FLAG_YSAL (1<<5)
+#define RESTRICT_FLAG_CROUCHJUMP (1<<6)
+#define RESTRICT_FLAG_DOUBLEJUMP (1<<7)
+#define RESTRICT_FLAG_ALLOWTELES (1<<8)
 
 //JAPRO - Serverside - Unlagged bitvalues
 #define UNLAGGED_PROJ_NUDGE	(1<<0)
@@ -338,6 +378,7 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define JAPRO_PLUGIN_CHATBOXCP		(1<<25)	//
 #define JAPRO_PLUGIN_NODMGNUMBERS	(1<<26)	//
 #define JAPRO_PLUGIN_CENTERMUZZLE	(1<<27)	//
+#define JAPRO_PLUGIN_CONSOLECP		(1<<28)	//
 
 //g_tweakVote TWEAKS
 #define TV_ALLOW_SIEGESPECVOTE		(1<<0)
@@ -351,6 +392,45 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define TV_SHOW_VOTES				(1<<8)
 #define TV_ONLY_COUNT_VOTERS		(1<<9)
 #define TV_FIX_GAMETYPEMAP			(1<<10)
+#define TV_IGNOREMAPARENAS			(1<<11)
+
+#define RS_TIMER_START				(1<<0)
+
+#define JAPRO_ACCOUNTFLAG_A_ADMINTELE	(1<<0)
+#define JAPRO_ACCOUNTFLAG_A_FREEZE		(1<<1)
+#define JAPRO_ACCOUNTFLAG_A_TELEMARK	(1<<2)
+#define JAPRO_ACCOUNTFLAG_A_ADMINBAN	(1<<3)
+#define JAPRO_ACCOUNTFLAG_A_ADMINKICK	(1<<4)
+#define JAPRO_ACCOUNTFLAG_A_NPC			(1<<5)
+#define JAPRO_ACCOUNTFLAG_A_NOCLIP		(1<<6)
+#define JAPRO_ACCOUNTFLAG_A_GRANTADMIN	(1<<7)
+#define JAPRO_ACCOUNTFLAG_A_CHANGEMAP	(1<<8)
+#define JAPRO_ACCOUNTFLAG_A_CSPRINT		(1<<9)
+#define JAPRO_ACCOUNTFLAG_A_FORCETEAM	(1<<10)
+#define JAPRO_ACCOUNTFLAG_A_LOCKTEAM	(1<<11)
+#define JAPRO_ACCOUNTFLAG_A_VSTR		(1<<12)
+#define JAPRO_ACCOUNTFLAG_A_SEEIP		(1<<13)
+#define JAPRO_ACCOUNTFLAG_A_RENAME		(1<<14)
+#define JAPRO_ACCOUNTFLAG_A_LISTMAPS	(1<<15)
+#define JAPRO_ACCOUNTFLAG_A_WHOIS		(1<<16)
+#define JAPRO_ACCOUNTFLAG_A_LOOKUP		(1<<17)
+#define JAPRO_ACCOUNTFLAG_A_NOFOLLOW	(1<<18)
+#define JAPRO_ACCOUNTFLAG_A_SEEHIDDEN	(1<<19)
+#define JAPRO_ACCOUNTFLAG_A_CALLVOTE	(1<<20)
+#define JAPRO_ACCOUNTFLAG_A_KILLVOTE	(1<<21)
+#define JAPRO_ACCOUNTFLAG_A_READAMSAY	(1<<22)
+#define JAPRO_MAX_ADMIN_BITS 22
+
+#define JAPRO_ACCOUNTFLAG_IPLOCK		(1<<23)
+#define JAPRO_ACCOUNTFLAG_TRUSTED		(1<<24)
+#define JAPRO_ACCOUNTFLAG_NORACE		(1<<25)
+#define JAPRO_ACCOUNTFLAG_NODUEL		(1<<26)
+#define JAPRO_ACCOUNTFLAG_ALLCOSMETICS	(1<<27)
+
+#define JAPRO_ACCOUNTTEAMFLAG_OWNER		(1<<0)
+#define JAPRO_ACCOUNTTEAMFLAG_PENDING	(1<<1)
+
+#define JAPRO_TEAMFLAG_PRIVATE			(1<<0)
 
 void G_StoreTrail( gentity_t *ent );
 void G_ResetTrail( gentity_t *ent );
@@ -368,34 +448,6 @@ typedef struct { //Should this store their g2 anim? for proper g2 sync?
 	int		time, leveltime, torsoAnim, torsoTimer, legsAnim, legsTimer;
 	float	realAngle; //Only the [YAW] is ever used for hit detection
 } clientTrail_t;
-
-
-//JAPRO - Serverside - Admin bitrates
-typedef enum {
-	A_ADMINTELE,
-	A_FREEZE,
-	A_TELEMARK,
-	A_ADMINBAN,
-	A_ADMINKICK,
-	A_NPC,
-	A_NOCLIP,
-	A_GRANTADMIN,
-	A_CHANGEMAP,
-	A_CSPRINT,
-	A_FORCETEAM,
-	A_LOCKTEAM,
-	A_VSTR,
-	A_SEEIP,
-	A_RENAME,
-	A_LISTMAPS,
-	A_BUILDHIGHSCORES,
-	A_WHOIS,
-	A_LOOKUP,
-	A_NOFOLLOW,
-	A_SEEHIDDEN,
-	A_CALLVOTE,
-	A_KILLVOTE
-} admin_type_t;
 
 //JAPRO - Serverside - Emote bitrates
 typedef enum {
@@ -419,7 +471,9 @@ typedef enum {
 	E_SLEEP,
 	E_SABERFLIP,
 	E_SLAP,
-	E_SIGNAL, //Group them all here, running out of space in this :s
+	E_SIGNAL,
+	E_BASEDUEL,
+//	E_SHEEV,//Group them all here, running out of space in this :s
 	E_ALL
 } emote_type_t;
 
@@ -658,6 +712,7 @@ struct gentity_s {
 
 	// OpenJK add
 	int			useDebounceTime;	// for cultist_destroyer
+	qboolean	isLogical;		// Determines if this ent is logical or not
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -732,8 +787,7 @@ typedef struct clientSession_s {
 	qboolean	raceMode;
 	int			movementStyle;
 
-	qboolean	juniorAdmin;
-	qboolean	fullAdmin;
+	int			accountFlags;
 
 	char		clanpass[32];//Japro - Serverside Clanpass
 	int			sayteammod;//0 = normal, 1 = clan, 2 = admin
@@ -763,6 +817,7 @@ typedef struct {//JAPRO - Serverside - Stats
 	int	displacementFlagSamples;
 
 	int	startTime;//For timers that are not flags
+	int	coopStarted;//For coop tracking ugh
 	int	startLevelTime;//For timers that are not flags
 	float displacement;
 	int	displacementSamples;
@@ -774,6 +829,11 @@ typedef struct {//JAPRO - Serverside - Stats
 	int	teamEnergizeGiven;
 	int	enemyDrainDamage;
 	int teamDrainDamage;
+
+	float racetime;
+
+	int kothTime;
+	short lowestHP;
 } stats_t;
 
 // client data that stays across multiple respawns, but is cleared
@@ -817,9 +877,10 @@ typedef struct clientPersistant_s {
 	int			timenudge;
 	int			maxFPS;
 	int			maxPackets;
-	int			thirdPerson;
+	qboolean	thirdPerson;
 	int			thirdPersonRange;
 	int			thirdPersonVertOffset;
+	short		cameraSettings; //Hold this here to network to player.. damn
 
 	//int			aimSamples[64];//japro anti yawspeed?
 	//int			aimCount;
@@ -850,10 +911,12 @@ typedef struct clientPersistant_s {
 	qboolean	keepDemo;//japro autodemo for defrag... :S
 	qboolean	showChatCP;
 	qboolean	showCenterCP;
+	qboolean	showConsoleCP;
+	int			demoStoppedTime;
 	int			stopRecordingTime;
 	char		oldDemoName[16];
 	char		demoName[MAX_QPATH];
-
+	unsigned int	unlocks;
 
 	stats_t		stats;
 } clientPersistant_t;
@@ -1022,6 +1085,7 @@ struct gclient_s {
 	int			respawnTime;		// can respawn when time > this, force after g_forcerespwan
 	int			inactivityTime;		// kick players when time > this
 	int			lastHereTime;		//japro to optimize bots / autorecord
+	int			afkDuration;
 	qboolean	inactivityWarning;	// qtrue if the five seoond warning has been given
 	int			rewardTime;			// clear the EF_AWARD_IMPRESSIVE, etc when time > this
 	int			ourSwoopNum;		//for swoop movementstyle
@@ -1165,6 +1229,7 @@ struct gclient_s {
 	qboolean	iAmALoser;
 
 	int			lastKickTime;	//JAPRO - Serverside - Add this to floodprotect sidekick
+	int			saberHitWound[MAX_CLIENTS][MAX_CLIENTS+1];//allow a slot for NPCs l0l
 	qboolean	didGlitchKick;
 	int			lastTargetLaserTime;
 	int			lastThrowTime;  //JAPRO - Serverside - Add thsi to floodprotect flagthrow?
@@ -1179,7 +1244,10 @@ struct gclient_s {
 	short		noKnockdownStreak; //pseudo random knockdowns option
 	short		totalDamage;
 	int			lastDamageTime;
-	int			lastStartTime; //for autodemo floodprotect
+	//int			lastStartTime; //for autodemo floodprotect
+	int			lastInStartTrigger;
+	int			kothDebounce;
+	short		forcedFireMode;
 	//int			numStakes;
 
 #if _GRAPPLE
@@ -1243,7 +1311,8 @@ typedef enum
 	AET_SOUND,
 } alertEventType_e;
 
-#define _SPPHYSICS 0
+#define _SPPHYSICS 1
+#define _COOP 1
 typedef enum //movementstyle enum
 {
 	MV_SIEGE,
@@ -1261,7 +1330,12 @@ typedef enum //movementstyle enum
 #if _SPPHYSICS
 	MV_SP,
 #endif
-	MV_NUMSTYLES,
+	MV_SLICK,
+	MV_BOTCPM,
+#if _COOP
+	MV_COOP_JKA,
+#endif
+	MV_NUMSTYLES
 } movementStyle_e;
 
 typedef enum
@@ -1306,10 +1380,20 @@ typedef struct Warp_s {
 	int				z;
 	short			yaw;
 } Warp_t;
-
 Warp_t	warpList[64];
 //japro
 
+//japro
+#define MAX_COSMETIC_UNLOCKS 32
+typedef struct CosmeticUnlocks_s {
+	unsigned short	bitvalue;
+	char			mapname[40];
+	short			style;
+	unsigned int	duration;
+	qboolean		active;
+} CosmeticUnlocks_t;
+CosmeticUnlocks_t cosmeticUnlocks[MAX_COSMETIC_UNLOCKS];
+//japro
 
 //japro
 typedef struct VoteFloodProtect_s {
@@ -1328,6 +1412,7 @@ typedef struct level_locals_s {
 	struct gentity_s	*gentities;
 	int			gentitySize;
 	int			num_entities;		// current number, <= MAX_GENTITIES
+	int			num_logicalents;	// current numner of logical ents, > MAX_GENTIIES, <= MAX_LOGICALENTS
 
 	int			warmupTime;			// restart match at this time
 
@@ -1464,6 +1549,8 @@ typedef struct level_locals_s {
 	int			saberUpdateDebounceTime; //why not
 #endif
 
+	int			kothTime; //JAPRO KOTH
+
 	//int			lastVoteFailTime;
 //JAPRO - Serverside - Amlockteam - End
 
@@ -1588,12 +1675,14 @@ void	G_SetAngles( gentity_t *ent, vec3_t angles );
 
 void	G_InitGentity( gentity_t *e );
 gentity_t	*G_Spawn (qboolean essential);
-gentity_t *G_TempEntity( vec3_t origin, int event );
+gentity_t	*G_SpawnLogical(void);
+gentity_t	*G_TempEntity( vec3_t origin, int event );
 gentity_t	*G_PlayEffect(int fxID, vec3_t org, vec3_t ang);
 gentity_t	*G_PlayEffectID(const int fxID, vec3_t org, vec3_t ang);
-gentity_t *G_ScreenShake(vec3_t org, gentity_t *target, float intensity, int duration, qboolean global);
+gentity_t	*G_ScreenShake(vec3_t org, gentity_t *target, float intensity, int duration, qboolean global);
 void	G_MuteSound( int entnum, int channel );
 void	G_Sound( gentity_t *ent, int channel, int soundIndex );
+void	G_RaceSound( gentity_t *ent, int channel, int soundIndex, int racesound );//bad
 void	G_SoundAtLoc( vec3_t loc, int channel, int soundIndex );
 void	G_EntitySound( gentity_t *ent, int channel, int soundIndex );
 void	TryUse( gentity_t *ent );
@@ -1738,8 +1827,8 @@ int	TAG_GetAngles( const char *owner, const char *name, vec3_t angles );
 int TAG_GetRadius( const char *owner, const char *name );
 int TAG_GetFlags( const char *owner, const char *name );
 
-void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean keepVel );
-void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean droptofloor, qboolean race );
+void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, int speed);
+void AmTeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles, qboolean droptofloor, qboolean race, qboolean toMark );
 
 //
 // g_weapon.c
@@ -1989,7 +2078,8 @@ int BotAIStartFrame( int time );
 
 
 extern	level_locals_t	level;
-extern	gentity_t		g_entities[MAX_GENTITIES];
+extern gentity_t		g_entities[MAX_ENTITIESTOTAL];
+extern gentity_t		*g_logicalents;
 
 #define	FOFS(x) offsetof(gentity_t, x)
 

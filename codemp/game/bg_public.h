@@ -564,7 +564,7 @@ typedef enum {
 	STAT_DASHTIME,				
 	STAT_LASTJUMPSPEED,
 	STAT_RACEMODE,
-	STAT_ONLYBHOP,
+	STAT_RESTRICTIONS,
 	STAT_MOVEMENTSTYLE,
 	STAT_JUMPTIME,
 	STAT_WJTIME
@@ -591,7 +591,8 @@ typedef enum {
 	PERS_DEFEND_COUNT,				// defend awards
 	PERS_ASSIST_COUNT,				// assist awards
 	PERS_GAUNTLET_FRAG_COUNT,		// kills with the gauntlet
-	PERS_CAPTURES					// captures
+	PERS_CAPTURES,					// captures
+	PERS_CAMERA_SETTINGS            //Max 32768, damn.
 } persEnum_t;
 
 
@@ -1194,6 +1195,7 @@ qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 #define	DF_NO_FALLING			8
 #define DF_FIXED_FOV			16
 #define	DF_NO_FOOTSTEPS			32
+#define DF_NO_CROUCHFIX			256 //Match JA+ I guess.
 
 //rwwRMG - added in CONTENTS_TERRAIN
 // content masks

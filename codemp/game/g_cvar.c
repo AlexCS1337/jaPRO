@@ -63,6 +63,12 @@ static void CVU_Headslide(void) {
 	trap->Cvar_Set("jcinfo", va("%i", jcinfo.integer));
 }
 
+static void CVU_PlayerCollision(void) {
+	g_fixPlayerCollision.integer ?
+		(jcinfo2.integer |= JAPRO_CINFO2_FIXPLAYERCOLLISION) : (jcinfo2.integer &= ~JAPRO_CINFO2_FIXPLAYERCOLLISION);
+	trap->Cvar_Set("jcinfo2", va("%i", jcinfo2.integer));
+}
+
 static void CVU_Unlagged(void) {
 	if (g_unlagged.integer & UNLAGGED_PROJ_NUDGE)//if 1 or 3 or 7
 		jcinfo.integer |= JAPRO_CINFO_UNLAGGEDPROJ;
@@ -90,6 +96,20 @@ static void CVU_Bhop(void) {
 	}
 	trap->Cvar_Set("jcinfo", va("%i", jcinfo.integer));
 }
+
+/*
+static void CVU_ShowHealth(void) {
+	int i, health = 0;
+	if (g_showHealth.integer)
+		health = 100;
+
+	for (i=0; i<MAX_CLIENTS; i++) {//Build a list of clients
+		if (!g_entities[i].inuse)
+			continue;
+		g_entities[i].maxHealth = health;
+	}
+}
+*/
 
 /*
 static void CVU_FastGrip(void) {
@@ -225,7 +245,7 @@ static void RemoveRabbit(void) {
 
 	for (i = 0; i < level.num_entities; i++) {
 		ent = &g_entities[i];
-		if (ent->inuse && (ent->s.eType == ET_ITEM) && (ent->item->giTag == PW_NEUTRALFLAG) && (ent->item->giType = IT_TEAM)) {
+		if (ent->inuse && (ent->s.eType == ET_ITEM) && (ent->item->giTag == PW_NEUTRALFLAG) && (ent->item->giType == IT_TEAM)) {
 			G_FreeEntity( ent );
 			return;
 		}
@@ -251,7 +271,7 @@ static void RemoveWeaponsFromMap(void) {
 				ent->r.contents = 0;
 				//ent->inuse = qfalse;
 			}
-			else if (ent->item->giType == IT_AMMO && wDisable && G_FreeAmmoEntity(ent->item)) {
+			else if ((ent->item->giType == IT_AMMO) && wDisable && G_FreeAmmoEntity(ent->item)) {
 				ent->think = 0;
 				ent->nextthink = 0;
 				ent->s.eFlags |= EF_NODRAW;
@@ -303,7 +323,7 @@ static void RemoveWeaponsFromPlayer(gentity_t *ent) {
 	ent->client->ps.stats[STAT_WEAPONS] &= ~disallowedWeaps; //Subtract disallowed weapons from current weapons.
 
 	if (ent->client->ps.stats[STAT_WEAPONS] <= 0)
-		ent->client->ps.stats[STAT_WEAPONS] = WP_MELEE;
+		ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE); //HMM? asdf
 
 	if (!(ent->client->ps.stats[STAT_WEAPONS] & (1 >> ent->client->ps.weapon))) { //If our weapon selected does not appear in our weapons list
 		ent->client->ps.weapon = WP_MELEE; //who knows why this does shit even if our current weapon is fine.
@@ -367,6 +387,21 @@ void CVU_StartingItems( void ) {
 	}
 }
 
+void CVU_GunGame(void) {
+	int i;
+	gentity_t* ent;
+
+	for (i = 0; i < level.numConnectedClients; i++) { //For each player, call removeweapons, and addweapons.
+		ent = &g_entities[level.sortedClients[i]];
+		if (ent->inuse && ent->client && !ent->client->sess.raceMode) {
+			//RemoveItemsFromPlayer(ent);
+			//Problem here is that thers no g_itemDisable cmd, so we have to parse all the other item individual disable cmds...
+			//Maybe just let them keep their old items until they die, oh well.
+			GiveClientWeapons(ent->client);
+		}
+	}
+}
+
 qboolean G_CallSpawn( gentity_t *ent );
 void CVU_Rabbit( void ) {
 	if (g_rabbit.integer) { //
@@ -387,6 +422,45 @@ void CVU_Rabbit( void ) {
 	else {
 		RemoveRabbit();
 	}
+}
+
+static void CVU_RaceMode(void) {
+	g_raceMode.integer ? //1 is forced, 2 allows /race cmd
+		(jcinfo2.integer |= JAPRO_CINFO2_RACEMODE) : (jcinfo2.integer &= ~JAPRO_CINFO2_RACEMODE);
+	trap->Cvar_Set("jcinfo2", va("%i", jcinfo2.integer));
+}
+
+static void CVU_SaberSwitch(void) {
+	g_allowSaberSwitch.integer ?
+		(jcinfo2.integer |= JAPRO_CINFO2_SABERSWITCH) : (jcinfo2.integer &= ~JAPRO_CINFO2_SABERSWITCH);
+	trap->Cvar_Set("jcinfo2", va("%i", jcinfo2.integer));
+}
+
+static void CVU_Registration(void) {
+	g_allowRegistration.integer ?
+		(jcinfo2.integer |= JAPRO_CINFO2_REGISTRATION) : (jcinfo2.integer &= ~JAPRO_CINFO2_REGISTRATION);
+	trap->Cvar_Set("jcinfo2", va("%i", jcinfo2.integer));
+}
+
+static void CVU_Cosmetics(void) {
+		char	msg[1024-128] = {0};
+		if (g_validateCosmetics.integer) {
+			int		i;
+
+			for (i=0; i<MAX_COSMETIC_UNLOCKS; i++) {
+				char *tmpMsg = NULL;
+				if (!cosmeticUnlocks[i].active)
+					continue;
+
+				tmpMsg = va("%i:%s:%i:%i\n", cosmeticUnlocks[i].bitvalue, cosmeticUnlocks[i].mapname, cosmeticUnlocks[i].style, cosmeticUnlocks[i].duration); //probably have to replace the \n with something so it doesnt flood console of old japro clients
+				if (strlen(msg) + strlen(tmpMsg) >= sizeof( msg)) {
+					trap->SendServerCommand( -1, va("cosmetics \"%s\"", msg));
+					msg[0] = '\0';
+				}
+				Q_strcat(msg, sizeof(msg), tmpMsg);
+			}
+		}
+		trap->SendServerCommand(-1, va("cosmetics \"%s\"", msg));
 }
 
 //

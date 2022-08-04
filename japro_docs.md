@@ -7,7 +7,7 @@
 	g_allowFlagThrow	0  //Allow use of /throwflag command.
 	g_fixCTFScores		0  //Tweak CTF score amounts.
 	g_fixFlagHitbox		0  	
-	g_rabbit			0  
+	g_rabbit			0 //1=normal rabit, 2=sniper rabbit
 
 #### Saber
 	g_tweakSaber			0	//Configured with /tweakSaber command.
@@ -118,7 +118,7 @@
 #### Race/Accounts 
 	g_raceMode					0	//0=Noracemode, 1=forcedracemode, 2=player can toggle race mode with /racecommand.
 	g_allowRaceTele				0//1=Allow amtele in racemode. 2=Also allow noclip.
-	g_allowRegistration			1	
+	g_allowRegistration			1=Allow registration. 2=also allow clan joining. 3=also allow clan creation
 	sv_pluginKey				0	
 	g_forceLogin				0//Force players to login in order to be ingame.
 
@@ -295,7 +295,6 @@
 	clanpass	
 	clansay	
 	clanwhois 	 
-	dftop10	
 	engage_fullforceduel	
 	engage_gunduel	
 	hide		
@@ -311,7 +310,11 @@
 	nudge	
 	practice	
 	printstats	
-	race		
+	race	
+	rTop
+	rLatest
+	rWorst
+	rRank
 	register	
 	rocketchange		
 	say_team_mod		

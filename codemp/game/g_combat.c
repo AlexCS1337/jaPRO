@@ -483,6 +483,9 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	if (self->client->sess.raceMode)//racemode
 		return;
 
+	if (g_gunGame.integer)
+		return;
+
 	if ((g_rabbit.integer == 2) && (weapon == WP_DISRUPTOR))//rabbit, only cuz of snipers idk?
 		return;
 
@@ -592,6 +595,9 @@ void TossClientItems( gentity_t *self ) {
 		return;
 
 	if (self->client->sess.raceMode)//racemode
+		return;
+
+	if (g_gunGame.integer)
 		return;
 
 	// drop the weapon if not a gauntlet or machinegun
@@ -2132,6 +2138,7 @@ extern void Rancor_DropVictim( gentity_t *self );
 
 void ResetPlayerTimers(gentity_t *ent, qboolean print);//extern ?
 void G_AddSimpleStat(gentity_t *self, gentity_t *other, int type);
+void G_GiveGunGameWeapon(gclient_t* client);
 extern qboolean g_dontFrickinCheck;
 extern qboolean g_endPDuel;
 extern qboolean g_noPDuelCheck;
@@ -2172,7 +2179,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 	else {
 		VectorClear(self->client->pers.respawnLocation);
-}	
+	}	
 
 	ResetPlayerTimers(self, qfalse);
 
@@ -2523,7 +2530,7 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 		(meansOfDeath == MOD_SUICIDE || meansOfDeath == MOD_TEAM_CHANGE) && 
 		self->client->ps.otherKillerTime > level.time)
 	{
-		if (OnSameTeam (self, &g_entities[self->client->ps.otherKiller]) && g_friendlyFire.integer)
+		if (OnSameTeam (self, &g_entities[self->client->ps.otherKiller]) && g_friendlyFire.value)
 			attacker = &g_entities[self->client->ps.otherKiller];
 		else if (level.gametype < GT_TEAM)
 			attacker = &g_entities[self->client->ps.otherKiller];
@@ -2622,12 +2629,157 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 			G_AddSimpleStat(self, attacker, 3);
 	}
 
-	if (attacker && attacker->client) {
-		attacker->client->lastkilled_client = self->s.number;
+	if (!attacker || attacker->NPC || !self->NPC || g_scoreNPCs.integer) {
+		if (attacker && attacker->client) {
+			attacker->client->lastkilled_client = self->s.number;
 
-		G_CheckVictoryScript(attacker);
+			if (!self->NPC || g_scoreNPCs.integer > 1) {
+				G_CheckVictoryScript(attacker);
+			}
 
-		if ( attacker == self || OnSameTeam (self, attacker ) ) {
+			if ( attacker == self || OnSameTeam (self, attacker ) ) {
+				if (level.gametype == GT_DUEL)
+				{ //in duel, if you kill yourself, the person you are dueling against gets a kill for it
+					int otherClNum = -1;
+					if (level.sortedClients[0] == self->s.number)
+					{
+						otherClNum = level.sortedClients[1];
+					}
+					else if (level.sortedClients[1] == self->s.number)
+					{
+						otherClNum = level.sortedClients[0];
+					}
+
+					if (otherClNum >= 0 && otherClNum < MAX_CLIENTS &&
+						g_entities[otherClNum].inuse && g_entities[otherClNum].client &&
+						otherClNum != attacker->s.number)
+					{
+						AddScore( &g_entities[otherClNum], self->r.currentOrigin, 1 );
+					}
+					else
+					{
+						if (!attacker->client->sess.raceMode)
+							AddScore( attacker, self->r.currentOrigin, -1 );
+					}
+				}
+				else
+				{
+					if (attacker != self) { //we did a teamkill
+						if (!attacker->client->sess.raceMode) {
+							AddScore( attacker, self->r.currentOrigin, -1 );
+							if (attacker != self  && attacker->client)//JAPRO STATS
+								attacker->client->pers.stats.teamKills++;
+						}
+					}
+					else if (level.gametype != GT_FFA && (level.gametype != GT_CTF || !g_fixCTFScores.integer)) {//we selfkilled
+						if (!attacker->client->sess.raceMode)
+							AddScore( attacker, self->r.currentOrigin, -1 ); //Only take away a point if its not FFA or CTF i guess, sure
+					}
+
+				}
+				if (level.gametype == GT_JEDIMASTER)
+				{
+					if (self->client && self->client->ps.isJediMaster)
+					{ //killed ourself so return the saber to the original position
+					  //(to avoid people jumping off ledges and making the saber
+					  //unreachable for 60 seconds)
+						ThrowSaberToAttacker(self, NULL);
+						self->client->ps.isJediMaster = qfalse;
+					}
+				}
+			} else {
+				if (level.gametype == GT_JEDIMASTER)
+				{
+					if ((attacker->client && attacker->client->ps.isJediMaster) ||
+						(self->client && self->client->ps.isJediMaster))
+					{
+						AddScore( attacker, self->r.currentOrigin, 1 );
+						if (self->client && self->client->ps.isJediMaster)
+						{
+							ThrowSaberToAttacker(self, attacker);
+							self->client->ps.isJediMaster = qfalse;
+						}
+					}
+					else
+					{
+						gentity_t *jmEnt = G_GetJediMaster();
+
+						if (jmEnt && jmEnt->client)
+						{
+							AddScore( jmEnt, self->r.currentOrigin, 1 );
+						}
+					}
+				}
+				else if ((level.gametype == GT_FFA || level.gametype == GT_TEAM) && g_rabbit.integer)//rabbit points
+				{
+					int carrier_bonus, killed_carrier, killed_other;
+					if (level.gametype == GT_TEAM) {
+						carrier_bonus = 2;
+						killed_carrier = 2;
+						killed_other = 1;
+					}
+					else {
+						carrier_bonus = 1;
+						killed_carrier = 2;
+						killed_other = 0;
+					}
+					if (self->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed flag carrier
+						AddScore( attacker, self->r.currentOrigin, killed_carrier ); 
+					}
+					else if (attacker->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed while holding flag
+						AddScore( attacker, self->r.currentOrigin, carrier_bonus ); 
+					}
+					else {
+						if (killed_other)
+							AddScore( attacker, self->r.currentOrigin, killed_other ); //we dont care about other kills? just rabbit?
+					}
+					G_AddSimpleStat(attacker, self, 1);
+					attacker->client->pers.stats.kills++;//JAPRO STATS
+				}
+				else
+				{
+					AddScore( attacker, self->r.currentOrigin, 1 );
+					G_AddSimpleStat(attacker, self, 1);
+					attacker->client->pers.stats.kills++;//JAPRO STATS
+					if (g_gunGame.integer && !attacker->client->sess.raceMode) {
+						//Print winner, resetscores so we dont fuck up racemode
+						G_GiveGunGameWeapon(attacker->client);
+						if (attacker->health > 0 && attacker->health < 100)
+							attacker->health = attacker->client->ps.stats[STAT_HEALTH] = 100;
+					}
+				}
+
+				if( meansOfDeath == MOD_STUN_BATON ) {
+				
+					// play humiliation on player
+					attacker->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT]++;
+
+					attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+
+					// also play humiliation on target
+					self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
+				}
+
+				// check for two kills in a short amount of time
+				// if this is close enough to the last kill, give a reward sound
+				if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
+					// play excellent on player
+					attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
+
+					attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+				}
+				attacker->client->lastKillTime = level.time;
+
+			}
+		} else {
+			if (self->client && self->client->ps.isJediMaster)
+			{ //killed ourself so return the saber to the original position
+			  //(to avoid people jumping off ledges and making the saber
+			  //unreachable for 60 seconds)
+				ThrowSaberToAttacker(self, NULL);
+				self->client->ps.isJediMaster = qfalse;
+			}
+
 			if (level.gametype == GT_DUEL)
 			{ //in duel, if you kill yourself, the person you are dueling against gets a kill for it
 				int otherClNum = -1;
@@ -2642,159 +2794,19 @@ extern void RunEmplacedWeapon( gentity_t *ent, usercmd_t **ucmd );
 
 				if (otherClNum >= 0 && otherClNum < MAX_CLIENTS &&
 					g_entities[otherClNum].inuse && g_entities[otherClNum].client &&
-					otherClNum != attacker->s.number)
+					otherClNum != self->s.number)
 				{
 					AddScore( &g_entities[otherClNum], self->r.currentOrigin, 1 );
 				}
 				else
 				{
-					if (!attacker->client->sess.raceMode)
-						AddScore( attacker, self->r.currentOrigin, -1 );
+					AddScore( self, self->r.currentOrigin, -1 );
 				}
 			}
 			else
 			{
-				if (attacker != self) { //we did a teamkill
-					if (!attacker->client->sess.raceMode) {
-						AddScore( attacker, self->r.currentOrigin, -1 );
-						if (attacker != self  && attacker->client)//JAPRO STATS
-							attacker->client->pers.stats.teamKills++;
-					}
-				}
-				else if (level.gametype != GT_FFA && (level.gametype != GT_CTF || !g_fixCTFScores.integer)) {//we selfkilled
-					if (!attacker->client->sess.raceMode)
-						AddScore( attacker, self->r.currentOrigin, -1 ); //Only take away a point if its not FFA or CTF i guess, sure
-				}
-
+				AddScore( self, self->r.currentOrigin, -1 ); //Not sure what this is.. loda fixme
 			}
-			if (level.gametype == GT_JEDIMASTER)
-			{
-				if (self->client && self->client->ps.isJediMaster)
-				{ //killed ourself so return the saber to the original position
-				  //(to avoid people jumping off ledges and making the saber
-				  //unreachable for 60 seconds)
-					ThrowSaberToAttacker(self, NULL);
-					self->client->ps.isJediMaster = qfalse;
-				}
-			}
-		} else {
-			if (level.gametype == GT_JEDIMASTER)
-			{
-				if ((attacker->client && attacker->client->ps.isJediMaster) ||
-					(self->client && self->client->ps.isJediMaster))
-				{
-					AddScore( attacker, self->r.currentOrigin, 1 );
-					
-					if (self->client && self->client->ps.isJediMaster)
-					{
-						ThrowSaberToAttacker(self, attacker);
-						self->client->ps.isJediMaster = qfalse;
-					}
-				}
-				else
-				{
-					gentity_t *jmEnt = G_GetJediMaster();
-
-					if (jmEnt && jmEnt->client)
-					{
-						AddScore( jmEnt, self->r.currentOrigin, 1 );
-					}
-				}
-			}
-			else if ((level.gametype == GT_FFA || level.gametype == GT_TEAM) && g_rabbit.integer)//rabbit points
-			{
-				int carrier_bonus, killed_carrier, killed_other;
-				if (level.gametype == GT_TEAM) {
-					carrier_bonus = 2;
-					killed_carrier = 2;
-					killed_other = 1;
-				}
-				else {
-					carrier_bonus = 1;
-					killed_carrier = 2;
-					killed_other = 0;
-				}
-				if (self->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed flag carrier
-					AddScore( attacker, self->r.currentOrigin, killed_carrier ); 
-					G_AddSimpleStat(attacker, self, 1);
-					attacker->client->pers.stats.kills++;//JAPRO STATS
-				}
-				else if (attacker->client->ps.powerups[PW_NEUTRALFLAG]) {//I killed while holding flag
-					AddScore( attacker, self->r.currentOrigin, carrier_bonus ); 
-					G_AddSimpleStat(attacker, self, 1);
-					attacker->client->pers.stats.kills++;//JAPRO STATS
-				}
-				else {
-					G_AddSimpleStat(attacker, self, 1);
-					attacker->client->pers.stats.kills++;//JAPRO STATS
-					if (killed_other)
-						AddScore( attacker, self->r.currentOrigin, killed_other ); //we dont care about other kills? just rabbit?
-				}
-			}
-			else
-			{
-				AddScore( attacker, self->r.currentOrigin, 1 );
-				G_AddSimpleStat(attacker, self, 1);
-				attacker->client->pers.stats.kills++;//JAPRO STATS
-			}
-
-			if( meansOfDeath == MOD_STUN_BATON ) {
-				
-				// play humiliation on player
-				attacker->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT]++;
-
-				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
-
-				// also play humiliation on target
-				self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
-			}
-
-			// check for two kills in a short amount of time
-			// if this is close enough to the last kill, give a reward sound
-			if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
-				// play excellent on player
-				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
-
-				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
-			}
-			attacker->client->lastKillTime = level.time;
-
-		}
-	} else {
-		if (self->client && self->client->ps.isJediMaster)
-		{ //killed ourself so return the saber to the original position
-		  //(to avoid people jumping off ledges and making the saber
-		  //unreachable for 60 seconds)
-			ThrowSaberToAttacker(self, NULL);
-			self->client->ps.isJediMaster = qfalse;
-		}
-
-		if (level.gametype == GT_DUEL)
-		{ //in duel, if you kill yourself, the person you are dueling against gets a kill for it
-			int otherClNum = -1;
-			if (level.sortedClients[0] == self->s.number)
-			{
-				otherClNum = level.sortedClients[1];
-			}
-			else if (level.sortedClients[1] == self->s.number)
-			{
-				otherClNum = level.sortedClients[0];
-			}
-
-			if (otherClNum >= 0 && otherClNum < MAX_CLIENTS &&
-				g_entities[otherClNum].inuse && g_entities[otherClNum].client &&
-				otherClNum != self->s.number)
-			{
-				AddScore( &g_entities[otherClNum], self->r.currentOrigin, 1 );
-			}
-			else
-			{
-				AddScore( self, self->r.currentOrigin, -1 );
-			}
-		}
-		else
-		{
-			AddScore( self, self->r.currentOrigin, -1 ); //Not sure what this is.. loda fixme
 		}
 	}
 
@@ -4469,7 +4481,7 @@ void G_LocationBasedDamageModifier(gentity_t *ent, vec3_t point, int mod, int df
 		return;
 	}
 
-	if (ent && ent->client && ((ent->client->ps.stats[STAT_MOVEMENTSTYLE] == 7) || (ent->client->ps.stats[STAT_MOVEMENTSTYLE] == 8)))//no loc based in rocketjump mode
+	if (ent && ent->client && ((ent->client->sess.movementStyle == MV_RJQ3) || (ent->client->sess.movementStyle == MV_RJCPM) || (ent->client->sess.movementStyle == MV_COOP_JKA)))//no loc based in rocketjump mode -and detpack?
 		return;
 
 	if ( (dflags&DAMAGE_NO_HIT_LOC) )
@@ -4640,24 +4652,37 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	if (mod == MOD_DEMP2 && targ && targ->inuse && targ->client)
 	{
-		if ( targ->client->ps.electrifyTime < level.time )
-		{//electrocution effect
-			if (targ->s.eType == ET_NPC && targ->s.NPC_class == CLASS_VEHICLE &&
-				targ->m_pVehicle && (targ->m_pVehicle->m_pVehicleInfo->type == VH_SPEEDER || targ->m_pVehicle->m_pVehicleInfo->type == VH_WALKER))
-			{ //do some extra stuff to speeders/walkers
-				targ->client->ps.electrifyTime = level.time + Q_irand( 3000, 4000 );
-			}
-			else if ( targ->s.NPC_class != CLASS_VEHICLE 
-				|| (targ->m_pVehicle && targ->m_pVehicle->m_pVehicleInfo->type != VH_FIGHTER) )
-			{//don't do this to fighters
-//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - Start]
-				if (g_tweakWeapons.integer & WT_DEMP2_RANDOM)
-					targ->client->ps.electrifyTime = level.time + 550;
-				else
-					targ->client->ps.electrifyTime = level.time + Q_irand( 300, 800 );
-//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
+		if (attacker && attacker->client && ((targ->client->sess.movementStyle != attacker->client->sess.movementStyle) || (targ->client->sess.raceMode != attacker->client->sess.raceMode))) {
+		}
+		else if (attacker && targ->client->ps.duelInProgress && (attacker->s.number == targ->client->ps.duelIndex)) {
+		}
+		else {
+			if (targ->client->ps.electrifyTime < level.time)
+			{//electrocution effect
+				if (targ->s.eType == ET_NPC && targ->s.NPC_class == CLASS_VEHICLE &&
+					targ->m_pVehicle && (targ->m_pVehicle->m_pVehicleInfo->type == VH_SPEEDER || targ->m_pVehicle->m_pVehicleInfo->type == VH_WALKER))
+				{ //do some extra stuff to speeders/walkers
+					targ->client->ps.electrifyTime = level.time + Q_irand(3000, 4000);
+				}
+				else if (targ->s.NPC_class != CLASS_VEHICLE
+					|| (targ->m_pVehicle && targ->m_pVehicle->m_pVehicleInfo->type != VH_FIGHTER))
+				{//don't do this to fighters
+	//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - Start]
+					if (targ->client->sess.movementStyle == MV_COOP_JKA) {
+						targ->client->ps.electrifyTime = level.time + 800;//Prim fire is 500ms, alt is 900ms, let them stay lowgrav forever if prim fire but not alt fire..
+					}
+					else if (g_tweakWeapons.integer & WT_DEMP2_RANDOM)
+						targ->client->ps.electrifyTime = level.time + 550;
+					else
+						targ->client->ps.electrifyTime = level.time + Q_irand(300, 800);
+					//[JAPRO - Serverside - Weapons - Tweak weapons Remove Demp2 Randomness - End]
+				}
 			}
 		}
+	}
+	else if (mod == MOD_TARGET_LASER && targ && targ->inuse && targ->client && targ->client->sess.raceMode) { //coop velocity redirect
+		targ->client->ps.velocity[2] = sqrt((targ->client->ps.velocity[0] * targ->client->ps.velocity[0]) + (targ->client->ps.velocity[1] * targ->client->ps.velocity[1]));
+		targ->client->ps.velocity[0] = targ->client->ps.velocity[1] = 0;
 	}
 
 	if (level.gametype == GT_SIEGE &&
@@ -4683,20 +4708,33 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	if (attacker && attacker->client && attacker->client->noclip)//Japro fix noclip abuse
 		return;
 
-	if (g_godChat.integer && attacker && attacker->client && (attacker->client->ps.eFlags & EF_TALK))//Japro - dont allow people to chat and still do damage with godchat (should this be after the 3s period instead?)
+	if (g_godChat.integer && level.gametype == GT_FFA && attacker && attacker->client && (attacker->client->ps.eFlags & EF_TALK))//Japro - dont allow people to chat and still do damage with godchat (should this be after the 3s period instead?)
 		return;
 
-	if ((level.gametype == GT_FFA) && !g_friendlyFire.integer && g_rabbit.integer) {
+	if ((level.gametype == GT_FFA) && !g_friendlyFire.value && g_rabbit.integer) {
 		if (attacker && attacker->client && !attacker->client->ps.duelInProgress && !attacker->client->ps.powerups[PW_NEUTRALFLAG] && targ && targ->client && !targ->client->ps.duelInProgress && !targ->client->sess.raceMode && !targ->client->ps.powerups[PW_NEUTRALFLAG])
 			return;
 	}
 
-	if (attacker && attacker->client && attacker->client->sess.raceMode && !((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == 7) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == 8)))
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
+		if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //I think this is a bug
+			//if (mod != MOD_BLASTER || (!targ->client || !targ->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA))
+				return;
+		}
+		else if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK)) //ignore self damage
+			return; //ignore self damage if attacker is in racemode
+		if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker)) {
+			return; //ignore other damage if attacker is in racemode - why is this not returning for detpacking race->outof race
+		}
+	}
+	/*
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)))
 		return;
-	if (attacker && attacker->client && attacker->client->sess.raceMode && ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == 7) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == 8)) && targ->client && (targ != attacker))
+	if (attacker && attacker->client && attacker->client->sess.raceMode && ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)) && targ->client && (targ != attacker))
 		return;
-	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE)) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
-		return;
+	*/
+	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
+		return; //ignore other damage if target is in racemode
 
 	if ( targ->client )
 	{//don't take damage when in a walker, or fighter
@@ -4767,8 +4805,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		if (targ && targ->client && targ->client->ps.duelInProgress)//Target is dueling
 		{
 			if (attacker && attacker->client) {//always kill him if he dies by falling
-				if (attacker->s.number != targ->client->ps.duelIndex)//Dont dmg him if its not his duelpartner doing the dmg
-					return;	
+				if (attacker->s.number != targ->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
+					//if (targ->client->sess.raceMode && mod == MOD_BLASTER) {
+					//}
+					//else 
+						return;
+				}
 				if (mod != MOD_SABER && dueltypes[attacker->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;
 				if ((mod == MOD_TRIP_MINE_SPLASH || mod == MOD_DET_PACK_SPLASH) && dueltypes[attacker->client->ps.clientNum] == 1) //Tripmine or detpack in FF duel.. sad hack!
@@ -4778,8 +4820,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 		if (attacker && attacker->client && attacker->client->ps.duelInProgress)//Attacker is dueling
 		{
 			if (targ && targ->client) {//always kill him if he dies by falling
-				if (targ->s.number != attacker->client->ps.duelIndex)//Dont dmg him if its not his duelpartner doing the dmg
-					return;	
+				if (targ->s.number != attacker->client->ps.duelIndex) {//Dont dmg him if its not his duelpartner doing the dmg
+					//if (attacker->client->sess.raceMode && mod == MOD_BLASTER) {
+					//}
+					//else 
+						return;
+				}
 				if (mod != MOD_SABER && dueltypes[targ->client->ps.clientNum] == 0)//Only allow saber only dmg in saber duels, this is just a doublecheck?
 					return;
 				if ((mod == MOD_TRIP_MINE_SPLASH || mod == MOD_DET_PACK_SPLASH) && dueltypes[attacker->client->ps.clientNum] == 1) //Tripmine or detpack in FF duel.. sad hack!
@@ -4809,16 +4855,16 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				break;
 			case MOD_BRYAR_PISTOL:
 			case MOD_BRYAR_PISTOL_ALT:
-				damage *= 5;
+				damage *= 4;
 				break;
 			case MOD_BLASTER:
 				damage *= 5;
 				break;
 			case MOD_DISRUPTOR:
-				damage *= 1;
+				damage *= 0.9f;
 				break;
 			case MOD_DISRUPTOR_SNIPER:
-				damage *= 1;
+				damage *= 0.9f;
 				break;
 			case MOD_BOWCASTER:
 				damage *= 5;
@@ -4879,8 +4925,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 	// the intermission has allready been qualified for, so don't
 	// allow any extra scoring
-	if ( level.intermissionQueued ) {
-		return;
+	if ( level.intermissionQueued) { //still let racers dmg themselves in the intermission delay time
+		if (targ->client && targ->client->sess.raceMode) {
+		}
+		else {
+			return;
+		}
 	}
 	if ( !inflictor ) {
 		inflictor = &g_entities[ENTITYNUM_WORLD];
@@ -5010,18 +5060,28 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 					}
 				}
 			}
-			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*saberKnockbackScale, kvel);
 
+			if (targ->client && targ->client->sess.raceMode) {
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
+			}
+			else {
+				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * saberKnockbackScale, kvel);
+			}
 		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - Start]
-		else if ((g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))
-				VectorScale (dir, 0.01 * g_knockback.value * (float)knockback / mass, kvel);
+		else if ((!targ->client || !targ->client->sess.raceMode) && (g_tweakWeapons.integer & WT_PROJECTILE_KNOCKBACK) && (mod == MOD_BLASTER || mod == MOD_BRYAR_PISTOL || mod == MOD_REPEATER || mod == MOD_DISRUPTOR || mod == MOD_DISRUPTOR_SNIPER || mod == MOD_STUN_BATON))
+		{
+			VectorScale(dir, 0.01 * g_knockback.value * (float)knockback / mass, kvel);
+		}
 //[JAPRO - Serverside - Weapons - Remove Projectile/disruptor Knockback - End]
 		else
 		{
-			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
+			if (targ->client && targ->client->sess.raceMode)
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
+			else
+				VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
-		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity);
+		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity); //wallbug?
 
 		if (attacker && attacker->client && attacker != targ)
 		{
@@ -5077,7 +5137,15 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 //JAPRO - Serverside - Fix Kill credit - End
 	}
 
-	
+	if (targ->client && targ->client->sess.raceMode && mod == MOD_SABER)
+	{ //add the shield effect and get out here (stops pain spam)
+		gentity_t *evEnt = G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT);
+		evEnt->s.otherEntityNum = targ->s.number;
+		evEnt->s.eventParm = DirToByte(dir);
+		evEnt->s.time2 = 100;
+		return;
+	}
+
 	if ( (g_jediVmerc.integer || level.gametype == GT_SIEGE)
 		&& client )
 	{//less explosive damage for jedi, more saber damage for non-jedi
@@ -5134,7 +5202,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			if (OnSameTeam (targ, attacker))
 			{
 				/*
-				if ( !g_friendlyFire.integer )
+				if ( !g_friendlyFire.value )
 				{
 					return;
 				}*/
@@ -5149,7 +5217,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 			{ //emplaced guns don't hurt teammates of user
 				if (OnSameTeam (targ, attacker->activator))
 				{
-					if ( !g_friendlyFire.integer )
+					if ( !g_friendlyFire.value)
 					{
 						return;
 					}
@@ -5160,13 +5228,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 				attacker->s.number >= MAX_CLIENTS &&
 				attacker->alliedTeam &&
 				targ->client->sess.sessionTeam == attacker->alliedTeam &&
-				!g_friendlyFire.integer)
+				!g_friendlyFire.value)
 			{ //things allied with my team should't hurt me.. I guess
 				return;
 			}
 		}
 
-		if (level.gametype == GT_JEDIMASTER && !g_friendlyFire.integer &&
+		if (level.gametype == GT_JEDIMASTER && !g_friendlyFire.value &&
 			targ && targ->client && attacker && attacker->client &&
 			targ != attacker && !targ->client->ps.isJediMaster && !attacker->client->ps.isJediMaster &&
 			G_ThereIsAMaster())
@@ -5182,7 +5250,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 
 			if (targown && targown->inuse && targown->client && OnSameTeam(targown, attacker))
 			{
-				if (!g_friendlyFire.integer)
+				if (!g_friendlyFire.value)
 				{
 					return;
 				}
@@ -5280,7 +5348,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	// always give half damage if hurting self... but not in siege.  Heavy weapons need a counter.
 	// calculated after knockback, so rocket jumping works
 	if ( targ == attacker && !(dflags & DAMAGE_NO_SELF_PROTECTION)) {
-		if (targ && targ->client && ((targ->client->ps.stats[STAT_MOVEMENTSTYLE] == 7) || (targ->client->ps.stats[STAT_MOVEMENTSTYLE] == 8)))//fuck this?
+		if (targ && targ->client && ((targ->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (targ->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (targ->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK)))//fuck this?
 			damage = 1;
 		if ( level.gametype == GT_SIEGE )
 			damage *= 1.5;
@@ -5656,7 +5724,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 	if (attacker && attacker->client && attacker->client->ps.duelInProgress && targ && targ->client && targ->client->ps.duelInProgress) {
 			attacker->client->pers.stats.duelDamageGiven += (((take + asave) > (targ->health + targ->client->ps.stats[STAT_ARMOR])) ? (targ->health + targ->client->ps.stats[STAT_ARMOR]) : take + asave);//Cap damage given e.g. if you do 99 dmg to someone with 1hp, its really only 1hp dmg.
 	}
-	else if (level.gametype == GT_TEAM || level.gametype == GT_CTF) {//JAPRO STATS
+	else if (level.gametype == GT_TEAM || level.gametype == GT_CTF || g_gunGame.integer) {//JAPRO STATS
 		if (attacker && attacker->client && targ && targ->client) {
 			if (OnSameTeam(targ, attacker)) //Subtract damage given for teamkills? or just ignore it..
 				attacker->client->pers.stats.teamDamageGiven += (((take + asave) > (targ->health + targ->client->ps.stats[STAT_ARMOR])) ? (targ->health + targ->client->ps.stats[STAT_ARMOR]) : take + asave);

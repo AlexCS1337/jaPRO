@@ -5531,12 +5531,8 @@ Sets mins, maxs, and pm->ps->viewheight
 */
 static void PM_CheckDuck (void)
 {
-<<<<<<< HEAD
-	trace_t	trace;
-=======
 //	trace_t	trace;
 	int oldHeight;
->>>>>>> 1ecfadd81eb3bec052c04980585d7de529cc0b32
 
 	if ( pm->ps->m_iVehicleNum > 0 && pm->ps->m_iVehicleNum < ENTITYNUM_NONE )
 	{//riding a vehicle or are a vehicle
@@ -5632,14 +5628,9 @@ static void PM_CheckDuck (void)
 				pm->ps->pm_flags &= ~PMF_ROLLING;
 			}
 		}
-<<<<<<< HEAD
-		else if ((pm->ps->pm_flags & PMF_ROLLING) && dmflags.integer & JAPRO_CINFO_CROUCH_OLD)
-		{
-=======
 		else if ((pm->ps->pm_flags & PMF_ROLLING) && dmflags.integer & DF_NO_CROUCHFIX)
 		{
 			trace_t	trace;
->>>>>>> 1ecfadd81eb3bec052c04980585d7de529cc0b32
 			// try to stand up
 			pm->maxs[2] = pm->ps->standheight;//DEFAULT_MAXS_2;
 			pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, pm->ps->origin, pm->ps->clientNum, pm->tracemask);
@@ -5701,14 +5692,9 @@ static void PM_CheckDuck (void)
 					pm->maxs[2] = pm->ps->standheight;
 					pm->ps->pm_flags &= ~PMF_DUCKED;
 				}
-<<<<<<< HEAD
-				else if ((pm->ps->pm_flags & PMF_DUCKED) && dmflags.integer & JAPRO_CINFO_CROUCH_OLD)
-				{
-=======
 				else if ((pm->ps->pm_flags & PMF_DUCKED) && dmflags.integer & DF_NO_CROUCHFIX)
 				{
 					trace_t	trace;
->>>>>>> 1ecfadd81eb3bec052c04980585d7de529cc0b32
 					// try to stand up
 					pm->maxs[2] = pm->ps->standheight;//DEFAULT_MAXS_2;
 					pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, pm->ps->origin, pm->ps->clientNum, pm->tracemask);

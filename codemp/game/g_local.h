@@ -205,7 +205,6 @@ extern int dueltypes[MAX_CLIENTS];//JAPRO - Serverside - Fullforce Duels y is th
 #define JAPRO_CINFO2_SABERSWITCH	(1<<2)
 #define	JAPRO_CINFO2_FIXPLAYERCOLLISION	(1<<3)
 
-#define JAPRO_CINFO_CROUCH_OLD		(1<<9) //old crouch clipping method
 
 //JAPRO - Serverside - Tweak Weapons bitvalues
 #define WT_DEMP2_RANDOM			(1<<0)
